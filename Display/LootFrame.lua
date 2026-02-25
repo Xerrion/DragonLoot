@@ -454,7 +454,15 @@ function ns.LootFrame.Show(autoLoot)
     local numItems = GetNumLootItems()
     if numItems == 0 then return end
 
-    -- Populate slots
+    -- Auto-loot: skip UI entirely
+    if autoLoot then
+        for i = 1, numItems do
+            LootSlot(i)
+        end
+        return
+    end
+
+    -- Only acquire and populate slots when NOT auto-looting
     for i = 1, numItems do
         local icon = GetNormalizedSlotInfo(i)
         if icon then
@@ -462,14 +470,6 @@ function ns.LootFrame.Show(autoLoot)
             PopulateSlot(slot, i)
             activeSlots[#activeSlots + 1] = slot
         end
-    end
-
-    -- If auto-loot is enabled, loot all items and return without showing the frame
-    if autoLoot then
-        for i = 1, numItems do
-            LootSlot(i)
-        end
-        return
     end
 
     LayoutSlots()

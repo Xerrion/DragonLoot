@@ -25,9 +25,15 @@ local isLootOpen = false
 -------------------------------------------------------------------------------
 
 local function OnLootOpened(_, autoLoot)
+    isLootOpen = true
+
+    local db = ns.Addon.db.profile
+    if not db.lootWindow.enabled then return end
+
     ns.SuppressBlizzardLootFrame()
     ns.LootFrame.Show(autoLoot)
-    isLootOpen = true
+
+    -- Message hook for Roll/History modules (Phase 3/4)
     ns.Addon:SendMessage("DRAGONLOOT_LOOT_OPENED")
     ns.DebugPrint("LOOT_OPENED fired (Classic)")
 end
@@ -38,10 +44,18 @@ local function OnLootSlotCleared(_, slotIndex)
     end
 end
 
+local function OnLootSlotChanged(_, slotIndex)
+    if not isLootOpen then return end
+    ns.LootFrame.UpdateSlot(slotIndex)
+end
+
 local function OnLootClosed()
     if isLootOpen then
         isLootOpen = false
         ns.LootFrame.Hide()
+
+        -- Message hook for Roll/History modules (Phase 3/4)
+        ns.Addon:SendMessage("DRAGONLOOT_LOOT_CLOSED")
         ns.DebugPrint("LOOT_CLOSED fired (Classic)")
     end
 end
@@ -55,6 +69,7 @@ function ns.Listeners.Initialize(addonRef)
 
     addon:RegisterEvent("LOOT_OPENED", OnLootOpened)
     addon:RegisterEvent("LOOT_SLOT_CLEARED", OnLootSlotCleared)
+    addon:RegisterEvent("LOOT_SLOT_CHANGED", OnLootSlotChanged)
     addon:RegisterEvent("LOOT_CLOSED", OnLootClosed)
 
     ns.DebugPrint("Classic Loot Listener initialized")
@@ -64,6 +79,7 @@ function ns.Listeners.Shutdown()
     if addon then
         addon:UnregisterEvent("LOOT_OPENED")
         addon:UnregisterEvent("LOOT_SLOT_CLEARED")
+        addon:UnregisterEvent("LOOT_SLOT_CHANGED")
         addon:UnregisterEvent("LOOT_CLOSED")
     end
 

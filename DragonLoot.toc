@@ -1,0 +1,15 @@
+## Interface: 110207, 120001, 120000
+## Interface-BCC: 20505
+## Title: Dragon Loot
+## Notes: Placeholder - loot tracking addon (not yet implemented)
+## Author: @project-author@
+## Version: @project-version@
+## SavedVariables: DragonLootDB
+## X-Category: Loot
+## IconTexture: Interface\AddOns\DragonLoot\DragonLoot_Icon
+## X-License: MIT
+## X-Curse-Project-ID: 0000000
+## X-Wago-ID: TBD
+
+# Libraries
+Libs\embeds.xml

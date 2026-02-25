@@ -1,0 +1,6 @@
+.env
+.release/
+
+# Libs managed by .pkgmeta externals (submodules Ace3 and LibAnimate are tracked separately)
+Libs/*
+!Libs/embeds.xml

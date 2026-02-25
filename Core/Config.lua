@@ -59,6 +59,10 @@ local defaults = {
             closeDuration = 0.5,
         },
 
+        rollWon = {
+            showGroupWins = false,
+        },
+
     },
 }
 
@@ -338,6 +342,19 @@ local function BuildLootRollOptions(db)
                 ns.RollManager.ApplySettings()
             end
         end,
+    }
+    args.headerRollWon = {
+        name = "Roll Won Notifications",
+        type = "header",
+        order = 10,
+    }
+    args.showGroupWins = {
+        name = "Show Group Roll Wins",
+        desc = "Show DragonToast celebration toasts when any group member wins a roll, not just you.",
+        type = "toggle",
+        order = 11,
+        get = function() return db.rollWon.showGroupWins end,
+        set = function(_, val) db.rollWon.showGroupWins = val end,
     }
     return {
         name = "Loot Roll",

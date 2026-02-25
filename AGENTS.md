@@ -115,7 +115,7 @@ DragonLoot integrates with DragonToast (sibling addon) via AceEvent inter-addon 
 |---------|---------|------|
 | `DRAGONLOOT_LOOT_OPENED` | none | Loot window opens |
 | `DRAGONLOOT_LOOT_CLOSED` | none | Loot window closes |
-| `DRAGONLOOT_ROLL_WON` | `{ itemLink, itemName, itemQuality, itemIcon, quantity, rollType }` | Player wins a roll |
+| `DRAGONLOOT_ROLL_WON` | `{ itemLink, itemName, itemQuality, itemIcon, itemID, quantity, rollType, rollValue, winnerName, winnerClass, isSelf }` | A player wins a roll |
 
 ### DragonToast Behavior
 

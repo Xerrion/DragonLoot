@@ -14,6 +14,9 @@ local ADDON_NAME, ns = ...
 local GetTime = GetTime
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
+local UnitName = UnitName
+local UnitClass = UnitClass
+local C_Timer = C_Timer
 local max = math.max
 
 -------------------------------------------------------------------------------
@@ -31,6 +34,7 @@ local addon
 local activeRolls = {}      -- rollID -> { rollID, rollTime, startTime, frameIndex }
 local waitingRolls = {}     -- ordered list of { rollID, rollTime }
 local usedFrames = {}       -- frameIndex -> true/false
+local notifiedRolls = {}    -- rollID -> true (prevent duplicate winner notifications)
 local activeRollCount = 0
 local timerHandle
 
@@ -162,13 +166,23 @@ local function StartTimerIfNeeded()
 end
 
 -------------------------------------------------------------------------------
--- DragonToast integration - notify when player wins a roll
+-- DragonToast integration - notify when a player wins a roll
 -------------------------------------------------------------------------------
 
-local function SendRollWonMessage(rollID)
+local function SendRollWonNotification(rollID, winnerName, winnerClass, rollType, rollValue)
+    if notifiedRolls[rollID] then return end
+    notifiedRolls[rollID] = true
+
     if not ns.hasDragonToast then return end
     local roll = activeRolls[rollID]
     if not roll or not roll.itemName then return end
+
+    local db = ns.Addon.db.profile
+    local playerName = UnitName("player")
+    local isSelf = (winnerName == playerName)
+
+    -- Check config: skip group wins if not enabled
+    if not isSelf and not db.rollWon.showGroupWins then return end
 
     ns.Addon:SendMessage("DRAGONLOOT_ROLL_WON", {
         itemLink = roll.itemLink,
@@ -177,9 +191,16 @@ local function SendRollWonMessage(rollID)
         itemIcon = roll.itemTexture,
         itemID = roll.itemLink and tonumber(roll.itemLink:match("item:(%d+)")),
         quantity = roll.itemCount or 1,
-        rollType = roll.playerRollType,
+        rollType = rollType,
+        rollValue = rollValue,
+        winnerName = winnerName,
+        winnerClass = winnerClass,
+        isSelf = isSelf,
     })
-    ns.DebugPrint("Sent DRAGONLOOT_ROLL_WON for " .. (roll.itemName or "unknown"))
+    ns.DebugPrint(
+        "Sent DRAGONLOOT_ROLL_WON for " .. (roll.itemName or "unknown")
+        .. " won by " .. (winnerName or "unknown")
+    )
 end
 
 -------------------------------------------------------------------------------
@@ -288,6 +309,7 @@ function ns.RollManager.CancelRoll(rollID)
     if roll then
         local frameIndex = roll.frameIndex
         activeRolls[rollID] = nil
+        notifiedRolls[rollID] = nil
         activeRollCount = activeRollCount - 1
         if activeRollCount <= 0 then
             activeRollCount = 0
@@ -312,17 +334,25 @@ function ns.RollManager.CancelAllRolls()
     end
     activeRollCount = 0
     wipe(waitingRolls)
+    wipe(notifiedRolls)
     StopTimer()
     ns.RollFrame.HideAllRolls()
 end
 
 function ns.RollManager.OnRollComplete(rollID)
     if not rollID then return end
+    local roll = activeRolls[rollID]
+    if roll then roll.completing = true end
 
-    -- Notify DragonToast before cancelling (guard is inside SendRollWonMessage)
-    SendRollWonMessage(rollID)
+    -- Ask the version-specific listener to resolve the winner
+    if ns.RollListener and ns.RollListener.ResolveWinner then
+        ns.RollListener.ResolveWinner(rollID)
+    end
 
-    ns.RollManager.CancelRoll(rollID)
+    -- Delay cancel to keep activeRolls data available for async winner resolution
+    C_Timer.After(0.5, function()
+        ns.RollManager.CancelRoll(rollID)
+    end)
 end
 
 function ns.RollManager.ApplySettings()
@@ -331,4 +361,27 @@ end
 
 function ns.RollManager.GetActiveRollCount()
     return activeRollCount
+end
+
+function ns.RollManager.GetActiveRolls()
+    return activeRolls
+end
+
+function ns.RollManager.NotifyRollWinner(rollID, winnerName, winnerClass, rollType, rollValue)
+    SendRollWonNotification(rollID, winnerName, winnerClass, rollType, rollValue)
+end
+
+function ns.RollManager.IsNotified(rollID)
+    return notifiedRolls[rollID] or false
+end
+
+function ns.RollManager.OnLootItemRollWon(itemLink, rollType, rollValue)
+    local playerName = UnitName("player")
+    local _, playerClass = UnitClass("player")
+    for rollID, roll in pairs(activeRolls) do
+        if roll.itemLink == itemLink and not notifiedRolls[rollID] then
+            SendRollWonNotification(rollID, playerName, playerClass, rollType, rollValue)
+            return
+        end
+    end
 end

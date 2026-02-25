@@ -20,6 +20,8 @@ if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then return end
 local GetActiveLootRollIDs = GetActiveLootRollIDs
 local GetLootRollTimeLeft = GetLootRollTimeLeft
 local StaticPopup_Show = StaticPopup_Show
+local C_LootHistory = C_LootHistory
+local C_Timer = C_Timer
 
 -------------------------------------------------------------------------------
 -- State
@@ -40,6 +42,8 @@ end
 
 local function OnCancelLootRoll(_, rollID)
     if not isRollActive then return end
+    local rolls = ns.RollManager.GetActiveRolls()
+    if rolls[rollID] and rolls[rollID].completing then return end
     ns.RollManager.CancelRoll(rollID)
     ns.DebugPrint("CANCEL_LOOT_ROLL: rollID=" .. tostring(rollID))
 end
@@ -53,8 +57,15 @@ end
 
 local function OnLootRollsComplete(_, lootHandle)
     if not isRollActive then return end
+    -- Note: LOOT_ROLLS_COMPLETE provides lootHandle which appears to match rollID from
+    -- START_LOOT_ROLL in practice. If they ever diverge, a mapping will be needed.
     ns.RollManager.OnRollComplete(lootHandle)
     ns.DebugPrint("LOOT_ROLLS_COMPLETE: handle=" .. tostring(lootHandle))
+end
+
+local function OnLootItemRollWon(_, itemLink, _rollQuantity, rollType, rollValue)
+    if not isRollActive then return end
+    ns.RollManager.OnLootItemRollWon(itemLink, rollType, rollValue)
 end
 
 -------------------------------------------------------------------------------
@@ -74,6 +85,28 @@ local function RecoverActiveRolls()
 end
 
 -------------------------------------------------------------------------------
+-- Winner resolution via C_LootHistory (for group member wins)
+-------------------------------------------------------------------------------
+
+local function ResolveWinnerFromHistory(rollID)
+    local roll = ns.RollManager.GetActiveRolls()[rollID]
+    if not roll or not roll.itemName then return end
+
+    local numItems = C_LootHistory and C_LootHistory.GetNumItems
+        and C_LootHistory.GetNumItems() or 0
+    for i = numItems, 1, -1 do
+        local _, itemName = C_LootHistory.GetItem(i)
+        if itemName == roll.itemName then
+            local winner, winnerClass, rollType, rollValue = C_LootHistory.GetPlayerInfo(i, 1)
+            if winner then
+                ns.RollManager.NotifyRollWinner(rollID, winner, winnerClass, rollType, rollValue)
+            end
+            return
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Public Interface: ns.RollListener
 -------------------------------------------------------------------------------
 
@@ -86,6 +119,7 @@ function ns.RollListener.Initialize(addonRef)
     addon:RegisterEvent("CONFIRM_LOOT_ROLL", OnConfirmRoll)
     addon:RegisterEvent("CONFIRM_DISENCHANT_ROLL", OnConfirmRoll)
     addon:RegisterEvent("LOOT_ROLLS_COMPLETE", OnLootRollsComplete)
+    addon:RegisterEvent("LOOT_ITEM_ROLL_WON", OnLootItemRollWon)
 
     RecoverActiveRolls()
 
@@ -101,7 +135,14 @@ function ns.RollListener.Shutdown()
         addon:UnregisterEvent("CONFIRM_LOOT_ROLL")
         addon:UnregisterEvent("CONFIRM_DISENCHANT_ROLL")
         addon:UnregisterEvent("LOOT_ROLLS_COMPLETE")
+        addon:UnregisterEvent("LOOT_ITEM_ROLL_WON")
     end
 
     ns.DebugPrint("Classic Roll Listener shut down")
+end
+
+function ns.RollListener.ResolveWinner(rollID)
+    C_Timer.After(0.3, function()
+        ResolveWinnerFromHistory(rollID)
+    end)
 end

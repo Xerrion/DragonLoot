@@ -44,6 +44,7 @@ local defaults = {
             enabled = true,
             maxEntries = 100,
             autoShow = false,
+            lock = false,
         },
 
         appearance = {
@@ -58,10 +59,6 @@ local defaults = {
             closeDuration = 0.5,
         },
 
-        sound = {
-            enabled = false,
-            lootSound = "None",
-        },
     },
 }
 
@@ -69,7 +66,7 @@ local defaults = {
 -- Profile Migration
 -------------------------------------------------------------------------------
 
-local CURRENT_SCHEMA = 1
+local CURRENT_SCHEMA = 2
 
 local function FillMissingDefaults(profile)
     for section, sectionDefaults in pairs(defaults.profile) do
@@ -92,8 +89,13 @@ local function MigrateProfile(db)
 
     if version < 1 then
         FillMissingDefaults(profile)
-        profile.schemaVersion = CURRENT_SCHEMA
     end
+
+    if version < 2 then
+        profile.sound = nil
+    end
+
+    profile.schemaVersion = CURRENT_SCHEMA
 end
 
 -------------------------------------------------------------------------------
@@ -389,6 +391,14 @@ local function BuildHistoryArgs(db)
             get = function() return db.history.autoShow end,
             set = function(_, val) db.history.autoShow = val end,
         },
+        lock = {
+            name = "Lock Position",
+            desc = "Prevent the history panel from being dragged.",
+            type = "toggle",
+            order = 5,
+            get = function() return db.history.lock end,
+            set = function(_, val) db.history.lock = val end,
+        },
     }
 end
 
@@ -399,6 +409,12 @@ local function BuildHistoryOptions(db)
         order = 4,
         args = BuildHistoryArgs(db),
     }
+end
+
+local function NotifyAppearanceChange()
+    if ns.LootFrame and ns.LootFrame.ApplySettings then ns.LootFrame.ApplySettings() end
+    if ns.RollManager and ns.RollManager.ApplySettings then ns.RollManager.ApplySettings() end
+    if ns.HistoryFrame and ns.HistoryFrame.ApplySettings then ns.HistoryFrame.ApplySettings() end
 end
 
 local function BuildAppearanceArgs(db)
@@ -422,7 +438,10 @@ local function BuildAppearanceArgs(db)
             dialogControl = "LSM30_Font",
             values = function() return LSM:HashTable("font") end,
             get = function() return db.appearance.font end,
-            set = function(_, val) db.appearance.font = val end,
+            set = function(_, val)
+                db.appearance.font = val
+                NotifyAppearanceChange()
+            end,
         },
         fontSize = {
             name = "Font Size",
@@ -431,7 +450,10 @@ local function BuildAppearanceArgs(db)
             order = 3,
             min = 8, max = 20, step = 1,
             get = function() return db.appearance.fontSize end,
-            set = function(_, val) db.appearance.fontSize = val end,
+            set = function(_, val)
+                db.appearance.fontSize = val
+                NotifyAppearanceChange()
+            end,
         },
         headerIcon = {
             name = "Icon",
@@ -445,7 +467,10 @@ local function BuildAppearanceArgs(db)
             order = 11,
             min = 16, max = 64, step = 2,
             get = function() return db.appearance.iconSize end,
-            set = function(_, val) db.appearance.iconSize = val end,
+            set = function(_, val)
+                db.appearance.iconSize = val
+                NotifyAppearanceChange()
+            end,
         },
     }
 end
@@ -507,46 +532,6 @@ local function BuildAnimationOptions(db)
     }
 end
 
-local function BuildSoundOptions(db)
-    return {
-        name = "Sound",
-        type = "group",
-        order = 7,
-        args = {
-            desc = {
-                name = "Configure audio feedback for loot events.",
-                type = "description",
-                order = 0,
-                fontSize = "medium",
-            },
-            headerSound = {
-                name = "Sound",
-                type = "header",
-                order = 1,
-            },
-            enabled = {
-                name = "Enable Sound",
-                desc = "Play a sound when loot is received.",
-                type = "toggle",
-                order = 2,
-                width = "full",
-                get = function() return db.sound.enabled end,
-                set = function(_, val) db.sound.enabled = val end,
-            },
-            lootSound = {
-                name = "Loot Sound",
-                desc = "Sound to play when loot is received.",
-                type = "select",
-                order = 3,
-                dialogControl = "LSM30_Sound",
-                values = function() return LSM:HashTable("sound") end,
-                get = function() return db.sound.lootSound end,
-                set = function(_, val) db.sound.lootSound = val end,
-            },
-        },
-    }
-end
-
 -------------------------------------------------------------------------------
 -- Options Table
 -------------------------------------------------------------------------------
@@ -565,12 +550,11 @@ local function GetOptions()
             history = BuildHistoryOptions(db),
             appearance = BuildAppearanceOptions(db),
             animation = BuildAnimationOptions(db),
-            sound = BuildSoundOptions(db),
             profiles = AceDBOptions:GetOptionsTable(ns.Addon.db),
         },
     }
 
-    options.args.profiles.order = 8
+    options.args.profiles.order = 7
 
     return options
 end

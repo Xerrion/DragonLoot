@@ -46,7 +46,6 @@ local function PrintStatus()
     print("  Roll Frame: " .. (db.rollFrame.enabled and "Yes" or "No"))
     print("  History: " .. (db.history.enabled and "Yes" or "No"))
     print("  Animations: " .. (db.animation.enabled and "Yes" or "No"))
-    print("  Sound: " .. (db.sound.enabled and "Yes" or "No"))
     print("  Minimap Icon: " .. (not db.minimap.hide and "Yes" or "No"))
 end
 

@@ -521,6 +521,8 @@ local function CreateContainerFrame()
     frame:RegisterForDrag("LeftButton")
 
     frame:SetScript("OnDragStart", function(self)
+        local db = ns.Addon.db.profile
+        if db.history.lock then return end
         self:StartMoving()
     end)
 

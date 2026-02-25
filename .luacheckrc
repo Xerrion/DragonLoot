@@ -28,7 +28,7 @@ read_globals = {
     -- WoW API - General
     "CreateFrame", "GetTime", "IsInInstance", "UnitName", "UnitClass",
     "GetItemInfo", "GetItemInfoInstant", "GetItemQualityColor",
-    "C_Timer", "C_Item", "C_Container",
+    "C_Timer", "C_Item", "C_Container", "C_AddOns", "IsAddOnLoaded",
     "GameTooltip", "UIParent", "PlaySound", "PlaySoundFile",
     "ChatFrame_OpenChat", "IsShiftKeyDown",
     "InCombatLockdown", "hooksecurefunc",

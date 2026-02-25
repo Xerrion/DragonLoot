@@ -188,6 +188,13 @@ function Addon:OnEnable()
     if ns.HistoryFrame.Initialize then ns.HistoryFrame.Initialize() end
     if ns.HistoryListener.Initialize then ns.HistoryListener.Initialize(self) end
     if ns.Listeners.Initialize then ns.Listeners.Initialize(self) end
+
+    -- DragonToast integration
+    local IsAddOnLoadedFn = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
+    ns.hasDragonToast = IsAddOnLoadedFn("DragonToast") or false
+    if ns.hasDragonToast then
+        ns.DebugPrint("DragonToast detected - cross-addon messaging enabled")
+    end
 end
 
 function Addon:OnDisable()

@@ -12,6 +12,8 @@ local ADDON_NAME, ns = ...
 -------------------------------------------------------------------------------
 
 local GetTime = GetTime
+local GetLootRollItemInfo = GetLootRollItemInfo
+local GetLootRollItemLink = GetLootRollItemLink
 local max = math.max
 
 -------------------------------------------------------------------------------
@@ -41,6 +43,7 @@ StaticPopupDialogs["DRAGONLOOT_CONFIRM_LOOT_ROLL"] = {
     button1 = YES,
     button2 = NO,
     OnAccept = function(self)
+        if not self.data then return end
         ConfirmLootRoll(self.data.rollID, self.data.rollType)
     end,
     timeout = 0,
@@ -136,6 +139,11 @@ local function PromoteFromQueue()
         rollTime = entry.rollTime,
         startTime = GetTime(),
         frameIndex = frameIndex,
+        itemTexture = entry.itemTexture,
+        itemName = entry.itemName,
+        itemCount = entry.itemCount,
+        itemQuality = entry.itemQuality,
+        itemLink = entry.itemLink,
     }
     activeRollCount = activeRollCount + 1
 
@@ -151,6 +159,27 @@ local function StartTimerIfNeeded()
     if activeRollCount > 0 then
         StartTimer()
     end
+end
+
+-------------------------------------------------------------------------------
+-- DragonToast integration - notify when player wins a roll
+-------------------------------------------------------------------------------
+
+local function SendRollWonMessage(rollID)
+    if not ns.hasDragonToast then return end
+    local roll = activeRolls[rollID]
+    if not roll or not roll.itemName then return end
+
+    ns.Addon:SendMessage("DRAGONLOOT_ROLL_WON", {
+        itemLink = roll.itemLink,
+        itemName = roll.itemName,
+        itemQuality = roll.itemQuality,
+        itemIcon = roll.itemTexture,
+        itemID = roll.itemLink and tonumber(roll.itemLink:match("item:(%d+)")),
+        quantity = roll.itemCount or 1,
+        rollType = roll.playerRollType,
+    })
+    ns.DebugPrint("Sent DRAGONLOOT_ROLL_WON for " .. (roll.itemName or "unknown"))
 end
 
 -------------------------------------------------------------------------------
@@ -181,6 +210,10 @@ function ns.RollManager.StartRoll(rollID, rollTime)
     -- Guard against duplicate events
     if activeRolls[rollID] or IsInWaitingQueue(rollID) then return end
 
+    -- Cache item data now while it is still available
+    local texture, name, count, quality = GetLootRollItemInfo(rollID)
+    local fullItemLink = GetLootRollItemLink(rollID)
+
     if activeRollCount < MAX_VISIBLE_ROLLS then
         local frameIndex = AcquireFrameIndex()
         if not frameIndex then return end
@@ -190,18 +223,35 @@ function ns.RollManager.StartRoll(rollID, rollTime)
             rollTime = rollTime,
             startTime = GetTime(),
             frameIndex = frameIndex,
+            itemTexture = texture,
+            itemName = name,
+            itemCount = count,
+            itemQuality = quality,
+            itemLink = fullItemLink,
         }
         activeRollCount = activeRollCount + 1
 
         ns.RollFrame.ShowRoll(frameIndex, rollID)
         StartTimer()
     else
-        waitingRolls[#waitingRolls + 1] = { rollID = rollID, rollTime = rollTime }
+        waitingRolls[#waitingRolls + 1] = {
+            rollID = rollID,
+            rollTime = rollTime,
+            itemTexture = texture,
+            itemName = name,
+            itemCount = count,
+            itemQuality = quality,
+            itemLink = fullItemLink,
+        }
     end
 end
 
 function ns.RollManager.RecoverRoll(rollID, totalDuration, timeLeft)
     if activeRolls[rollID] or IsInWaitingQueue(rollID) then return end
+
+    -- Cache item data now while it is still available
+    local texture, name, count, quality = GetLootRollItemInfo(rollID)
+    local fullItemLink = GetLootRollItemLink(rollID)
 
     local frameIndex = AcquireFrameIndex()
     if frameIndex then
@@ -211,12 +261,25 @@ function ns.RollManager.RecoverRoll(rollID, totalDuration, timeLeft)
             rollTime = totalDuration,
             startTime = now - (totalDuration - timeLeft),
             frameIndex = frameIndex,
+            itemTexture = texture,
+            itemName = name,
+            itemCount = count,
+            itemQuality = quality,
+            itemLink = fullItemLink,
         }
         activeRollCount = activeRollCount + 1
         ns.RollFrame.ShowRoll(frameIndex, rollID)
         StartTimerIfNeeded()
     else
-        waitingRolls[#waitingRolls + 1] = { rollID = rollID, rollTime = totalDuration }
+        waitingRolls[#waitingRolls + 1] = {
+            rollID = rollID,
+            rollTime = totalDuration,
+            itemTexture = texture,
+            itemName = name,
+            itemCount = count,
+            itemQuality = quality,
+            itemLink = fullItemLink,
+        }
     end
 end
 
@@ -254,9 +317,12 @@ function ns.RollManager.CancelAllRolls()
 end
 
 function ns.RollManager.OnRollComplete(rollID)
-    if rollID then
-        ns.RollManager.CancelRoll(rollID)
-    end
+    if not rollID then return end
+
+    -- Notify DragonToast before cancelling (guard is inside SendRollWonMessage)
+    SendRollWonMessage(rollID)
+
+    ns.RollManager.CancelRoll(rollID)
 end
 
 function ns.RollManager.ApplySettings()

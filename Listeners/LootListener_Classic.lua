@@ -25,6 +25,7 @@ local isLootOpen = false
 -------------------------------------------------------------------------------
 
 local function OnLootOpened(_, autoLoot)
+    if isLootOpen then return end
     isLootOpen = true
 
     local db = ns.Addon.db.profile

@@ -1,4 +1,4 @@
-name: Package and Upload
+name: Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Tag to package (e.g. 0.1.0)"
+        description: "Tag to package (e.g. 1.4.3)"
         required: true
         type: string
 
@@ -40,7 +40,11 @@ jobs:
           ref: refs/tags/${{ env.TAG_NAME }}
           fetch-depth: 0
 
+      - name: Generate changelog
+        run: bash scripts/generate_changelog.sh
+
       - name: Package and upload
         uses: BigWigsMods/packager@v2
         env:
           GITHUB_REF: refs/tags/${{ env.TAG_NAME }}
+          

@@ -42,6 +42,36 @@ local ROLL_TYPE_NAMES = {
     [ROLL_TYPE_TRANSMOG] = "Transmog",
 }
 
+-- Retail C_LootHistory state -> canonical roll type (preserves Transmog)
+-- States: 0=NeedMainSpec, 1=NeedOffSpec, 2=Transmog, 3=Greed, 4=NoRoll, 5=Pass
+ns.NOTIFICATION_STATE_MAP = {
+    [0] = ROLL_TYPE_NEED,
+    [1] = ROLL_TYPE_NEED,
+    [2] = ROLL_TYPE_TRANSMOG,
+    [3] = ROLL_TYPE_GREED,
+    [4] = ROLL_TYPE_PASS,
+    [5] = ROLL_TYPE_PASS,
+}
+
+-------------------------------------------------------------------------------
+-- Instance-type gating
+-------------------------------------------------------------------------------
+
+local IsInInstance = IsInInstance
+
+local function IsInstanceAllowed(settings)
+    local inInstance, instanceType = IsInInstance()
+    if not inInstance or instanceType == "none" then
+        return settings.showInWorld
+    elseif instanceType == "party" then
+        return settings.showInDungeon
+    elseif instanceType == "raid" then
+        return settings.showInRaid
+    end
+    -- pvp, arena, scenario, etc. - treat as dungeon
+    return settings.showInDungeon
+end
+
 -------------------------------------------------------------------------------
 -- State
 -------------------------------------------------------------------------------
@@ -201,6 +231,12 @@ local function SendRollWonNotification(rollID, winnerName, _winnerClass, rollTyp
     -- Check config: skip group wins if not enabled
     if not isSelf and not db.rollNotifications.showGroupWins then return end
 
+    -- Instance gating
+    if not IsInstanceAllowed(db.rollNotifications) then return end
+
+    -- Quality filter
+    if roll.itemQuality and roll.itemQuality < db.rollNotifications.minQuality then return end
+
     local rollTypeName = ROLL_TYPE_NAMES[rollType] or "Unknown"
 
     -- Fire generic DragonToast message (fire-and-forget, no detection needed)
@@ -222,6 +258,48 @@ local function SendRollWonNotification(rollID, winnerName, _winnerClass, rollTyp
         "Sent DRAGONTOAST_QUEUE_TOAST (roll won) for " .. (roll.itemName or "unknown")
         .. " won by " .. (winnerName or "unknown")
     )
+end
+
+-------------------------------------------------------------------------------
+-- DragonToast integration - individual roll result notification
+-------------------------------------------------------------------------------
+
+function ns.RollManager.SendRollResultNotification(itemLink, itemName, itemQuality, itemIcon,
+                                                    playerName, _playerClass, rollType, rollValue)
+    local db = ns.Addon.db.profile
+    if not db.rollNotifications.showRollResults then return end
+
+    -- Instance gating
+    if not IsInstanceAllowed(db.rollNotifications) then return end
+
+    -- Quality filter
+    if itemQuality and itemQuality < db.rollNotifications.minQuality then return end
+
+    -- Self vs group filter
+    local myName = UnitName("player")
+    local isSelf = (playerName == myName)
+    if isSelf and not db.rollNotifications.showSelfRolls then return end
+    if not isSelf and not db.rollNotifications.showGroupRolls then return end
+
+    -- Skip passes - nobody wants a toast for "Player passed"
+    if rollType == ROLL_TYPE_PASS then return end
+
+    local rollTypeName = ROLL_TYPE_NAMES[rollType] or "Unknown"
+    local itemID = itemLink and tonumber(itemLink:match("item:(%d+)"))
+
+    ns.Addon:SendMessage("DRAGONTOAST_QUEUE_TOAST", {
+        itemLink = itemLink,
+        itemName = itemName or UNKNOWN or "Unknown",
+        itemQuality = itemQuality or 0,
+        itemIcon = itemIcon or 0,
+        itemID = itemID,
+        quantity = 1,
+        isRollWin = false,
+        isSelf = isSelf,
+        looter = playerName,
+        itemType = rollTypeName .. (rollValue and (" (" .. rollValue .. ")") or ""),
+        timestamp = GetTime(),
+    })
 end
 
 -------------------------------------------------------------------------------

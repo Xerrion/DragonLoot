@@ -27,6 +27,7 @@ local GetTime = GetTime
 -------------------------------------------------------------------------------
 
 local addon
+local notifiedRollResults = {}
 
 -------------------------------------------------------------------------------
 -- Item texture helper
@@ -89,6 +90,37 @@ local function RefreshFromAPI()
 end
 
 -------------------------------------------------------------------------------
+-- Individual roll result notification
+-------------------------------------------------------------------------------
+
+local function ProcessClassicRollResult(historyIndex, playerIndex)
+    local rollID, itemLink = C_LootHistory.GetItem(historyIndex)
+    if not rollID or not itemLink then return end
+
+    local playerName, _playerClass, rollType, roll = C_LootHistory.GetPlayerInfo(historyIndex, playerIndex)
+    if not playerName then return end
+
+    -- Classic ROLL_CHANGED can fire before roll number is assigned
+    -- For non-Pass rolls (rollType ~= 0), wait until roll value is available
+    if roll == nil and rollType and rollType ~= 0 then return end
+
+    local dedupKey = rollID .. "-" .. playerName
+    if notifiedRollResults[dedupKey] then return end
+    notifiedRollResults[dedupKey] = true
+
+    -- Extract item info (may be cached from earlier GetItemInfo calls)
+    local itemName, _, itemQuality, _, _, _, _, _, _, itemIcon = GetItemInfo(itemLink)
+    if not itemName then
+        itemName = itemLink:match("%[(.-)%]") or "Unknown"
+    end
+
+    ns.RollManager.SendRollResultNotification(
+        itemLink, itemName, itemQuality or 0, itemIcon or 0,
+        playerName, nil, rollType, roll
+    )
+end
+
+-------------------------------------------------------------------------------
 -- Event handlers
 -------------------------------------------------------------------------------
 
@@ -97,7 +129,12 @@ local function OnFullUpdate()
     ns.DebugPrint("LOOT_HISTORY_FULL_UPDATE")
 end
 
-local function OnRollChanged(_, _historyIndex, _playerIndex)
+local function OnRollChanged(_, historyIndex, playerIndex)
+    -- Process the individual roll result notification
+    if historyIndex and playerIndex then
+        ProcessClassicRollResult(historyIndex, playerIndex)
+    end
+    -- Still refresh the full history display
     RefreshFromAPI()
     ns.DebugPrint("LOOT_HISTORY_ROLL_CHANGED")
 end
@@ -116,6 +153,11 @@ local function OnAutoShow()
     ns.DebugPrint("LOOT_HISTORY_AUTO_SHOW")
 end
 
+local function OnHistoryClear()
+    wipe(notifiedRollResults)
+    ns.DebugPrint("LOOT_HISTORY_CLEAR_HISTORY (Classic)")
+end
+
 -------------------------------------------------------------------------------
 -- Public Interface: ns.HistoryListener
 -------------------------------------------------------------------------------
@@ -127,6 +169,7 @@ function ns.HistoryListener.Initialize(addonRef)
     addon:RegisterEvent("LOOT_HISTORY_ROLL_CHANGED", OnRollChanged)
     addon:RegisterEvent("LOOT_HISTORY_ROLL_COMPLETE", OnRollComplete)
     addon:RegisterEvent("LOOT_HISTORY_AUTO_SHOW", OnAutoShow)
+    addon:RegisterEvent("LOOT_HISTORY_CLEAR_HISTORY", OnHistoryClear)
 
     -- Load any existing data
     RefreshFromAPI()
@@ -140,7 +183,10 @@ function ns.HistoryListener.Shutdown()
         addon:UnregisterEvent("LOOT_HISTORY_ROLL_CHANGED")
         addon:UnregisterEvent("LOOT_HISTORY_ROLL_COMPLETE")
         addon:UnregisterEvent("LOOT_HISTORY_AUTO_SHOW")
+        addon:UnregisterEvent("LOOT_HISTORY_CLEAR_HISTORY")
     end
+
+    wipe(notifiedRollResults)
 
     ns.DebugPrint("Classic History Listener shut down")
 end

@@ -169,7 +169,7 @@ function ns.HistoryListener.Initialize(addonRef)
     addon:RegisterEvent("LOOT_HISTORY_ROLL_CHANGED", OnRollChanged)
     addon:RegisterEvent("LOOT_HISTORY_ROLL_COMPLETE", OnRollComplete)
     addon:RegisterEvent("LOOT_HISTORY_AUTO_SHOW", OnAutoShow)
-    addon:RegisterEvent("LOOT_HISTORY_CLEAR_HISTORY", OnHistoryClear)
+    pcall(addon.RegisterEvent, addon, "LOOT_HISTORY_CLEAR_HISTORY", OnHistoryClear)
 
     -- Load any existing data
     RefreshFromAPI()
@@ -183,7 +183,7 @@ function ns.HistoryListener.Shutdown()
         addon:UnregisterEvent("LOOT_HISTORY_ROLL_CHANGED")
         addon:UnregisterEvent("LOOT_HISTORY_ROLL_COMPLETE")
         addon:UnregisterEvent("LOOT_HISTORY_AUTO_SHOW")
-        addon:UnregisterEvent("LOOT_HISTORY_CLEAR_HISTORY")
+        pcall(addon.UnregisterEvent, addon, "LOOT_HISTORY_CLEAR_HISTORY")
     end
 
     wipe(notifiedRollResults)

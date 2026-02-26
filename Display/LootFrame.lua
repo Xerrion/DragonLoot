@@ -93,10 +93,33 @@ end
 -- Font helper
 -------------------------------------------------------------------------------
 
+local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+
 local function GetFont()
-    local db = ns.Addon.db.profile
-    local fontPath = LSM:Fetch("font", db.appearance.font) or STANDARD_TEXT_FONT
-    return fontPath, db.appearance.fontSize
+    local db = ns.Addon.db.profile.appearance
+    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
+    return fontPath, db.fontSize, db.fontOutline
+end
+
+local function GetBackdropSettings()
+    local db = ns.Addon.db.profile.appearance
+    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local settings = { bgFile = bgTexture }
+    if db.borderSize > 0 then
+        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
+        settings.edgeSize = db.borderSize
+    end
+    return settings
+end
+
+local function ApplyBackdrop(frame)
+    local db = ns.Addon.db.profile.appearance
+    frame:SetBackdrop(GetBackdropSettings())
+    local bg = db.backgroundColor
+    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
+    local border = db.borderColor
+    -- Border alpha is intentionally fixed at 0.8 for visual consistency
+    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
 end
 
 -------------------------------------------------------------------------------
@@ -282,7 +305,7 @@ local function PopulateSlot(slot, slotIndex)
 
     local db = ns.Addon.db.profile
     local iconSize = db.appearance.iconSize or 36
-    local fontPath, fontSize = GetFont()
+    local fontPath, fontSize, fontOutline = GetFont()
 
     -- Icon
     slot.icon:SetTexture(icon)
@@ -290,11 +313,17 @@ local function PopulateSlot(slot, slotIndex)
     slot.icon:SetDesaturated(locked and true or false)
 
     -- Quality border color
-    local r, g, b = GetQualityColor(quality)
-    slot.iconBorder:SetColorTexture(r, g, b, 0.8)
+    if db.appearance.qualityBorder then
+        local r, g, b = GetQualityColor(quality)
+        slot.iconBorder:SetColorTexture(r, g, b, 0.8)
+        slot.iconBorder:Show()
+    else
+        slot.iconBorder:Hide()
+    end
 
     -- Item name
-    slot.itemName:SetFont(fontPath, fontSize, "OUTLINE")
+    local r, g, b = GetQualityColor(quality)
+    slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     slot.itemName:SetText(name or UNKNOWN)
     slot.itemName:SetTextColor(r, g, b)
 
@@ -345,17 +374,13 @@ local function CreateContainerFrame()
     frame:Hide()
 
     -- Backdrop
-    frame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-    })
-    frame:SetBackdropColor(0.05, 0.05, 0.05, 0.85)
-    frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+    ApplyBackdrop(frame)
 
     -- Title text
+    local fontPath, fontSize, fontOutline = GetFont()
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -6)
+    frame.title:SetFont(fontPath, fontSize, fontOutline)
     frame.title:SetText("Loot")
     frame.title:SetTextColor(1, 0.82, 0)
 
@@ -536,9 +561,30 @@ function ns.LootFrame.ApplySettings()
     containerFrame:SetSize(db.lootWindow.width or 220, db.lootWindow.height or 300)
     containerFrame:SetScale(db.lootWindow.scale or 1.0)
 
+    -- Update backdrop
+    ApplyBackdrop(containerFrame)
+
     -- Update title font
-    local fontPath, fontSize = GetFont()
-    containerFrame.title:SetFont(fontPath, fontSize, "OUTLINE")
+    local fontPath, fontSize, fontOutline = GetFont()
+    containerFrame.title:SetFont(fontPath, fontSize, fontOutline)
+
+    -- Update visible slots
+    for _, slot in ipairs(activeSlots) do
+        if slot:IsShown() then
+            slot.itemName:SetFont(fontPath, fontSize, fontOutline)
+            -- Refresh quality border visibility
+            if slot.slotIndex then
+                local _, _, _, quality = GetNormalizedSlotInfo(slot.slotIndex)
+                if db.appearance.qualityBorder then
+                    local r, g, b = GetQualityColor(quality)
+                    slot.iconBorder:SetColorTexture(r, g, b, 0.8)
+                    slot.iconBorder:Show()
+                else
+                    slot.iconBorder:Hide()
+                end
+            end
+        end
+    end
 
     -- Re-layout if visible
     if containerFrame:IsShown() then
@@ -593,16 +639,23 @@ local function PopulateTestSlot(slot, testData, index)
 
     local db = ns.Addon.db.profile
     local iconSize = db.appearance.iconSize or 36
-    local fontPath, fontSize = GetFont()
+    local fontPath, fontSize, fontOutline = GetFont()
 
     slot.icon:SetTexture(testData.icon)
     slot.icon:SetSize(iconSize, iconSize)
     slot.icon:SetDesaturated(false)
 
     local r, g, b = GetQualityColor(testData.quality)
-    slot.iconBorder:SetColorTexture(r, g, b, 0.8)
 
-    slot.itemName:SetFont(fontPath, fontSize, "OUTLINE")
+    -- Quality border
+    if db.appearance.qualityBorder then
+        slot.iconBorder:SetColorTexture(r, g, b, 0.8)
+        slot.iconBorder:Show()
+    else
+        slot.iconBorder:Hide()
+    end
+
+    slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     slot.itemName:SetText(testData.name)
     slot.itemName:SetTextColor(r, g, b)
 

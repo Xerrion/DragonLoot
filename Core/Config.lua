@@ -38,6 +38,7 @@ local defaults = {
             scale = 1.0,
             lock = false,
             timerBarHeight = 12,
+            timerBarTexture = "Blizzard",
         },
 
         history = {
@@ -50,7 +51,15 @@ local defaults = {
         appearance = {
             font = "Friz Quadrata TT",
             fontSize = 12,
+            fontOutline = "OUTLINE",
             iconSize = 36,
+            qualityBorder = true,
+            backgroundColor = { r = 0.05, g = 0.05, b = 0.05 },
+            backgroundAlpha = 0.9,
+            backgroundTexture = "Solid",
+            borderColor = { r = 0.3, g = 0.3, b = 0.3 },
+            borderSize = 1,
+            borderTexture = "Solid",
         },
 
         animation = {
@@ -80,6 +89,15 @@ local defaults = {
 
 local CURRENT_SCHEMA = 1
 
+local function DeepCopyValue(value)
+    if type(value) ~= "table" then return value end
+    local copy = {}
+    for k, v in pairs(value) do
+        copy[k] = DeepCopyValue(v)
+    end
+    return copy
+end
+
 local function FillMissingDefaults(profile)
     for section, sectionDefaults in pairs(defaults.profile) do
         if type(sectionDefaults) == "table" then
@@ -88,7 +106,7 @@ local function FillMissingDefaults(profile)
             end
             for key, value in pairs(sectionDefaults) do
                 if profile[section][key] == nil then
-                    profile[section][key] = value
+                    profile[section][key] = DeepCopyValue(value)
                 end
             end
         end
@@ -109,6 +127,8 @@ end
 -------------------------------------------------------------------------------
 -- Options Table: Helper Builders
 -------------------------------------------------------------------------------
+
+local NotifyAppearanceChange  -- forward declaration; defined after BuildHistoryOptions
 
 local function SetMasterEnabled(_, val)
     ns.Addon.db.profile.enabled = val
@@ -347,6 +367,19 @@ local function BuildLootRollOptions(db)
             end
         end,
     }
+    args.timerBarTexture = {
+        name = "Timer Bar Texture",
+        desc = "Texture for the roll timer bar.",
+        type = "select",
+        order = 6,
+        dialogControl = "LSM30_Statusbar",
+        values = function() return LSM:HashTable("statusbar") end,
+        get = function() return db.rollFrame.timerBarTexture end,
+        set = function(_, val)
+            db.rollFrame.timerBarTexture = val
+            NotifyAppearanceChange()
+        end,
+    }
     args.headerRollWon = {
         name = "Roll Won Notifications",
         type = "header",
@@ -522,7 +555,7 @@ local function BuildHistoryOptions(db)
     }
 end
 
-local function NotifyAppearanceChange()
+NotifyAppearanceChange = function()
     if ns.LootFrame and ns.LootFrame.ApplySettings then ns.LootFrame.ApplySettings() end
     if ns.RollManager and ns.RollManager.ApplySettings then ns.RollManager.ApplySettings() end
     if ns.HistoryFrame and ns.HistoryFrame.ApplySettings then ns.HistoryFrame.ApplySettings() end
@@ -531,7 +564,7 @@ end
 local function BuildAppearanceArgs(db)
     return {
         desc = {
-            name = "Customize fonts and icon sizing.",
+            name = "Customize fonts, icons, backgrounds, and borders.",
             type = "description",
             order = 0,
             fontSize = "medium",
@@ -566,6 +599,23 @@ local function BuildAppearanceArgs(db)
                 NotifyAppearanceChange()
             end,
         },
+        fontOutline = {
+            name = "Font Outline",
+            desc = "Font outline style for all text.",
+            type = "select",
+            order = 4,
+            values = {
+                [""] = "None",
+                ["OUTLINE"] = "Outline",
+                ["THICKOUTLINE"] = "Thick Outline",
+                ["MONOCHROME"] = "Monochrome",
+            },
+            get = function() return db.appearance.fontOutline end,
+            set = function(_, val)
+                db.appearance.fontOutline = val
+                NotifyAppearanceChange()
+            end,
+        },
         headerIcon = {
             name = "Icon",
             type = "header",
@@ -580,6 +630,109 @@ local function BuildAppearanceArgs(db)
             get = function() return db.appearance.iconSize end,
             set = function(_, val)
                 db.appearance.iconSize = val
+                NotifyAppearanceChange()
+            end,
+        },
+        qualityBorder = {
+            name = "Quality Border",
+            desc = "Show quality-colored borders around item icons.",
+            type = "toggle",
+            order = 12,
+            get = function() return db.appearance.qualityBorder end,
+            set = function(_, val)
+                db.appearance.qualityBorder = val
+                NotifyAppearanceChange()
+            end,
+        },
+        headerBackground = {
+            name = "Background",
+            type = "header",
+            order = 20,
+        },
+        backgroundColor = {
+            name = "Background Color",
+            desc = "Background color for all frames.",
+            type = "color",
+            order = 21,
+            hasAlpha = false,
+            get = function()
+                local c = db.appearance.backgroundColor
+                return c.r, c.g, c.b
+            end,
+            set = function(_, r, g, b)
+                local c = db.appearance.backgroundColor
+                c.r, c.g, c.b = r, g, b
+                NotifyAppearanceChange()
+            end,
+        },
+        backgroundAlpha = {
+            name = "Background Opacity",
+            desc = "Background opacity for all frames.",
+            type = "range",
+            order = 22,
+            min = 0, max = 1, step = 0.05, isPercent = true,
+            get = function() return db.appearance.backgroundAlpha end,
+            set = function(_, val)
+                db.appearance.backgroundAlpha = val
+                NotifyAppearanceChange()
+            end,
+        },
+        backgroundTexture = {
+            name = "Background Texture",
+            desc = "Background texture for all frames.",
+            type = "select",
+            order = 23,
+            dialogControl = "LSM30_Statusbar",
+            values = function() return LSM:HashTable("statusbar") end,
+            get = function() return db.appearance.backgroundTexture end,
+            set = function(_, val)
+                db.appearance.backgroundTexture = val
+                NotifyAppearanceChange()
+            end,
+        },
+        headerBorder = {
+            name = "Border",
+            type = "header",
+            order = 30,
+        },
+        borderColor = {
+            name = "Border Color",
+            desc = "Border color for all frames.",
+            type = "color",
+            order = 31,
+            hasAlpha = false,
+            get = function()
+                local c = db.appearance.borderColor
+                return c.r, c.g, c.b
+            end,
+            set = function(_, r, g, b)
+                local c = db.appearance.borderColor
+                c.r, c.g, c.b = r, g, b
+                NotifyAppearanceChange()
+            end,
+        },
+        borderSize = {
+            name = "Border Size",
+            desc = "Border thickness for all frames.",
+            type = "range",
+            order = 32,
+            min = 0, max = 4, step = 1,
+            get = function() return db.appearance.borderSize end,
+            set = function(_, val)
+                db.appearance.borderSize = val
+                NotifyAppearanceChange()
+            end,
+        },
+        borderTexture = {
+            name = "Border Texture",
+            desc = "Border texture for all frames.",
+            type = "select",
+            order = 33,
+            dialogControl = "LSM30_Statusbar",
+            values = function() return LSM:HashTable("statusbar") end,
+            get = function() return db.appearance.borderTexture end,
+            set = function(_, val)
+                db.appearance.borderTexture = val
                 NotifyAppearanceChange()
             end,
         },

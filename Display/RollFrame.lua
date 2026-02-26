@@ -81,10 +81,33 @@ end
 -- Font helper
 -------------------------------------------------------------------------------
 
+local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+
 local function GetFont()
-    local db = ns.Addon.db.profile
-    local fontPath = LSM:Fetch("font", db.appearance.font) or STANDARD_TEXT_FONT
-    return fontPath, db.appearance.fontSize
+    local db = ns.Addon.db.profile.appearance
+    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
+    return fontPath, db.fontSize, db.fontOutline
+end
+
+local function GetBackdropSettings()
+    local db = ns.Addon.db.profile.appearance
+    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local settings = { bgFile = bgTexture }
+    if db.borderSize > 0 then
+        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
+        settings.edgeSize = db.borderSize
+    end
+    return settings
+end
+
+local function ApplyBackdrop(frame)
+    local db = ns.Addon.db.profile.appearance
+    frame:SetBackdrop(GetBackdropSettings())
+    local bg = db.backgroundColor
+    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
+    local border = db.borderColor
+    -- Border alpha is intentionally fixed at 0.8 for visual consistency
+    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
 end
 
 -------------------------------------------------------------------------------
@@ -257,12 +280,14 @@ end
 local function CreateTimerBar(parent)
     local db = ns.Addon.db.profile
     local barHeight = db.rollFrame.timerBarHeight or 12
+    local barTexture = LSM:Fetch("statusbar", db.rollFrame.timerBarTexture)
+        or "Interface\\TargetingFrame\\UI-StatusBar"
 
     local bar = CreateFrame("StatusBar", nil, parent)
     bar:SetHeight(barHeight)
     bar:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", ICON_SIZE + 10, 4)
     bar:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -4, 4)
-    bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    bar:SetStatusBarTexture(barTexture)
     bar:SetMinMaxValues(0, 1)
     bar:SetValue(1)
     bar:SetStatusBarColor(0, 1, 0)
@@ -288,13 +313,7 @@ local function CreateRollFrame(index)
 
     local frame = CreateFrame("Frame", frameName, anchorFrame, "BackdropTemplate")
     frame:SetSize(FRAME_WIDTH, FRAME_BASE_HEIGHT)
-    frame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-    })
-    frame:SetBackdropColor(0.05, 0.05, 0.05, 0.9)
-    frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+    ApplyBackdrop(frame)
     frame:SetFrameStrata("HIGH")
     frame:SetFrameLevel(110)
     frame:Hide()
@@ -376,15 +395,22 @@ local function PopulateRollFrame(frame, rollID)
 
     if not texture then return end
 
-    local fontPath, fontSize = GetFont()
+    local fontPath, fontSize, fontOutline = GetFont()
     local r, g, b = GetQualityColor(quality)
 
     -- Icon
     frame.iconFrame.icon:SetTexture(texture)
-    frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
+
+    -- Quality border
+    if ns.Addon.db.profile.appearance.qualityBorder then
+        frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
+        frame.iconFrame.border:Show()
+    else
+        frame.iconFrame.border:Hide()
+    end
 
     -- Item name
-    frame.itemName:SetFont(fontPath, fontSize, "OUTLINE")
+    frame.itemName:SetFont(fontPath, fontSize, fontOutline)
     frame.itemName:SetText(name or "")
     frame.itemName:SetTextColor(r, g, b)
 
@@ -569,10 +595,34 @@ function ns.RollFrame.ApplySettings()
     anchorFrame:SetScale(db.rollFrame.scale or 1.0)
 
     local barHeight = db.rollFrame.timerBarHeight or 12
+    local barTexture = LSM:Fetch("statusbar", db.rollFrame.timerBarTexture)
+        or "Interface\\TargetingFrame\\UI-StatusBar"
+    local fontPath, fontSize, fontOutline = GetFont()
+
     for i = 1, MAX_VISIBLE_ROLLS do
         local frame = rollFramePool[i]
         if frame then
+            -- Update backdrop
+            ApplyBackdrop(frame)
+
+            -- Update timer bar
             frame.timerBar:SetHeight(barHeight)
+            frame.timerBar:SetStatusBarTexture(barTexture)
+
+            -- Update fonts
+            frame.itemName:SetFont(fontPath, fontSize, fontOutline)
+
+            -- Update quality border
+            if frame.rollID and frame:IsShown() then
+                local _, _, _, quality = GetLootRollItemInfo(frame.rollID)
+                if db.appearance.qualityBorder then
+                    local r, g, b = GetQualityColor(quality)
+                    frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
+                    frame.iconFrame.border:Show()
+                else
+                    frame.iconFrame.border:Hide()
+                end
+            end
         end
     end
 

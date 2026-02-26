@@ -8,7 +8,7 @@ Project-specific guidelines for DragonLoot. See the parent `../AGENTS.md` for ge
 
 DragonLoot is a customizable loot addon that replaces the default Blizzard loot window, loot roll views, and provides a loot history frame.
 
-**Status**: Feature-complete (Phases 1-5, 8). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, and instance-type filtering are all implemented.
+**Status**: Feature-complete (Phases 1-5, 8, 10). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, and appearance expansion (font outline, quality borders, background/border customization) are all implemented.
 
 **GitHub**: https://github.com/Xerrion/DragonLoot
 
@@ -85,6 +85,30 @@ All modules attach to `ns`:
 | `ns.MinimapIcon` | `Core/MinimapIcon.lua` |
 | `ns.Print` | `Core/Init.lua` (helper function) |
 | `ns.DebugPrint` | `Core/Init.lua` (helper function) |
+
+### Config Schema Reference
+
+#### Appearance Config (`db.profile.appearance`)
+
+| Key                | Type    | Default              | Description                       |
+|--------------------|---------|----------------------|-----------------------------------|
+| font               | string  | "Friz Quadrata TT"  | LSM font name                     |
+| fontSize           | number  | 12                   | Font size (8-20)                  |
+| fontOutline        | string  | "OUTLINE"            | Font outline style                |
+| iconSize           | number  | 36                   | Item icon size (16-64)            |
+| qualityBorder      | boolean | true                 | Show quality-colored icon borders |
+| backgroundColor    | table   | {r=0.05,g=0.05,b=0.05} | Frame background color         |
+| backgroundAlpha    | number  | 0.9                  | Frame background opacity (0-1)    |
+| backgroundTexture  | string  | "Solid"              | LSM statusbar texture for bg      |
+| borderColor        | table   | {r=0.3,g=0.3,b=0.3} | Frame border color                |
+| borderSize         | number  | 1                    | Border thickness (0-4)            |
+| borderTexture      | string  | "Solid"              | LSM statusbar texture for border  |
+
+#### Roll Frame Config (`db.profile.rollFrame`)
+
+| Key              | Type   | Default     | Description                     |
+|------------------|--------|-------------|---------------------------------|
+| timerBarTexture  | string | "Blizzard"  | LSM statusbar texture for timer |
 
 ---
 
@@ -339,6 +363,31 @@ No automated test framework. Test manually in-game.
 12. Disable "Show in Open World" - verify no roll notifications in world content
 13. Verify roll won toasts also respect instance filtering and minimum quality
 14. Verify no duplicate toasts for the same player/drop combination
+
+#### Phase 10 - Appearance Expansion (Manual Test Steps)
+
+1. Open config with `/dl` -> Appearance section
+2. Verify all new options are present:
+   - Font Outline (dropdown: None, Outline, Thick Outline, Monochrome)
+   - Quality Border (toggle)
+   - Background Color (color picker)
+   - Background Opacity (slider 0-100%)
+   - Background Texture (LSM statusbar dropdown)
+   - Border Color (color picker)
+   - Border Size (slider 0-4)
+   - Border Texture (LSM statusbar dropdown)
+3. Change each setting and verify all 3 frames update live:
+   - Loot Frame: `/dl test` to spawn test loot, verify backdrop/border/outline changes
+   - Roll Frame: start a group loot roll, verify backdrop/border/outline/timer bar changes
+   - History Frame: open via minimap icon after rolls, verify backdrop/border/outline changes
+4. Test Quality Border toggle:
+   - Enable: item icons show quality-colored borders
+   - Disable: item icons have no colored border
+5. Test Background Opacity: slide to 0% (transparent), 100% (opaque), verify frame backdrop
+6. Test Border Size 0: verify border disappears cleanly (no artifacts)
+7. Test Font Outline None: verify text renders without outline
+8. Test Timer Bar Texture: open Loot Roll options, change timer bar texture, verify roll timer bar updates
+9. `/reload` and verify settings persist
 
 ---
 

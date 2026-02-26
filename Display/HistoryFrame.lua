@@ -80,10 +80,33 @@ end
 -- Font helper
 -------------------------------------------------------------------------------
 
+local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+
 local function GetFont()
-    local db = ns.Addon.db.profile
-    local fontPath = LSM:Fetch("font", db.appearance.font) or STANDARD_TEXT_FONT
-    return fontPath, db.appearance.fontSize
+    local db = ns.Addon.db.profile.appearance
+    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
+    return fontPath, db.fontSize, db.fontOutline
+end
+
+local function GetBackdropSettings()
+    local db = ns.Addon.db.profile.appearance
+    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local settings = { bgFile = bgTexture }
+    if db.borderSize > 0 then
+        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
+        settings.edgeSize = db.borderSize
+    end
+    return settings
+end
+
+local function ApplyBackdrop(frame)
+    local db = ns.Addon.db.profile.appearance
+    frame:SetBackdrop(GetBackdropSettings())
+    local bg = db.backgroundColor
+    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
+    local border = db.borderColor
+    -- Border alpha is intentionally fixed at 0.8 for visual consistency
+    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
 end
 
 -------------------------------------------------------------------------------
@@ -209,6 +232,7 @@ local function ReleaseEntry(entry)
     entry:Hide()
     entry:ClearAllPoints()
     entry.itemLink = nil
+    entry.quality = nil
     entry.icon:SetTexture(nil)
     entry.itemName:SetText("")
     entry.winnerName:SetText("")
@@ -256,17 +280,23 @@ end
 local function PopulateEntry(entry, data)
     entry.itemLink = data.itemLink
     entry.timestampValue = data.timestamp
+    entry.quality = data.quality
 
     -- Icon
     entry.icon:SetTexture(data.itemTexture)
 
     -- Quality border
     local qr, qg, qb = GetQualityColor(data.quality)
-    entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
+    if ns.Addon.db.profile.appearance.qualityBorder then
+        entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
+        entry.iconBorder:Show()
+    else
+        entry.iconBorder:Hide()
+    end
 
     -- Item name (quality colored)
-    local fontPath, fontSize = GetFont()
-    entry.itemName:SetFont(fontPath, fontSize - 1, "OUTLINE")
+    local fontPath, fontSize, fontOutline = GetFont()
+    entry.itemName:SetFont(fontPath, fontSize - 1, fontOutline)
     if data.itemLink then
         -- Extract name from link for display, fallback to link itself
         local name = data.itemLink:match("%[(.-)%]") or data.itemLink
@@ -277,7 +307,7 @@ local function PopulateEntry(entry, data)
     entry.itemName:SetTextColor(qr, qg, qb)
 
     -- Winner name (class colored)
-    entry.winnerName:SetFont(fontPath, fontSize - 2, "OUTLINE")
+    entry.winnerName:SetFont(fontPath, fontSize - 2, fontOutline)
     if data.winner then
         local cr, cg, cb = GetClassColor(data.winnerClass)
         entry.winnerName:SetText(data.winner)
@@ -287,7 +317,7 @@ local function PopulateEntry(entry, data)
     end
 
     -- Roll info
-    entry.rollInfo:SetFont(fontPath, fontSize - 2, "OUTLINE")
+    entry.rollInfo:SetFont(fontPath, fontSize - 2, fontOutline)
     local rollText = GetRollTypeText(data.rollType)
     if data.roll then
         rollText = rollText .. " " .. data.roll
@@ -295,7 +325,7 @@ local function PopulateEntry(entry, data)
     entry.rollInfo:SetText(rollText)
 
     -- Time
-    entry.timeText:SetFont(fontPath, fontSize - 2, "OUTLINE")
+    entry.timeText:SetFont(fontPath, fontSize - 2, fontOutline)
     entry.timeText:SetText(FormatTimeAgo(data.timestamp))
 
     -- Interaction scripts (named functions, no per-entry closures)
@@ -393,8 +423,10 @@ local function CreateTitleBar(parent)
     titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
     titleBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
 
+    local fontPath, fontSize, fontOutline = GetFont()
     titleBar.text = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+    titleBar.text:SetFont(fontPath, fontSize, fontOutline)
     titleBar.text:SetText("DragonLoot - Loot History")
     titleBar.text:SetTextColor(1, 0.82, 0)
 
@@ -462,7 +494,7 @@ local function CreateScrollComponents(parent)
     bar:SetValue(0)
     bar:SetValueStep(ENTRY_HEIGHT)
     bar:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
+        bgFile = WHITE8x8,
     })
     bar:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
 
@@ -504,13 +536,7 @@ local function CreateContainerFrame()
     frame:Hide()
 
     -- Backdrop
-    frame:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        edgeSize = 1,
-    })
-    frame:SetBackdropColor(0.05, 0.05, 0.05, 0.9)
-    frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+    ApplyBackdrop(frame)
 
     -- Title bar
     frame.titleBar = CreateTitleBar(frame)
@@ -544,10 +570,8 @@ local function StartTimeRefresh()
     if timeRefreshHandle then return end
     timeRefreshHandle = ns.Addon:ScheduleRepeatingTimer(function()
         if not containerFrame or not containerFrame:IsShown() then return end
-        local fontPath, fontSize = GetFont()
         for _, entry in ipairs(activeEntries) do
             if entry.timestampValue then
-                entry.timeText:SetFont(fontPath, fontSize - 2, "OUTLINE")
                 entry.timeText:SetText(FormatTimeAgo(entry.timestampValue))
             end
         end
@@ -612,8 +636,35 @@ end
 
 function ns.HistoryFrame.ApplySettings()
     if not containerFrame then return end
-    local fontPath, fontSize = GetFont()
-    containerFrame.titleBar.text:SetFont(fontPath, fontSize, "OUTLINE")
+
+    -- Update backdrop
+    ApplyBackdrop(containerFrame)
+
+    -- Update title font
+    local fontPath, fontSize, fontOutline = GetFont()
+    containerFrame.titleBar.text:SetFont(fontPath, fontSize, fontOutline)
+
+    -- Update visible entries
+    local db = ns.Addon.db.profile
+    for _, entry in ipairs(activeEntries) do
+        if entry:IsShown() then
+            entry.itemName:SetFont(fontPath, fontSize - 1, fontOutline)
+            entry.winnerName:SetFont(fontPath, fontSize - 2, fontOutline)
+            entry.rollInfo:SetFont(fontPath, fontSize - 2, fontOutline)
+            entry.timeText:SetFont(fontPath, fontSize - 2, fontOutline)
+
+            -- Refresh quality border visibility
+            if entry.itemLink and db.appearance.qualityBorder then
+                if entry.quality then
+                    local qr, qg, qb = GetQualityColor(entry.quality)
+                    entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
+                end
+                entry.iconBorder:Show()
+            elseif entry.itemLink then
+                entry.iconBorder:Hide()
+            end
+        end
+    end
 end
 
 function ns.HistoryFrame.AddEntry(data)

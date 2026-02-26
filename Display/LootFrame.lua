@@ -248,7 +248,7 @@ local function CreateSlotFrame()
     slot.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
     -- Icon border (drawn behind icon)
-    slot.iconBorder = slot:CreateTexture(nil, "OVERLAY")
+    slot.iconBorder = slot:CreateTexture(nil, "BORDER")
     slot.iconBorder:SetPoint("TOPLEFT", slot.icon, "TOPLEFT", -1, 1)
     slot.iconBorder:SetPoint("BOTTOMRIGHT", slot.icon, "BOTTOMRIGHT", 1, -1)
     slot.iconBorder:SetColorTexture(0.3, 0.3, 0.3, 0.8)
@@ -272,10 +272,11 @@ local function CreateSlotFrame()
     slot.slotType:SetJustifyH("LEFT")
     slot.slotType:SetTextColor(0.6, 0.6, 0.6)
 
-    -- Highlight
+    -- Highlight (text area only, not the icon)
     slot.highlight = slot:CreateTexture(nil, "HIGHLIGHT")
-    slot.highlight:SetAllPoints()
-    slot.highlight:SetColorTexture(1, 1, 1, 0.1)
+    slot.highlight:SetPoint("TOPLEFT", slot.icon, "TOPRIGHT", 2, 0)
+    slot.highlight:SetPoint("BOTTOMRIGHT", slot, "BOTTOMRIGHT", 0, 0)
+    slot.highlight:SetColorTexture(1, 1, 1, 0.15)
 
     -- Interaction scripts
     slot:SetScript("OnClick", OnSlotClick)
@@ -364,6 +365,9 @@ local function PopulateSlot(slot, slotIndex)
     slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     slot.itemName:SetText(name or UNKNOWN)
     slot.itemName:SetTextColor(r, g, b)
+
+    -- Quality-tinted hover highlight
+    slot.highlight:SetColorTexture(r, g, b, 0.15)
 
     -- Quantity badge
     if quantity and quantity > 1 then
@@ -709,6 +713,9 @@ local function PopulateTestSlot(slot, testData, index)
     slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     slot.itemName:SetText(testData.name)
     slot.itemName:SetTextColor(r, g, b)
+
+    -- Quality-tinted hover highlight
+    slot.highlight:SetColorTexture(r, g, b, 0.15)
 
     if testData.quantity > 1 then
         slot.quantity:SetText(testData.quantity)

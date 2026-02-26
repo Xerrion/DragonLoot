@@ -34,7 +34,8 @@ function ns.RollAnimations.PlayShow(frame)
 
     ns.RollAnimations.StopAll(frame)
 
-    lib:Animate(frame, "slideInRight", {
+    local animName = db.animation.rollShowAnim or "slideInRight"
+    local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = 50,
         onFinished = function()
@@ -42,6 +43,10 @@ function ns.RollAnimations.PlayShow(frame)
             frame:SetScale(scale)
         end,
     })
+    if not ok then
+        frame:SetAlpha(1)
+        frame:SetScale(ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0)
+    end
 end
 
 function ns.RollAnimations.PlayHide(frame, onFinished)
@@ -56,8 +61,10 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
 
     ns.RollAnimations.StopAll(frame)
 
-    lib:Animate(frame, "fadeOut", {
+    local animName = db.animation.rollHideAnim or "fadeOut"
+    local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
+        distance = 50,
         onFinished = function()
             local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
             frame:SetAlpha(1)
@@ -66,6 +73,12 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
             if onFinished then onFinished() end
         end,
     })
+    if not ok then
+        frame:SetAlpha(1)
+        frame:SetScale(ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0)
+        frame:Hide()
+        if onFinished then onFinished() end
+    end
 end
 
 function ns.RollAnimations.StopAll(frame)

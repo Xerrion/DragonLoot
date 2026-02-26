@@ -46,9 +46,9 @@ Version-specific files are loaded via BigWigsMods packager comment directives (`
 | `Core/MinimapIcon.lua` | LDB + LibDBIcon minimap button |
 | `Core/SlashCommands.lua` | `/dl` and `/dragonloot` command router |
 | `Display/LootFrame.lua` | Loot window frame pool, slot rendering, drag/position, test loot |
-| `Display/LootAnimations.lua` | LibAnimate fadeIn/fadeOut for loot window |
+| `Display/LootAnimations.lua` | LibAnimate animations for loot window (configurable via config) |
 | `Display/RollFrame.lua` | Roll frame pool (up to 4), timer bar, Need/Greed/DE/Pass/Transmog buttons |
-| `Display/RollAnimations.lua` | LibAnimate slideInRight/fadeOut for roll frames |
+| `Display/RollAnimations.lua` | LibAnimate animations for roll frames (configurable via config) |
 | `Display/RollManager.lua` | Roll orchestration, overflow FIFO queue, timer tick, DRAGONTOAST_QUEUE_TOAST messaging |
 | `Display/HistoryFrame.lua` | Scrollable loot history, entry pool, class-colored winners, time-ago refresh |
 | `Listeners/LootListener_Retail.lua` | Retail: LOOT_OPENED + LOOT_READY with pendingAutoLoot |
@@ -95,14 +95,28 @@ All modules attach to `ns`:
 | font               | string  | "Friz Quadrata TT"  | LSM font name                     |
 | fontSize           | number  | 12                   | Font size (8-20)                  |
 | fontOutline        | string  | "OUTLINE"            | Font outline style                |
-| iconSize           | number  | 36                   | Item icon size (16-64)            |
+| lootIconSize       | number  | 36                   | Loot window icon size (16-64)     |
+| rollIconSize       | number  | 36                   | Roll frame icon size (16-64)      |
+| historyIconSize    | number  | 24                   | History frame icon size (16-48)   |
 | qualityBorder      | boolean | true                 | Show quality-colored icon borders |
 | backgroundColor    | table   | {r=0.05,g=0.05,b=0.05} | Frame background color         |
 | backgroundAlpha    | number  | 0.9                  | Frame background opacity (0-1)    |
-| backgroundTexture  | string  | "Solid"              | LSM statusbar texture for bg      |
+| backgroundTexture  | string  | "Solid"              | LSM background key for bg         |
 | borderColor        | table   | {r=0.3,g=0.3,b=0.3} | Frame border color                |
 | borderSize         | number  | 1                    | Border thickness (0-4)            |
-| borderTexture      | string  | "Solid"              | LSM statusbar texture for border  |
+| borderTexture      | string  | "None"               | LSM border key for border         |
+
+#### Animation Config (`db.profile.animation`)
+
+| Key                | Type    | Default              | Description                       |
+|--------------------|---------|----------------------|-----------------------------------|
+| enabled            | boolean | true                 | Enable/disable animations         |
+| openDuration       | number  | 0.3                  | Open animation duration (seconds) |
+| closeDuration      | number  | 0.5                  | Close animation duration (seconds)|
+| lootOpenAnim       | string  | "fadeIn"             | LibAnimate animation name for loot window open  |
+| lootCloseAnim      | string  | "fadeOut"            | LibAnimate animation name for loot window close |
+| rollShowAnim       | string  | "slideInRight"      | LibAnimate animation name for roll frame entrance |
+| rollHideAnim       | string  | "fadeOut"            | LibAnimate animation name for roll frame exit   |
 
 #### Roll Frame Config (`db.profile.rollFrame`)
 
@@ -220,7 +234,7 @@ DragonLoot embeds Ace3 via `Libs/embeds.xml`. The full Ace3 library set is avail
 | LibSharedMedia-3.0 | Font/texture selection |
 | LibDataBroker-1.1 | Data source for minimap icon |
 | LibDBIcon-1.0 | Minimap button |
-| LibAnimate | Animation library (loot fadeIn/Out, roll slideIn/fadeOut) |
+| LibAnimate | Animation library (user-configurable via Animation config tab) |
 | AceGUI-SharedMediaWidgets | SharedMedia dropdowns in AceGUI |
 
 ### Local Dev: Ace3 Submodule
@@ -280,6 +294,7 @@ No automated test framework. Test manually in-game.
 | `/dl enable` / `/dl disable` | Explicit enable/disable |
 | `/dl reset` | Reset loot frame position |
 | `/dl test` | Show test loot data |
+| `/dl testroll` | Show test roll frames with countdown timers |
 | `/dl history` | Toggle history frame |
 
 #### Phase 1 - Core (Manual Test Steps)
@@ -388,6 +403,22 @@ No automated test framework. Test manually in-game.
 7. Test Font Outline None: verify text renders without outline
 8. Test Timer Bar Texture: open Loot Roll options, change timer bar texture, verify roll timer bar updates
 9. `/reload` and verify settings persist
+
+#### UI Fixes - Test Roll, Animation Selection, Per-Frame Icon Size (Manual Test Steps)
+
+1. `/dl testroll` - verify roll frames appear with countdown timer bars
+2. Click Need/Greed/DE/Pass buttons on test roll - verify test messages print to chat
+3. Wait for countdown to expire - verify test roll frame hides automatically
+4. Open config -> Animation tab - change loot open animation type (e.g. slideInLeft)
+5. `/dl test` - verify the new animation plays when loot window opens
+6. Close loot window - verify the configured close animation plays
+7. Change roll show animation type in config (e.g. fadeIn instead of slideInRight)
+8. `/dl testroll` - verify new entrance animation plays on roll frames
+9. Open config -> Appearance tab - verify separate icon size sliders for Loot, Roll, History
+10. Change loot icon size - `/dl test` - verify loot window uses the new icon size
+11. Change roll icon size - `/dl testroll` - verify roll frames use the new icon size
+12. Change history icon size - `/dl history` - verify history entries use the new icon size
+13. Verify changing one icon size does not affect the others
 
 ---
 

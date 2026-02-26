@@ -52,26 +52,32 @@ local defaults = {
             font = "Friz Quadrata TT",
             fontSize = 12,
             fontOutline = "OUTLINE",
-            iconSize = 36,
+            lootIconSize = 36,
+            rollIconSize = 36,
+            historyIconSize = 24,
             qualityBorder = true,
             backgroundColor = { r = 0.05, g = 0.05, b = 0.05 },
             backgroundAlpha = 0.9,
             backgroundTexture = "Solid",
             borderColor = { r = 0.3, g = 0.3, b = 0.3 },
             borderSize = 1,
-            borderTexture = "Solid",
+            borderTexture = "None",
         },
 
         animation = {
             enabled = true,
             openDuration = 0.3,
             closeDuration = 0.5,
+            lootOpenAnim = "fadeIn",
+            lootCloseAnim = "fadeOut",
+            rollShowAnim = "slideInRight",
+            rollHideAnim = "fadeOut",
         },
 
         rollNotifications = {
             showRollWon = true,
-            showGroupWins = false,
-            showRollResults = false,
+            showGroupWins = true,
+            showRollResults = true,
             showSelfRolls = true,
             showGroupRolls = true,
             minQuality = 0,
@@ -104,13 +110,39 @@ local function FillMissingDefaults(profile)
             if not profile[section] then
                 profile[section] = {}
             end
-            for key, value in pairs(sectionDefaults) do
-                if profile[section][key] == nil then
-                    profile[section][key] = DeepCopyValue(value)
+            for key, defaultValue in pairs(sectionDefaults) do
+                local currentValue = profile[section][key]
+                -- Fill missing keys
+                if currentValue == nil then
+                    profile[section][key] = DeepCopyValue(defaultValue)
+                -- Validate existing values: reset if type doesn't match or is invalid
+                elseif type(currentValue) ~= type(defaultValue) then
+                    profile[section][key] = DeepCopyValue(defaultValue)
+                -- Handle nested tables (like color values {r,g,b})
+                elseif type(defaultValue) == "table" then
+                    local isValid = true
+                    for k, v in pairs(defaultValue) do
+                        if type(currentValue[k]) ~= type(v) then
+                            isValid = false
+                            break
+                        end
+                    end
+                    if not isValid then
+                        profile[section][key] = DeepCopyValue(defaultValue)
+                    end
                 end
             end
         end
     end
+end
+
+local function ResetToDefaults(profile)
+    for section, sectionDefaults in pairs(defaults.profile) do
+        if type(sectionDefaults) == "table" then
+            profile[section] = DeepCopyValue(sectionDefaults)
+        end
+    end
+    profile.schemaVersion = CURRENT_SCHEMA
 end
 
 local function MigrateProfile(db)
@@ -119,6 +151,26 @@ local function MigrateProfile(db)
 
     if version < 1 then
         FillMissingDefaults(profile)
+    end
+
+    -- Clean up invalid values from old defaults
+    local appearance = profile.appearance
+    if appearance then
+        -- "Solid" was the old borderTexture default but is not a valid LSM border name
+        if appearance.borderTexture == "Solid" then
+            appearance.borderTexture = defaults.profile.appearance.borderTexture
+        end
+        -- Migrate old single iconSize to per-frame keys
+        if appearance.iconSize then
+            if not appearance.lootIconSize then
+                appearance.lootIconSize = appearance.iconSize
+            end
+            if not appearance.rollIconSize then
+                appearance.rollIconSize = appearance.iconSize
+            end
+            -- historyIconSize was always 24, don't use old iconSize for it
+            appearance.iconSize = nil
+        end
     end
 
     profile.schemaVersion = CURRENT_SCHEMA
@@ -621,15 +673,39 @@ local function BuildAppearanceArgs(db)
             type = "header",
             order = 10,
         },
-        iconSize = {
-            name = "Icon Size",
-            desc = "Size of item icons in pixels.",
+        lootIconSize = {
+            name = "Loot Icon Size",
+            desc = "Size of item icons in the loot window.",
             type = "range",
             order = 11,
             min = 16, max = 64, step = 2,
-            get = function() return db.appearance.iconSize end,
+            get = function() return db.appearance.lootIconSize end,
             set = function(_, val)
-                db.appearance.iconSize = val
+                db.appearance.lootIconSize = val
+                NotifyAppearanceChange()
+            end,
+        },
+        rollIconSize = {
+            name = "Roll Icon Size",
+            desc = "Size of item icons in the roll frame.",
+            type = "range",
+            order = 12,
+            min = 16, max = 64, step = 2,
+            get = function() return db.appearance.rollIconSize end,
+            set = function(_, val)
+                db.appearance.rollIconSize = val
+                NotifyAppearanceChange()
+            end,
+        },
+        historyIconSize = {
+            name = "History Icon Size",
+            desc = "Size of item icons in the loot history.",
+            type = "range",
+            order = 13,
+            min = 16, max = 48, step = 2,
+            get = function() return db.appearance.historyIconSize end,
+            set = function(_, val)
+                db.appearance.historyIconSize = val
                 NotifyAppearanceChange()
             end,
         },
@@ -637,7 +713,7 @@ local function BuildAppearanceArgs(db)
             name = "Quality Border",
             desc = "Show quality-colored borders around item icons.",
             type = "toggle",
-            order = 12,
+            order = 14,
             get = function() return db.appearance.qualityBorder end,
             set = function(_, val)
                 db.appearance.qualityBorder = val
@@ -682,8 +758,8 @@ local function BuildAppearanceArgs(db)
             desc = "Background texture for all frames.",
             type = "select",
             order = 23,
-            dialogControl = "LSM30_Statusbar",
-            values = function() return LSM:HashTable("statusbar") end,
+            dialogControl = "LSM30_Background",
+            values = function() return LSM:HashTable("background") end,
             get = function() return db.appearance.backgroundTexture end,
             set = function(_, val)
                 db.appearance.backgroundTexture = val
@@ -728,8 +804,8 @@ local function BuildAppearanceArgs(db)
             desc = "Border texture for all frames.",
             type = "select",
             order = 33,
-            dialogControl = "LSM30_Statusbar",
-            values = function() return LSM:HashTable("statusbar") end,
+            dialogControl = "LSM30_Border",
+            values = function() return LSM:HashTable("border") end,
             get = function() return db.appearance.borderTexture end,
             set = function(_, val)
                 db.appearance.borderTexture = val
@@ -746,6 +822,16 @@ local function BuildAppearanceOptions(db)
         order = 5,
         args = BuildAppearanceArgs(db),
     }
+end
+
+local function GetAnimationValues()
+    local animLib = LibStub("LibAnimate")
+    local names = animLib:GetAnimationNames()
+    local values = {}
+    for _, name in ipairs(names) do
+        values[name] = name
+    end
+    return values
 end
 
 local function BuildAnimationOptions(db)
@@ -792,6 +878,47 @@ local function BuildAnimationOptions(db)
                 get = function() return db.animation.closeDuration end,
                 set = function(_, val) db.animation.closeDuration = val end,
             },
+            headerAnimTypes = {
+                name = "Animation Types",
+                type = "header",
+                order = 5,
+            },
+            lootOpenAnim = {
+                name = "Loot Open Animation",
+                desc = "Animation when the loot window opens.",
+                type = "select",
+                order = 6,
+                values = GetAnimationValues,
+                get = function() return db.animation.lootOpenAnim end,
+                set = function(_, val) db.animation.lootOpenAnim = val end,
+            },
+            lootCloseAnim = {
+                name = "Loot Close Animation",
+                desc = "Animation when the loot window closes.",
+                type = "select",
+                order = 7,
+                values = GetAnimationValues,
+                get = function() return db.animation.lootCloseAnim end,
+                set = function(_, val) db.animation.lootCloseAnim = val end,
+            },
+            rollShowAnim = {
+                name = "Roll Show Animation",
+                desc = "Animation when a roll frame appears.",
+                type = "select",
+                order = 8,
+                values = GetAnimationValues,
+                get = function() return db.animation.rollShowAnim end,
+                set = function(_, val) db.animation.rollShowAnim = val end,
+            },
+            rollHideAnim = {
+                name = "Roll Hide Animation",
+                desc = "Animation when a roll frame disappears.",
+                type = "select",
+                order = 9,
+                values = GetAnimationValues,
+                get = function() return db.animation.rollHideAnim end,
+                set = function(_, val) db.animation.rollHideAnim = val end,
+            },
         },
     }
 end
@@ -836,7 +963,7 @@ function ns.InitializeDB(addon)
     -- Re-migrate on profile changes
     addon.db.RegisterCallback(addon, "OnProfileChanged", function() MigrateProfile(addon.db) end)
     addon.db.RegisterCallback(addon, "OnProfileCopied", function() MigrateProfile(addon.db) end)
-    addon.db.RegisterCallback(addon, "OnProfileReset", function() MigrateProfile(addon.db) end)
+    addon.db.RegisterCallback(addon, "OnProfileReset", function() ResetToDefaults(addon.db.profile) end)
 
     -- Register options
     AceConfig:RegisterOptionsTable(ADDON_NAME, GetOptions)

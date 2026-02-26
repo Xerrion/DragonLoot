@@ -59,7 +59,9 @@ local containerFrame
 --
 -- Retail: icon, name, quantity, currencyID, quality, locked, isQuestItem,
 --         questID, isActive, isCoin (10 returns)
--- Classic: icon, name, quantity, quality, locked, isQuestItem (6 returns)
+-- Classic: icon, name, quantity, currencyID, quality, locked (6 returns)
+-- Both versions return currencyID at position 4; strip it for a normalized
+-- return of: icon, name, quantity, quality, locked, isQuestItem
 -------------------------------------------------------------------------------
 
 local function GetNormalizedSlotInfo(slotIndex)
@@ -68,9 +70,10 @@ local function GetNormalizedSlotInfo(slotIndex)
             GetLootSlotInfo(slotIndex)
         return icon, name, quantity, quality, locked, isQuestItem
     end
-
-    -- Classic/TBC/MoP: returns match the normalized order directly
-    return GetLootSlotInfo(slotIndex)
+    -- Classic/TBC/MoP: 6 returns with currencyID at position 4, no isQuestItem
+    local icon, name, quantity, _currencyID, quality, locked =
+        GetLootSlotInfo(slotIndex)
+    return icon, name, quantity, quality, locked, nil
 end
 
 -------------------------------------------------------------------------------
@@ -103,23 +106,53 @@ end
 
 local function GetBackdropSettings()
     local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
     local settings = { bgFile = bgTexture }
-    if db.borderSize > 0 then
-        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
-        settings.edgeSize = db.borderSize
+    if (db.borderSize or 1) > 0 then
+        local edgeFile = LSM:Fetch("border", db.borderTexture)
+        if edgeFile then
+            settings.edgeFile = edgeFile
+            settings.edgeSize = db.borderSize
+        end
     end
     return settings
 end
 
 local function ApplyBackdrop(frame)
     local db = ns.Addon.db.profile.appearance
+    if not db then return end
+
     frame:SetBackdrop(GetBackdropSettings())
+
     local bg = db.backgroundColor
-    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
+    if bg then
+        frame:SetBackdropColor(bg.r or 0.05, bg.g or 0.05, bg.b or 0.05, db.backgroundAlpha or 0.9)
+    else
+        frame:SetBackdropColor(0.05, 0.05, 0.05, db.backgroundAlpha or 0.9)
+    end
+
     local border = db.borderColor
-    -- Border alpha is intentionally fixed at 0.8 for visual consistency
-    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
+    if border then
+        frame:SetBackdropBorderColor(border.r or 0.3, border.g or 0.3, border.b or 0.3, 0.8)
+    else
+        frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+    end
+end
+
+local function ApplyLayoutOffsets(frame)
+    local borderSize = ns.Addon.db.profile.appearance.borderSize or 1
+
+    -- Title text
+    frame.title:ClearAllPoints()
+    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8 + borderSize, -(6 + borderSize))
+
+    -- Close button
+    frame.closeBtn:ClearAllPoints()
+    frame.closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(4 + borderSize), -(4 + borderSize))
+
+    -- Fishing hint text
+    frame.fishingText:ClearAllPoints()
+    frame.fishingText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8 + borderSize, 4 + borderSize)
 end
 
 -------------------------------------------------------------------------------
@@ -189,7 +222,9 @@ local function ApplySlotTypeAndQuest(slot, slotIndex, isQuestItem)
 
     if isQuestItem then
         slot.iconBorder:SetColorTexture(1, 0.82, 0, 0.9)
+        slot.iconBorder:Show()
     end
+    -- Don't hide for non-quest items - let PopulateSlot handle quality border
 end
 
 -------------------------------------------------------------------------------
@@ -207,6 +242,7 @@ local function CreateSlotFrame()
 
     -- Icon
     slot.icon = slot:CreateTexture(nil, "ARTWORK")
+    slot.icon:SetDrawLayer("ARTWORK", 0)
     slot.icon:SetSize(36, 36)
     slot.icon:SetPoint("LEFT", slot, "LEFT", 4, 0)
     slot.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
@@ -216,7 +252,6 @@ local function CreateSlotFrame()
     slot.iconBorder:SetPoint("TOPLEFT", slot.icon, "TOPLEFT", -1, 1)
     slot.iconBorder:SetPoint("BOTTOMRIGHT", slot.icon, "BOTTOMRIGHT", 1, -1)
     slot.iconBorder:SetColorTexture(0.3, 0.3, 0.3, 0.8)
-    slot.icon:SetDrawLayer("OVERLAY", 1)
 
     -- Quantity badge
     slot.quantity = slot:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
@@ -267,10 +302,14 @@ local function ReleaseSlot(slot)
     if slot._isPooled then return end
     slot._isPooled = true
 
+    slot.iconBorder:Hide()
     slot:Hide()
     slot:ClearAllPoints()
     slot.slotIndex = nil
     slot.icon:SetTexture(nil)
+    slot.icon:SetDesaturated(false)
+    slot.icon:SetVertexColor(1, 1, 1)
+    slot.icon:SetAlpha(1)
     slot.itemName:SetText("")
     slot.quantity:Hide()
     slot.slotType:SetText("")
@@ -297,24 +336,24 @@ end
 local function PopulateSlot(slot, slotIndex)
     slot.slotIndex = slotIndex
 
-    local icon, name, quantity, quality, locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
+    local icon, name, quantity, quality, _locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
     if not icon then
         slot:Hide()
         return
     end
 
     local db = ns.Addon.db.profile
-    local iconSize = db.appearance.iconSize or 36
+    local iconSize = db.appearance.lootIconSize or 36
     local fontPath, fontSize, fontOutline = GetFont()
 
-    -- Icon
+    -- Icon - reset all state to ensure proper rendering
     slot.icon:SetTexture(icon)
     slot.icon:SetSize(iconSize, iconSize)
-    slot.icon:SetDesaturated(locked and true or false)
+    slot.icon:SetDesaturated(false)
 
-    -- Quality border color
+    -- Quality border color - always set but respect qualityBorder setting
+    local r, g, b = GetQualityColor(quality)
     if db.appearance.qualityBorder then
-        local r, g, b = GetQualityColor(quality)
         slot.iconBorder:SetColorTexture(r, g, b, 0.8)
         slot.iconBorder:Show()
     else
@@ -322,7 +361,6 @@ local function PopulateSlot(slot, slotIndex)
     end
 
     -- Item name
-    local r, g, b = GetQualityColor(quality)
     slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     slot.itemName:SetText(name or UNKNOWN)
     slot.itemName:SetTextColor(r, g, b)
@@ -348,15 +386,19 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateCloseButton(parent)
-    local btn = CreateFrame("Button", nil, parent)
-    btn:SetSize(16, 16)
-    btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -4, -4)
-    btn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-    btn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-    btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    local ok, btn = pcall(CreateFrame, "Button", nil, parent, "UIPanelCloseButtonNoScripts")
+    if not ok or not btn then
+        btn = CreateFrame("Button", nil, parent)
+        btn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+        btn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+        btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    end
+    btn:SetSize(24, 24)
+    btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -2, -2)
 
     btn:SetScript("OnClick", function()
         CloseLoot()
+        ns.LootFrame.Hide()
     end)
 
     return btn
@@ -410,6 +452,9 @@ local function CreateContainerFrame()
     frame.fishingText:SetTextColor(0.5, 0.5, 0.5)
     frame.fishingText:Hide()
 
+    -- Offset child elements to account for border thickness
+    ApplyLayoutOffsets(frame)
+
     return frame
 end
 
@@ -424,21 +469,22 @@ local PADDING = 4
 local function LayoutSlots()
     if not containerFrame then return end
     local db = ns.Addon.db.profile
-    local iconSize = db.appearance.iconSize or 36
+    local iconSize = db.appearance.lootIconSize or 36
+    local borderSize = db.appearance.borderSize or 1
     local slotHeight = iconSize + 4
-    local yOffset = -(TITLE_BAR_HEIGHT + PADDING)
+    local yOffset = -(TITLE_BAR_HEIGHT + PADDING + borderSize)
 
     for i = 1, #activeSlots do
         local slot = activeSlots[i]
         slot:ClearAllPoints()
-        slot:SetPoint("TOPLEFT", containerFrame, "TOPLEFT", PADDING, yOffset)
-        slot:SetPoint("RIGHT", containerFrame, "RIGHT", -PADDING, 0)
+        slot:SetPoint("TOPLEFT", containerFrame, "TOPLEFT", PADDING + borderSize, yOffset)
+        slot:SetPoint("RIGHT", containerFrame, "RIGHT", -(PADDING + borderSize), 0)
         yOffset = yOffset - slotHeight - SLOT_SPACING
     end
 
     -- Auto-resize container height to fit slots
     local totalHeight = TITLE_BAR_HEIGHT + PADDING
-        + (#activeSlots * (slotHeight + SLOT_SPACING)) + PADDING
+        + (#activeSlots * (slotHeight + SLOT_SPACING)) + PADDING + (borderSize * 2)
     local minHeight = db.lootWindow.height or 300
     if totalHeight < minHeight then totalHeight = minHeight end
     containerFrame:SetHeight(totalHeight)
@@ -564,6 +610,9 @@ function ns.LootFrame.ApplySettings()
     -- Update backdrop
     ApplyBackdrop(containerFrame)
 
+    -- Update layout offsets for border thickness
+    ApplyLayoutOffsets(containerFrame)
+
     -- Update title font
     local fontPath, fontSize, fontOutline = GetFont()
     containerFrame.title:SetFont(fontPath, fontSize, fontOutline)
@@ -638,12 +687,14 @@ local function PopulateTestSlot(slot, testData, index)
     slot.slotIndex = index
 
     local db = ns.Addon.db.profile
-    local iconSize = db.appearance.iconSize or 36
+    local iconSize = db.appearance.lootIconSize or 36
     local fontPath, fontSize, fontOutline = GetFont()
 
     slot.icon:SetTexture(testData.icon)
     slot.icon:SetSize(iconSize, iconSize)
     slot.icon:SetDesaturated(false)
+    slot.icon:SetVertexColor(1, 1, 1)  -- Reset any vertex color tinting
+    slot.icon:SetAlpha(1)  -- Ensure full opacity
 
     local r, g, b = GetQualityColor(testData.quality)
 

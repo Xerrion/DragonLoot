@@ -30,9 +30,7 @@ local LSM = LibStub("LibSharedMedia-3.0")
 local FRAME_WIDTH = 350
 local FRAME_HEIGHT = 400
 local TITLE_BAR_HEIGHT = 24
-local ENTRY_HEIGHT = 30
 local ENTRY_SPACING = 2
-local ENTRY_ICON_SIZE = 24
 local PADDING = 6
 local SCROLL_STEP = 3
 local SCROLLBAR_WIDTH = 14
@@ -82,6 +80,14 @@ end
 
 local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
 
+local function GetHistoryIconSize()
+    return ns.Addon.db.profile.appearance.historyIconSize or 24
+end
+
+local function GetEntryHeight()
+    return GetHistoryIconSize() + 6
+end
+
 local function GetFont()
     local db = ns.Addon.db.profile.appearance
     local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
@@ -90,11 +96,14 @@ end
 
 local function GetBackdropSettings()
     local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
     local settings = { bgFile = bgTexture }
-    if db.borderSize > 0 then
-        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
-        settings.edgeSize = db.borderSize
+    if (db.borderSize or 1) > 0 then
+        local edgeFile = LSM:Fetch("border", db.borderTexture)
+        if edgeFile then
+            settings.edgeFile = edgeFile
+            settings.edgeSize = db.borderSize
+        end
     end
     return settings
 end
@@ -107,6 +116,32 @@ local function ApplyBackdrop(frame)
     local border = db.borderColor
     -- Border alpha is intentionally fixed at 0.8 for visual consistency
     frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
+end
+
+local function ApplyLayoutOffsets(frame)
+    local borderSize = ns.Addon.db.profile.appearance.borderSize or 1
+
+    -- Title bar spans across the top, inset by border
+    local titleBar = frame.titleBar
+    titleBar:ClearAllPoints()
+    titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -borderSize)
+    titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
+
+    -- Scroll frame and scrollbar insets
+    if scrollFrame then
+        scrollFrame:ClearAllPoints()
+        scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT",
+            PADDING + borderSize, -(TITLE_BAR_HEIGHT + PADDING + borderSize))
+        scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
+            -(PADDING + SCROLLBAR_WIDTH + 2 + borderSize), PADDING + borderSize)
+    end
+    if scrollBar then
+        scrollBar:ClearAllPoints()
+        scrollBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT",
+            -(PADDING + borderSize), -(TITLE_BAR_HEIGHT + PADDING + borderSize))
+        scrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
+            -(PADDING + borderSize), PADDING + borderSize)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -163,13 +198,15 @@ local function CreateEntryFrame()
     local frameName = "DragonLootHistoryEntry" .. entryCount
 
     local entry = CreateFrame("Button", frameName, scrollChild)
-    entry:SetHeight(ENTRY_HEIGHT)
+    local entryHeight = GetEntryHeight()
+    entry:SetHeight(entryHeight)
     entry:EnableMouse(true)
     entry:RegisterForClicks("LeftButtonUp")
 
     -- Icon
     entry.icon = entry:CreateTexture(nil, "ARTWORK")
-    entry.icon:SetSize(ENTRY_ICON_SIZE, ENTRY_ICON_SIZE)
+    local iconSize = GetHistoryIconSize()
+    entry.icon:SetSize(iconSize, iconSize)
     entry.icon:SetPoint("LEFT", entry, "LEFT", 2, 0)
     entry.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
@@ -364,6 +401,7 @@ local function RefreshHistory()
 
     ReleaseAllEntries()
 
+    local entryHeight = GetEntryHeight()
     local yOffset = 0
     for i, data in ipairs(ns.historyData) do
         local entry = AcquireEntry()
@@ -372,11 +410,11 @@ local function RefreshHistory()
         entry:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -yOffset)
         entry:SetPoint("RIGHT", scrollChild, "RIGHT", 0, 0)
         activeEntries[i] = entry
-        yOffset = yOffset + ENTRY_HEIGHT + ENTRY_SPACING
+        yOffset = yOffset + entryHeight + ENTRY_SPACING
     end
 
     -- Resize scroll child to fit all entries
-    local totalHeight = #ns.historyData * (ENTRY_HEIGHT + ENTRY_SPACING)
+    local totalHeight = #ns.historyData * (entryHeight + ENTRY_SPACING)
     if totalHeight < 1 then totalHeight = 1 end
     scrollChild:SetHeight(totalHeight)
 
@@ -431,12 +469,17 @@ local function CreateTitleBar(parent)
     titleBar.text:SetTextColor(1, 0.82, 0)
 
     -- Close button
-    local closeBtn = CreateFrame("Button", nil, titleBar)
-    closeBtn:SetSize(16, 16)
-    closeBtn:SetPoint("TOPRIGHT", titleBar, "TOPRIGHT", -4, -4)
-    closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-    closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-    closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    local ok, closeBtn = pcall(CreateFrame, "Button", nil, titleBar,
+        "UIPanelCloseButtonNoScripts")
+    if not ok or not closeBtn then
+        closeBtn = CreateFrame("Button", nil, titleBar)
+        closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+        closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+        closeBtn:SetHighlightTexture(
+            "Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    end
+    closeBtn:SetSize(24, 24)
+    closeBtn:SetPoint("TOPRIGHT", titleBar, "TOPRIGHT", -2, -2)
     closeBtn:SetScript("OnClick", function()
         ns.HistoryFrame.Hide()
     end)
@@ -492,7 +535,7 @@ local function CreateScrollComponents(parent)
     bar:SetOrientation("VERTICAL")
     bar:SetMinMaxValues(0, 0)
     bar:SetValue(0)
-    bar:SetValueStep(ENTRY_HEIGHT)
+    bar:SetValueStep(GetEntryHeight())
     bar:SetBackdrop({
         bgFile = WHITE8x8,
     })
@@ -511,7 +554,7 @@ local function CreateScrollComponents(parent)
     sf:EnableMouseWheel(true)
     sf:SetScript("OnMouseWheel", function(_, delta)
         local current = bar:GetValue()
-        local step = ENTRY_HEIGHT * SCROLL_STEP
+        local step = GetEntryHeight() * SCROLL_STEP
         bar:SetValue(current - (delta * step))
     end)
 
@@ -593,6 +636,7 @@ function ns.HistoryFrame.Initialize()
     if containerFrame then return end
     containerFrame = CreateContainerFrame()
     scrollFrame, scrollChild, scrollBar = CreateScrollComponents(containerFrame)
+    ApplyLayoutOffsets(containerFrame)
     ns.HistoryFrame.ApplySettings()
     RestoreFramePosition()
     ns.DebugPrint("HistoryFrame initialized")
@@ -640,14 +684,21 @@ function ns.HistoryFrame.ApplySettings()
     -- Update backdrop
     ApplyBackdrop(containerFrame)
 
+    -- Update layout offsets for border thickness
+    ApplyLayoutOffsets(containerFrame)
+
     -- Update title font
     local fontPath, fontSize, fontOutline = GetFont()
     containerFrame.titleBar.text:SetFont(fontPath, fontSize, fontOutline)
 
-    -- Update visible entries
+    -- Update visible entries with current icon size and entry height
     local db = ns.Addon.db.profile
+    local iconSize = GetHistoryIconSize()
+    local entryHeight = GetEntryHeight()
     for _, entry in ipairs(activeEntries) do
         if entry:IsShown() then
+            entry:SetHeight(entryHeight)
+            entry.icon:SetSize(iconSize, iconSize)
             entry.itemName:SetFont(fontPath, fontSize - 1, fontOutline)
             entry.winnerName:SetFont(fontPath, fontSize - 2, fontOutline)
             entry.rollInfo:SetFont(fontPath, fontSize - 2, fontOutline)
@@ -664,6 +715,11 @@ function ns.HistoryFrame.ApplySettings()
                 entry.iconBorder:Hide()
             end
         end
+    end
+
+    -- Re-layout entries if visible
+    if containerFrame:IsShown() then
+        RefreshHistory()
     end
 end
 

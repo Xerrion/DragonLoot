@@ -12,6 +12,7 @@ local ADDON_NAME, ns = ...
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
+local C_Timer = C_Timer
 local GameTooltip = GameTooltip
 local UIParent = UIParent
 local GetLootRollItemInfo = GetLootRollItemInfo
@@ -33,6 +34,45 @@ local ROLL_GREED = 2
 local ROLL_DISENCHANT = 3
 local ROLL_TRANSMOG = 4
 
+local ROLL_TYPE_NAMES = {
+    [ROLL_PASS] = "Pass",
+    [ROLL_NEED] = "Need",
+    [ROLL_GREED] = "Greed",
+    [ROLL_DISENCHANT] = "Disenchant",
+    [ROLL_TRANSMOG] = "Transmog",
+}
+
+-------------------------------------------------------------------------------
+-- Test roll data
+-------------------------------------------------------------------------------
+
+local TEST_ROLLS = {
+    {
+        texture = 135225,           -- INV_Sword_04
+        name = "Blade of the Fallen",
+        count = 1,
+        quality = 4,                -- Epic
+        bindOnPickUp = true,
+        canNeed = true,
+        canGreed = true,
+        canDisenchant = true,
+        canTransmog = false,
+        duration = 15,
+    },
+    {
+        texture = 134004,           -- INV_Potion_54
+        name = "Flask of the Titans",
+        count = 5,
+        quality = 3,                -- Rare
+        bindOnPickUp = false,
+        canNeed = true,
+        canGreed = true,
+        canDisenchant = false,
+        canTransmog = false,
+        duration = 20,
+    },
+}
+
 -------------------------------------------------------------------------------
 -- Button icon textures
 -------------------------------------------------------------------------------
@@ -48,7 +88,6 @@ local PASS_ICON = "Interface\\Buttons\\UI-GroupLoot-Pass-Up"
 
 local FRAME_WIDTH = 280
 local FRAME_BASE_HEIGHT = 54
-local ICON_SIZE = 36
 local BUTTON_SIZE = 24
 local FRAME_SPACING = 4
 local MAX_VISIBLE_ROLLS = 4
@@ -83,6 +122,10 @@ end
 
 local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
 
+local function GetRollIconSize()
+    return ns.Addon.db.profile.appearance.rollIconSize or 36
+end
+
 local function GetFont()
     local db = ns.Addon.db.profile.appearance
     local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
@@ -91,11 +134,14 @@ end
 
 local function GetBackdropSettings()
     local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("statusbar", db.backgroundTexture) or WHITE8x8
+    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
     local settings = { bgFile = bgTexture }
-    if db.borderSize > 0 then
-        settings.edgeFile = LSM:Fetch("statusbar", db.borderTexture) or WHITE8x8
-        settings.edgeSize = db.borderSize
+    if (db.borderSize or 1) > 0 then
+        local edgeFile = LSM:Fetch("border", db.borderTexture)
+        if edgeFile then
+            settings.edgeFile = edgeFile
+            settings.edgeSize = db.borderSize
+        end
     end
     return settings
 end
@@ -108,6 +154,36 @@ local function ApplyBackdrop(frame)
     local border = db.borderColor
     -- Border alpha is intentionally fixed at 0.8 for visual consistency
     frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
+end
+
+local function ApplyLayoutOffsets(frame)
+    local db = ns.Addon.db.profile
+    local borderSize = db.appearance.borderSize or 1
+    local iconSize = db.appearance.rollIconSize or 36
+
+    -- Icon position
+    frame.iconFrame:ClearAllPoints()
+    frame.iconFrame:SetPoint("LEFT", frame, "LEFT", 4 + borderSize, 0)
+
+    -- Item name - follows icon, but right edge needs border offset
+    frame.itemName:ClearAllPoints()
+    frame.itemName:SetPoint("TOPLEFT", frame.iconFrame, "TOPRIGHT", 6, -1)
+    frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(4 + borderSize), 0)
+
+    -- BoP indicator
+    frame.bindText:ClearAllPoints()
+    frame.bindText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(4 + borderSize), -(2 + borderSize))
+
+    -- Timer bar
+    frame.timerBar:ClearAllPoints()
+    frame.timerBar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", iconSize + 10 + borderSize,
+        4 + borderSize)
+    frame.timerBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(6 + borderSize),
+        4 + borderSize)
+
+    -- Roll buttons - only reposition the rightmost (pass); others chain from it
+    frame.passButton:ClearAllPoints()
+    frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(6 + borderSize), 6)
 end
 
 -------------------------------------------------------------------------------
@@ -161,9 +237,13 @@ end
 -------------------------------------------------------------------------------
 
 local function OnRollButtonClick(self)
-    local rollID = self:GetParent().rollID
-    if rollID then
-        RollOnLoot(rollID, self.rollType)
+    local frame = self:GetParent()
+    if frame.isTestMode then
+        ns.Print("Test roll: " .. (ROLL_TYPE_NAMES[self.rollType] or "Unknown"))
+        return
+    end
+    if frame.rollID then
+        RollOnLoot(frame.rollID, self.rollType)
     end
 end
 
@@ -198,10 +278,16 @@ end
 -------------------------------------------------------------------------------
 
 local function OnIconEnter(self)
-    local rollID = self:GetParent().rollID
-    if rollID then
+    local frame = self:GetParent()
+    if frame.isTestMode then
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetLootRollItem(rollID)
+        GameTooltip:AddLine(frame.testItemName or "Test Item", 1, 1, 1)
+        GameTooltip:Show()
+        return
+    end
+    if frame.rollID then
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetLootRollItem(frame.rollID)
         GameTooltip:Show()
     end
 end
@@ -211,10 +297,14 @@ local function OnIconLeave()
 end
 
 local function OnIconClick(self, button)
-    local rollID = self:GetParent().rollID
-    if not rollID then return end
+    local frame = self:GetParent()
+    if frame.isTestMode then
+        ns.Print("Test item: " .. (frame.testItemName or "Test Item"))
+        return
+    end
+    if not frame.rollID then return end
     if button == "LeftButton" then
-        local link = GetLootRollItemLink(rollID)
+        local link = GetLootRollItemLink(frame.rollID)
         if link then
             HandleModifiedItemClick(link)
         end
@@ -227,7 +317,8 @@ end
 
 local function CreateRollIcon(parent)
     local btn = CreateFrame("Button", nil, parent)
-    btn:SetSize(ICON_SIZE, ICON_SIZE)
+    local defaultIconSize = GetRollIconSize()
+    btn:SetSize(defaultIconSize, defaultIconSize)
     btn:SetPoint("LEFT", parent, "LEFT", 4, 0)
     btn:RegisterForClicks("LeftButtonUp")
 
@@ -285,7 +376,8 @@ local function CreateTimerBar(parent)
 
     local bar = CreateFrame("StatusBar", nil, parent)
     bar:SetHeight(barHeight)
-    bar:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", ICON_SIZE + 10, 4)
+    local iconSize = GetRollIconSize()
+    bar:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", iconSize + 10, 4)
     bar:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -4, 4)
     bar:SetStatusBarTexture(barTexture)
     bar:SetMinMaxValues(0, 1)
@@ -398,6 +490,13 @@ local function PopulateRollFrame(frame, rollID)
     local fontPath, fontSize, fontOutline = GetFont()
     local r, g, b = GetQualityColor(quality)
 
+    -- Resize icon to current config value
+    local iconSize = GetRollIconSize()
+    frame.iconFrame:SetSize(iconSize, iconSize)
+
+    -- Adjust frame height based on icon size
+    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+
     -- Icon
     frame.iconFrame.icon:SetTexture(texture)
 
@@ -454,6 +553,9 @@ local function PopulateRollFrame(frame, rollID)
             frame.transmogButton:Hide()
         end
     end
+
+    -- Reposition children for current border thickness
+    ApplyLayoutOffsets(frame)
 end
 
 -------------------------------------------------------------------------------
@@ -486,6 +588,13 @@ end
 local function ReleaseRollFrame(index)
     local frame = rollFramePool[index]
     if not frame then return end
+    if frame.testTimer then
+        frame.testTimer:Cancel()
+        frame.testTimer = nil
+    end
+    frame.isTestMode = false
+    frame.testItemName = nil
+    frame.testQuality = nil
     frame.rollID = nil
     frame:Hide()
 end
@@ -519,6 +628,114 @@ local function CreateAnchorFrame()
 end
 
 -------------------------------------------------------------------------------
+-- Populate a test roll frame with fake data (no real rollID required)
+-------------------------------------------------------------------------------
+
+local function PopulateTestRollFrame(frame, testData)
+    frame.rollID = nil
+    frame.isTestMode = true
+    frame.testItemName = testData.name
+    frame.testQuality = testData.quality
+
+    local db = ns.Addon.db.profile
+    local iconSize = db.appearance.rollIconSize or 36
+    local fontPath, fontSize, fontOutline = GetFont()
+    local r, g, b = GetQualityColor(testData.quality)
+
+    -- Icon
+    frame.iconFrame.icon:SetTexture(testData.texture)
+    frame.iconFrame:SetSize(iconSize, iconSize)
+
+    -- Quality border
+    if db.appearance.qualityBorder then
+        frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
+        frame.iconFrame.border:Show()
+    else
+        frame.iconFrame.border:Hide()
+    end
+
+    -- Item name
+    frame.itemName:SetFont(fontPath, fontSize, fontOutline)
+    frame.itemName:SetText(testData.name)
+    frame.itemName:SetTextColor(r, g, b)
+
+    -- BoP indicator
+    if testData.bindOnPickUp then
+        frame.bindText:SetText("BoP")
+        frame.bindText:Show()
+    else
+        frame.bindText:Hide()
+    end
+
+    -- Timer bar starts full
+    frame.timerBar:SetMinMaxValues(0, 1)
+    frame.timerBar:SetValue(1)
+    frame.timerBar:SetStatusBarColor(0, 1, 0)
+    frame.timerBar.text:SetText(string.format("%.0f", testData.duration))
+
+    -- Stack count on icon
+    if testData.count and testData.count > 1 then
+        if not frame.iconFrame.count then
+            frame.iconFrame.count = frame.iconFrame:CreateFontString(
+                nil, "OVERLAY", "NumberFontNormal")
+            frame.iconFrame.count:SetPoint(
+                "BOTTOMRIGHT", frame.iconFrame, "BOTTOMRIGHT", 2, -2)
+        end
+        frame.iconFrame.count:SetText(testData.count)
+        frame.iconFrame.count:Show()
+    elseif frame.iconFrame.count then
+        frame.iconFrame.count:Hide()
+    end
+
+    -- Button states
+    SetButtonState(frame.needButton, testData.canNeed, nil)
+    SetButtonState(frame.greedButton, testData.canGreed, nil)
+    SetButtonState(frame.disenchantButton, testData.canDisenchant, nil)
+    SetButtonState(frame.passButton, true, nil)
+
+    if frame.transmogButton then
+        if testData.canTransmog then
+            frame.transmogButton:Show()
+            SetButtonState(frame.transmogButton, true, nil)
+        else
+            frame.transmogButton:Hide()
+        end
+    end
+
+    -- Frame height based on icon size
+    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+
+    ApplyLayoutOffsets(frame)
+end
+
+-------------------------------------------------------------------------------
+-- Start test countdown timer for a single frame
+-------------------------------------------------------------------------------
+
+local function StartTestTimer(frameIndex, duration)
+    local frame = rollFramePool[frameIndex]
+    if not frame or not frame:IsShown() then return end
+
+    local remaining = duration
+    local total = duration
+
+    frame.testTimer = C_Timer.NewTicker(0.1, function()
+        remaining = remaining - 0.1
+        if remaining <= 0 then
+            frame.testTimer:Cancel()
+            frame.testTimer = nil
+            ns.RollFrame.HideRoll(frameIndex)
+            return
+        end
+        local pct = remaining / total
+        frame.timerBar:SetValue(pct)
+        local r, g, b = GetTimerBarColor(remaining, total)
+        frame.timerBar:SetStatusBarColor(r, g, b)
+        frame.timerBar.text:SetText(string.format("%.0f", remaining))
+    end)
+end
+
+-------------------------------------------------------------------------------
 -- Public Interface: ns.RollFrame
 -------------------------------------------------------------------------------
 
@@ -542,10 +759,13 @@ function ns.RollFrame.ShowRoll(frameIndex, rollID)
 
     local frame = AcquireRollFrame(frameIndex)
     PopulateRollFrame(frame, rollID)
+
+    -- Show and layout BEFORE animation so anchor points are set
+    frame:SetAlpha(0)
     frame:Show()
+    LayoutRollFrames()
 
     ns.RollAnimations.PlayShow(frame)
-    LayoutRollFrames()
 end
 
 function ns.RollFrame.HideRoll(frameIndex, onComplete)
@@ -592,18 +812,33 @@ function ns.RollFrame.ApplySettings()
     if not anchorFrame then return end
     local db = ns.Addon.db.profile
 
-    anchorFrame:SetScale(db.rollFrame.scale or 1.0)
+    if not db then return end
 
-    local barHeight = db.rollFrame.timerBarHeight or 12
-    local barTexture = LSM:Fetch("statusbar", db.rollFrame.timerBarTexture)
+    local appearance = db.appearance or {}
+    local rollFrame = db.rollFrame or {}
+
+    anchorFrame:SetScale(rollFrame.scale or 1.0)
+
+    local barHeight = rollFrame.timerBarHeight or 12
+    local barTexture = LSM:Fetch("statusbar", rollFrame.timerBarTexture)
         or "Interface\\TargetingFrame\\UI-StatusBar"
     local fontPath, fontSize, fontOutline = GetFont()
+    local iconSize = GetRollIconSize()
 
     for i = 1, MAX_VISIBLE_ROLLS do
         local frame = rollFramePool[i]
         if frame then
             -- Update backdrop
             ApplyBackdrop(frame)
+
+            -- Update icon size
+            frame.iconFrame:SetSize(iconSize, iconSize)
+
+            -- Adjust frame height based on icon size
+            frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+
+            -- Update layout offsets for border thickness
+            ApplyLayoutOffsets(frame)
 
             -- Update timer bar
             frame.timerBar:SetHeight(barHeight)
@@ -613,9 +848,14 @@ function ns.RollFrame.ApplySettings()
             frame.itemName:SetFont(fontPath, fontSize, fontOutline)
 
             -- Update quality border
-            if frame.rollID and frame:IsShown() then
-                local _, _, _, quality = GetLootRollItemInfo(frame.rollID)
-                if db.appearance.qualityBorder then
+            if (frame.rollID or frame.isTestMode) and frame:IsShown() then
+                local quality
+                if frame.rollID then
+                    quality = select(4, GetLootRollItemInfo(frame.rollID))
+                else
+                    quality = frame.testQuality
+                end
+                if appearance.qualityBorder then
                     local r, g, b = GetQualityColor(quality)
                     frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
                     frame.iconFrame.border:Show()
@@ -638,4 +878,44 @@ function ns.RollFrame.ResetAnchor()
     db.y = nil
     anchorFrame:ClearAllPoints()
     anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+end
+
+function ns.RollFrame.ShowTestRoll()
+    if not anchorFrame then
+        ns.RollFrame.Initialize()
+    end
+
+    -- Release any existing test rolls
+    for i = 1, MAX_VISIBLE_ROLLS do
+        local f = rollFramePool[i]
+        if f and f.isTestMode then
+            ReleaseRollFrame(i)
+        end
+    end
+
+    -- First pass: acquire, populate, and show all frames (hidden alpha for animation)
+    for i, testData in ipairs(TEST_ROLLS) do
+        local frame = AcquireRollFrame(i)
+        PopulateTestRollFrame(frame, testData)
+        frame:SetAlpha(0)
+        frame:Show()
+    end
+
+    -- Layout BEFORE animation so anchor points are set
+    LayoutRollFrames()
+
+    -- Second pass: animate entrance
+    for i in ipairs(TEST_ROLLS) do
+        local frame = rollFramePool[i]
+        if frame then
+            ns.RollAnimations.PlayShow(frame)
+        end
+    end
+
+    -- Start countdown timers
+    for i, testData in ipairs(TEST_ROLLS) do
+        StartTestTimer(i, testData.duration)
+    end
+
+    ns.Print("Showing test roll frames.")
 end

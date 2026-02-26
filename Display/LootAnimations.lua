@@ -34,13 +34,19 @@ function ns.LootAnimations.PlayOpen(frame)
 
     ns.LootAnimations.StopAll(frame)
 
-    lib:Animate(frame, "fadeIn", {
+    local animName = db.animation.lootOpenAnim or "fadeIn"
+    local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
+        distance = 50,
         onFinished = function()
             local scale = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
             frame:SetScale(scale)
         end,
     })
+    if not ok then
+        frame:SetAlpha(1)
+        frame:SetScale(ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0)
+    end
 end
 
 function ns.LootAnimations.PlayClose(frame, onFinished)
@@ -55,8 +61,10 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
 
     ns.LootAnimations.StopAll(frame)
 
-    lib:Animate(frame, "fadeOut", {
+    local animName = db.animation.lootCloseAnim or "fadeOut"
+    local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
+        distance = 50,
         onFinished = function()
             local scale = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
             frame:SetAlpha(1)
@@ -65,6 +73,12 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
             if onFinished then onFinished() end
         end,
     })
+    if not ok then
+        frame:SetAlpha(1)
+        frame:SetScale(ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0)
+        frame:Hide()
+        if onFinished then onFinished() end
+    end
 end
 
 function ns.LootAnimations.StopAll(frame)

@@ -28,6 +28,8 @@ local GetTime = GetTime
 
 local addon
 local processedDrops = {}
+local notifiedRollResults = {}
+local isInitializing = false
 
 -------------------------------------------------------------------------------
 -- Item texture helper
@@ -73,6 +75,40 @@ local function ConvertRollState(state)
 end
 
 -------------------------------------------------------------------------------
+-- Process individual roll results for notifications
+-------------------------------------------------------------------------------
+
+local function ProcessRollResults(encounterID, drop)
+    if isInitializing then return end
+    if not drop or not drop.rollInfos then return end
+
+    local stateMap = ns.NOTIFICATION_STATE_MAP
+    if not stateMap then return end
+
+    local itemLink = drop.itemHyperlink
+    local itemName = itemLink and itemLink:match("%[(.-)%]")
+    local itemQuality = GetItemQuality(itemLink)
+    local itemIcon = GetItemTexture(itemLink)
+
+    for _, rollInfo in ipairs(drop.rollInfos) do
+        if rollInfo.playerName and rollInfo.state then
+            local dedupKey = encounterID .. "-" .. drop.lootListID .. "-"
+                .. (rollInfo.playerGUID or rollInfo.playerName)
+            if not notifiedRollResults[dedupKey] then
+                notifiedRollResults[dedupKey] = true
+                local rollType = stateMap[rollInfo.state]
+                local rollValue = rollInfo.roll
+                ns.RollManager.SendRollResultNotification(
+                    itemLink, itemName, itemQuality, itemIcon,
+                    rollInfo.playerName, rollInfo.playerClass,
+                    rollType, rollValue
+                )
+            end
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Process a single drop into a history entry
 -------------------------------------------------------------------------------
 
@@ -113,6 +149,9 @@ local function ProcessDrop(encounterID, drop)
     if db.history.autoShow then
         ns.HistoryFrame.Show()
     end
+
+    -- Process individual roll results for notifications
+    ProcessRollResults(encounterID, drop)
 end
 
 -------------------------------------------------------------------------------
@@ -136,6 +175,7 @@ end
 
 local function OnHistoryClear()
     wipe(processedDrops)
+    wipe(notifiedRollResults)
     ns.HistoryFrame.ClearHistory()
     ns.DebugPrint("LOOT_HISTORY_CLEAR_HISTORY")
 end
@@ -169,7 +209,9 @@ function ns.HistoryListener.Initialize(addonRef)
     addon:RegisterEvent("LOOT_HISTORY_UPDATE_DROP", OnHistoryUpdateDrop)
     addon:RegisterEvent("LOOT_HISTORY_CLEAR_HISTORY", OnHistoryClear)
 
+    isInitializing = true
     PopulateExistingHistory()
+    isInitializing = false
 
     ns.DebugPrint("Retail History Listener initialized")
 end
@@ -180,6 +222,8 @@ function ns.HistoryListener.Shutdown()
         addon:UnregisterEvent("LOOT_HISTORY_UPDATE_DROP")
         addon:UnregisterEvent("LOOT_HISTORY_CLEAR_HISTORY")
     end
+
+    wipe(notifiedRollResults)
 
     ns.DebugPrint("Retail History Listener shut down")
 end

@@ -8,7 +8,7 @@ Project-specific guidelines for DragonLoot. See the parent `../AGENTS.md` for ge
 
 DragonLoot is a customizable loot addon that replaces the default Blizzard loot window, loot roll views, and provides a loot history frame.
 
-**Status**: Feature-complete (Phases 1-5). Loot window, roll frame, loot history, config wiring, edge case fixes, and DragonToast integration are all implemented.
+**Status**: Feature-complete (Phases 1-5, 8). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, and instance-type filtering are all implemented.
 
 **GitHub**: https://github.com/Xerrion/DragonLoot
 
@@ -117,6 +117,7 @@ DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detec
 | `DRAGONTOAST_SUPPRESS` | `"DragonLoot"` (source string) | Loot window opens |
 | `DRAGONTOAST_UNSUPPRESS` | `"DragonLoot"` (source string) | Loot window closes |
 | `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | A player wins a roll |
+| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result (Phase 8) |
 
 #### Roll Won Toast Data
 
@@ -136,11 +137,30 @@ DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detec
 }
 ```
 
+#### Individual Roll Result Toast Data (Phase 8)
+
+```lua
+{
+    itemLink = string,     -- full item hyperlink
+    itemName = string,     -- item name
+    itemQuality = number,  -- 0-7 quality enum
+    itemIcon = number,     -- icon texture ID
+    itemID = number,       -- parsed from itemLink
+    quantity = 1,          -- always 1
+    isRollWin = false,     -- not a win notification
+    isSelf = boolean,      -- true if current player rolled
+    looter = string,       -- roller's name
+    itemType = string,     -- e.g. "Need (87)" or "Greed (42)" for display
+    timestamp = number,    -- GetTime()
+}
+```
+
 ### DragonToast Behavior
 
 - `DRAGONTOAST_SUPPRESS` with source `"DragonLoot"` sets a suppress flag; item loot toasts are suppressed while DragonLoot's loot window is open
 - `DRAGONTOAST_UNSUPPRESS` with source `"DragonLoot"` clears the suppress flag
 - `DRAGONTOAST_QUEUE_TOAST` with `isRollWin = true` triggers a celebration toast
+- `DRAGONTOAST_QUEUE_TOAST` with `isRollWin = false` triggers a standard item toast (individual roll result)
 - XP, honor, currency toasts are never suppressed
 - DragonToast's `Listeners/MessageBridge.lua` handles backward compatibility for old message names (`DRAGONLOOT_LOOT_OPENED`, `DRAGONLOOT_LOOT_CLOSED`, `DRAGONLOOT_ROLL_WON`)
 
@@ -303,6 +323,23 @@ No automated test framework. Test manually in-game.
 5. With DragonToast installed: win a roll - verify DragonToast shows a celebration toast
 6. Without DragonToast: verify all features work independently
 
+#### Phase 8 - Roll Notifications and Instance Filtering (Manual Test Steps)
+
+1. Open `/dl config` -> Loot Roll tab - verify new sections: Individual Roll Results, Instance Filtering
+2. Enable "Show Individual Roll Results" - verify sub-options (Your Rolls, Group Rolls) become enabled
+3. Disable "Show Individual Roll Results" - verify sub-options become disabled (greyed out)
+4. Enable individual roll results, queue for a dungeon with Need/Greed loot
+5. When rolls resolve, verify a DragonToast notification appears for each player's roll (not just winner)
+6. Verify Pass rolls do NOT generate a toast
+7. Disable "Show Your Rolls" - verify your own rolls no longer produce toasts
+8. Disable "Show Group Rolls" - verify other players' rolls no longer produce toasts
+9. Set "Minimum Quality" to Rare - verify Common/Uncommon items do not produce roll toasts
+10. Disable "Show in Dungeons" - verify no roll notifications appear while in a dungeon
+11. Enable "Show in Dungeons", disable "Show in Raids" - verify no roll notifications in raids
+12. Disable "Show in Open World" - verify no roll notifications in world content
+13. Verify roll won toasts also respect instance filtering and minimum quality
+14. Verify no duplicate toasts for the same player/drop combination
+
 ---
 
 ## Deferred Features
@@ -323,3 +360,6 @@ No automated test framework. Test manually in-game.
 8. **Classic double-open** - LOOT_OPENED can fire twice; guard with `if isLootOpen then return end`
 9. **Roll data availability** - Fetch item info via GetLootRollItemInfo BEFORE calling CancelRoll, as data is lost after cancel
 10. **Local dev listener loading** - All packager directives are comments locally; both Retail and Classic listeners load. Version guards (`WOW_PROJECT_ID` checks) in each file handle this correctly
+11. **NOTIFICATION_STATE_MAP vs ROLL_STATE_MAP** - `ROLL_STATE_MAP` in HistoryListener_Retail maps Transmog->Greed (lossy) for history display. `ns.NOTIFICATION_STATE_MAP` in RollManager preserves Transmog as a distinct roll type for notifications
+12. **Classic LOOT_HISTORY_ROLL_CHANGED timing** - May fire before roll value is assigned; ProcessClassicRollResult skips non-Pass rolls with nil roll values and relies on a later re-fire with the value
+13. **Roll result dedup** - Both Retail and Classic listeners use `notifiedRollResults` tables to prevent duplicate notifications per player per drop; tables are wiped on history clear and shutdown

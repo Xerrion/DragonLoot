@@ -62,6 +62,13 @@ local defaults = {
         rollNotifications = {
             showRollWon = true,
             showGroupWins = false,
+            showRollResults = false,
+            showSelfRolls = true,
+            showGroupRolls = true,
+            minQuality = 0,
+            showInWorld = true,
+            showInDungeon = true,
+            showInRaid = true,
         },
 
     },
@@ -362,6 +369,86 @@ local function BuildLootRollOptions(db)
         get = function() return db.rollNotifications.showGroupWins end,
         set = function(_, val) db.rollNotifications.showGroupWins = val end,
         disabled = function() return not db.rollNotifications.showRollWon end,
+    }
+    args.headerRollResults = {
+        name = "Individual Roll Results",
+        type = "header",
+        order = 20,
+    }
+    args.showRollResults = {
+        name = "Show Individual Roll Results",
+        desc = "Send a DragonToast notification for each player's roll on an item, not just the winner.",
+        type = "toggle",
+        order = 21,
+        width = "full",
+        get = function() return db.rollNotifications.showRollResults end,
+        set = function(_, val) db.rollNotifications.showRollResults = val end,
+    }
+    args.showSelfRolls = {
+        name = "Show Your Rolls",
+        desc = "Show notifications for your own roll results.",
+        type = "toggle",
+        order = 22,
+        get = function() return db.rollNotifications.showSelfRolls end,
+        set = function(_, val) db.rollNotifications.showSelfRolls = val end,
+        disabled = function() return not db.rollNotifications.showRollResults end,
+    }
+    args.showGroupRolls = {
+        name = "Show Group Rolls",
+        desc = "Show notifications for other group members' roll results.",
+        type = "toggle",
+        order = 23,
+        get = function() return db.rollNotifications.showGroupRolls end,
+        set = function(_, val) db.rollNotifications.showGroupRolls = val end,
+        disabled = function() return not db.rollNotifications.showRollResults end,
+    }
+    args.minQuality = {
+        name = "Minimum Quality",
+        desc = "Only show roll notifications for items at or above this quality.",
+        type = "select",
+        order = 24,
+        values = {
+            [0] = ITEM_QUALITY_COLORS[0].hex .. "Poor|r",
+            [1] = ITEM_QUALITY_COLORS[1].hex .. "Common|r",
+            [2] = ITEM_QUALITY_COLORS[2].hex .. "Uncommon|r",
+            [3] = ITEM_QUALITY_COLORS[3].hex .. "Rare|r",
+            [4] = ITEM_QUALITY_COLORS[4].hex .. "Epic|r",
+            [5] = ITEM_QUALITY_COLORS[5].hex .. "Legendary|r",
+        },
+        get = function() return db.rollNotifications.minQuality end,
+        set = function(_, val) db.rollNotifications.minQuality = val end,
+        disabled = function()
+            return not db.rollNotifications.showRollResults and not db.rollNotifications.showRollWon
+        end,
+    }
+    args.headerInstanceFilter = {
+        name = "Instance Filtering",
+        type = "header",
+        order = 30,
+    }
+    args.showInWorld = {
+        name = "Show in Open World",
+        desc = "Show roll notifications while in the open world.",
+        type = "toggle",
+        order = 31,
+        get = function() return db.rollNotifications.showInWorld end,
+        set = function(_, val) db.rollNotifications.showInWorld = val end,
+    }
+    args.showInDungeon = {
+        name = "Show in Dungeons",
+        desc = "Show roll notifications while in a dungeon instance.",
+        type = "toggle",
+        order = 32,
+        get = function() return db.rollNotifications.showInDungeon end,
+        set = function(_, val) db.rollNotifications.showInDungeon = val end,
+    }
+    args.showInRaid = {
+        name = "Show in Raids",
+        desc = "Show roll notifications while in a raid instance.",
+        type = "toggle",
+        order = 33,
+        get = function() return db.rollNotifications.showInRaid end,
+        set = function(_, val) db.rollNotifications.showInRaid = val end,
     }
     return {
         name = "Loot Roll",

@@ -29,7 +29,7 @@ local defaults = {
             enabled = true,
             scale = 1.0,
             lock = false,
-            width = 220,
+            width = 250,
             height = 300,
         },
 
@@ -56,6 +56,7 @@ local defaults = {
             rollIconSize = 36,
             historyIconSize = 24,
             qualityBorder = true,
+            slotBackground = "gradient",
             backgroundColor = { r = 0.05, g = 0.05, b = 0.05 },
             backgroundAlpha = 0.9,
             backgroundTexture = "Solid",
@@ -717,6 +718,23 @@ local function BuildAppearanceArgs(db)
             get = function() return db.appearance.qualityBorder end,
             set = function(_, val)
                 db.appearance.qualityBorder = val
+                NotifyAppearanceChange()
+            end,
+        },
+        slotBackground = {
+            name = "Slot Background Style",
+            desc = "Style of the quality-tinted background behind each loot slot.",
+            type = "select",
+            order = 15,
+            values = {
+                gradient = "Gradient",
+                ["flat"] = "Flat Tint",
+                stripe = "Accent Stripe",
+                none = "None",
+            },
+            get = function() return db.appearance.slotBackground end,
+            set = function(_, val)
+                db.appearance.slotBackground = val
                 NotifyAppearanceChange()
             end,
         },

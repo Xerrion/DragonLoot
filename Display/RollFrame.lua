@@ -811,6 +811,9 @@ end
 function ns.RollFrame.ApplySettings()
     if not anchorFrame then return end
     local db = ns.Addon.db.profile
+    if not db then return end
+    local rollFrameDb = db.rollFrame or {}
+    local appearance = db.appearance or {}
 
     if not db then return end
 
@@ -848,13 +851,8 @@ function ns.RollFrame.ApplySettings()
             frame.itemName:SetFont(fontPath, fontSize, fontOutline)
 
             -- Update quality border
-            if (frame.rollID or frame.isTestMode) and frame:IsShown() then
-                local quality
-                if frame.rollID then
-                    quality = select(4, GetLootRollItemInfo(frame.rollID))
-                else
-                    quality = frame.testQuality
-                end
+            if frame.rollID and frame:IsShown() then
+                local _, _, _, quality = GetLootRollItemInfo(frame.rollID)
                 if appearance.qualityBorder then
                     local r, g, b = GetQualityColor(quality)
                     frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)

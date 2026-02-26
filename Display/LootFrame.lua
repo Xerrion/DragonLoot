@@ -59,7 +59,9 @@ local containerFrame
 --
 -- Retail: icon, name, quantity, currencyID, quality, locked, isQuestItem,
 --         questID, isActive, isCoin (10 returns)
--- Classic: icon, name, quantity, quality, locked, isQuestItem (6 returns)
+-- Classic: icon, name, quantity, currencyID, quality, locked (6 returns)
+-- Both versions return currencyID at position 4; strip it for a normalized
+-- return of: icon, name, quantity, quality, locked, isQuestItem
 -------------------------------------------------------------------------------
 
 local function GetNormalizedSlotInfo(slotIndex)
@@ -68,9 +70,10 @@ local function GetNormalizedSlotInfo(slotIndex)
             GetLootSlotInfo(slotIndex)
         return icon, name, quantity, quality, locked, isQuestItem
     end
-
-    -- Classic/TBC/MoP: returns match the normalized order directly
-    return GetLootSlotInfo(slotIndex)
+    -- Classic/TBC/MoP: 6 returns with currencyID at position 4, no isQuestItem
+    local icon, name, quantity, _currencyID, quality, locked =
+        GetLootSlotInfo(slotIndex)
+    return icon, name, quantity, quality, locked, nil
 end
 
 -------------------------------------------------------------------------------
@@ -333,7 +336,7 @@ end
 local function PopulateSlot(slot, slotIndex)
     slot.slotIndex = slotIndex
 
-    local icon, name, quantity, quality, _, isQuestItem = GetNormalizedSlotInfo(slotIndex)
+    local icon, name, quantity, quality, _locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
     if not icon then
         slot:Hide()
         return
@@ -347,8 +350,6 @@ local function PopulateSlot(slot, slotIndex)
     slot.icon:SetTexture(icon)
     slot.icon:SetSize(iconSize, iconSize)
     slot.icon:SetDesaturated(false)
-    slot.icon:SetVertexColor(1, 1, 1)  -- Reset any vertex color tinting
-    slot.icon:SetAlpha(1)  -- Ensure full opacity
 
     -- Quality border color - always set but respect qualityBorder setting
     local r, g, b = GetQualityColor(quality)

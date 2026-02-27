@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/DragonAddons/DragonLoot/compare/0.2.0...0.2.1) (2026-02-27)
+
+
+### 📚 Documentation
+
+* add correct logo ([#27](https://github.com/DragonAddons/DragonLoot/issues/27)) ([6691e16](https://github.com/DragonAddons/DragonLoot/commit/6691e16496f42b0b82ceeb5a42a383169756c7ba))
+* add new better assets ([#25](https://github.com/DragonAddons/DragonLoot/issues/25)) ([563edab](https://github.com/DragonAddons/DragonLoot/commit/563edab863f30aeee9b4e91e7b65a0577d8b470e))
+
 ## [0.2.0](https://github.com/Xerrion/DragonLoot/compare/0.1.0...0.2.0) (2026-02-27)
 
 

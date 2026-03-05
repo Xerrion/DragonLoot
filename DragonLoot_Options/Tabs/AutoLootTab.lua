@@ -19,7 +19,7 @@ local tonumber = tonumber
 -- Namespace references
 -------------------------------------------------------------------------------
 
-local dlns = ns.dlns
+local dlns
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -144,6 +144,7 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateContent(parent)
+    dlns = ns.dlns
     local W = ns.Widgets
     local db = dlns.Addon.db
     local yOffset = PADDING_TOP

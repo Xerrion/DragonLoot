@@ -14,12 +14,6 @@ local ADDON_NAME, ns = ...
 local tinsert = table.insert
 
 -------------------------------------------------------------------------------
--- Bridge to DragonLoot namespace
--------------------------------------------------------------------------------
-
-local dlns = _G.DragonLootNS
-
--------------------------------------------------------------------------------
 -- Widget and tab registries (populated by subsequent files)
 -------------------------------------------------------------------------------
 
@@ -54,6 +48,12 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateOptionsPanel()
+    ns.dlns = _G.DragonLootNS
+    if not ns.dlns then
+        print("|cffff6600[DragonLoot_Options]|r DragonLoot namespace not found.")
+        return
+    end
+
     local panel = ns.Widgets.CreatePanel("DragonLootOptionsFrame", 800, 600)
 
     -- Tab group below title bar
@@ -98,4 +98,4 @@ end
 -- Expose namespace bridge for widgets/tabs
 -------------------------------------------------------------------------------
 
-ns.dlns = dlns
+ns.RefreshVisibleWidgets = RefreshVisibleWidgets

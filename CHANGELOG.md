@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/DragonAddons/DragonLoot/compare/0.4.0...0.5.0) (2026-03-05)
+
+
+### 🚀 Features
+
+* custom options panel replacing AceConfig ([#42](https://github.com/DragonAddons/DragonLoot/issues/42)) ([384f7d0](https://github.com/DragonAddons/DragonLoot/commit/384f7d02a461ac7d49f3d5b3aca0f00ddab8f241))
+
+
+### 🐛 Bug Fixes
+
+* badge formatting in README.md ([#43](https://github.com/DragonAddons/DragonLoot/issues/43)) ([5fbded5](https://github.com/DragonAddons/DragonLoot/commit/5fbded5c1fd2f083b3ce14073d1e04c80926ef97))
+
 ## [0.4.0](https://github.com/DragonAddons/DragonLoot/compare/0.3.0...0.4.0) (2026-03-01)
 
 

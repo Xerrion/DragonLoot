@@ -294,8 +294,8 @@ end
 -- Create the fullscreen overlay for outside-click closing
 -------------------------------------------------------------------------------
 
-local function CreateOverlay(dropdown)
-    local overlay = CreateFrame("Button", nil, dropdown, "BackdropTemplate")
+local function CreateOverlay(_dropdown)
+    local overlay = CreateFrame("Button", nil, UIParent, "BackdropTemplate")
     overlay:SetAllPoints(UIParent)
     overlay:SetFrameStrata("FULLSCREEN")
     overlay:SetFrameLevel(199)
@@ -310,7 +310,7 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateListFrame(dropdown)
-    local listFrame = CreateFrame("Frame", nil, dropdown, "BackdropTemplate")
+    local listFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     listFrame:SetPoint("TOPLEFT", dropdown._button, "BOTTOMLEFT", 0, -1)
     listFrame:SetPoint("TOPRIGHT", dropdown._button, "BOTTOMRIGHT", 0, -1)
     listFrame:SetFrameStrata("FULLSCREEN")
@@ -379,6 +379,16 @@ function ns.Widgets.CreateDropdown(parent, opts)
 
     -- List frame
     frame._listFrame = CreateListFrame(frame)
+
+    -- When the dropdown hides (e.g. parent scroll frame hides), clean up orphaned UIParent children
+    frame:SetScript("OnHide", function()
+        if activeDropdown == frame then
+            CloseActiveDropdown()
+        else
+            frame._listFrame:Hide()
+            frame._overlay:Hide()
+        end
+    end)
 
     -- Click toggles dropdown
     button:SetScript("OnClick", function()

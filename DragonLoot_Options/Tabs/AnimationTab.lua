@@ -33,12 +33,6 @@ local SPACING_BETWEEN_SECTIONS = 16
 local PADDING_BOTTOM = 20
 
 -------------------------------------------------------------------------------
--- LibAnimate (optional)
--------------------------------------------------------------------------------
-
-local LibAnimate = LibStub("LibAnimate-1.0", true)
-
--------------------------------------------------------------------------------
 -- Notify appearance change helper
 -------------------------------------------------------------------------------
 
@@ -50,13 +44,25 @@ local function NotifyAppearanceChange()
 end
 
 -------------------------------------------------------------------------------
--- Build animation name values from LibAnimate
+-- Build entrance/exit animation name values from LibAnimate
 -------------------------------------------------------------------------------
 
-local function GetAnimationValues()
-    if not LibAnimate then return {} end
-    local names = LibAnimate:GetAnimationNames()
-    local values = {}
+local function GetEntranceValues()
+    local lib = LibStub("LibAnimate-1.0", true)
+    if not lib then return {} end
+    local names = lib:GetEntranceAnimations()
+    local values = { { value = "none", text = "None" } }
+    for _, name in ipairs(names) do
+        values[#values + 1] = { value = name, text = name }
+    end
+    return values
+end
+
+local function GetExitValues()
+    local lib = LibStub("LibAnimate-1.0", true)
+    if not lib then return {} end
+    local names = lib:GetExitAnimations()
+    local values = { { value = "none", text = "None" } }
     for _, name in ipairs(names) do
         values[#values + 1] = { value = name, text = name }
     end
@@ -77,10 +83,10 @@ end
 -- Create an animation dropdown for a given db key
 -------------------------------------------------------------------------------
 
-local function CreateAnimDropdown(parent, W, db, yOffset, label, key)
+local function CreateAnimDropdown(parent, W, db, yOffset, label, key, valuesFn)
     local dropdown = W.CreateDropdown(parent, {
         label = label,
-        values = GetAnimationValues,
+        values = valuesFn,
         get = function() return db.profile.animation[key] end,
         set = function(value)
             db.profile.animation[key] = value
@@ -153,8 +159,8 @@ local function CreateContent(parent)
     local lootHeader = W.CreateHeader(parent, "Loot Window")
     yOffset = AnchorWidget(lootHeader, parent, yOffset) - SPACING_AFTER_HEADER
 
-    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Open Animation", "lootOpenAnim")
-    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Close Animation", "lootCloseAnim")
+    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Open Animation", "lootOpenAnim", GetEntranceValues)
+    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Close Animation", "lootCloseAnim", GetExitValues)
 
     -- Extra section spacing before next header
     yOffset = yOffset - SPACING_BETWEEN_SECTIONS + SPACING_BETWEEN_WIDGETS
@@ -165,8 +171,8 @@ local function CreateContent(parent)
     local rollHeader = W.CreateHeader(parent, "Roll Frame")
     yOffset = AnchorWidget(rollHeader, parent, yOffset) - SPACING_AFTER_HEADER
 
-    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Show Animation", "rollShowAnim")
-    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Hide Animation", "rollHideAnim")
+    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Show Animation", "rollShowAnim", GetEntranceValues)
+    yOffset = CreateAnimDropdown(parent, W, db, yOffset, "Hide Animation", "rollHideAnim", GetExitValues)
 
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame

@@ -3,6 +3,7 @@
 ## Interface-Cata: 40402
 ## Interface-Mists: 50503
 ## Title: DragonLoot Options
+## Author: Xerrion
 ## Notes: Custom configuration UI for DragonLoot
 ## Dependencies: DragonLoot
 ## LoadOnDemand: 1

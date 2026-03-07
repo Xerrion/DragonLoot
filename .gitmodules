@@ -4,3 +4,12 @@
 [submodule "DragonLoot/Libs/LibAnimate"]
 	path = DragonLoot/Libs/LibAnimate
 	url = https://github.com/Xerrion/LibAnimate.git
+[submodule "DragonLoot/Libs/LibDataBroker-1.1"]
+	path = DragonLoot/Libs/LibDataBroker-1.1
+	url = https://github.com/tekkub/libdatabroker-1-1.git
+[submodule "DragonLoot/Libs/LibDBIcon-1.0"]
+	path = DragonLoot/Libs/LibDBIcon-1.0
+	url = https://github.com/kaldown/LibDBIcon-1.0.git
+[submodule "DragonLoot/Libs/LibSharedMedia-3.0"]
+	path = DragonLoot/Libs/LibSharedMedia-3.0
+	url = https://github.com/wowace-clone/LibSharedMedia-3.0.git

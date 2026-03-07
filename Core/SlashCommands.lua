@@ -10,22 +10,25 @@ local ADDON_NAME, ns = ...
 local print = print
 local strtrim = strtrim
 
+local L = ns.L
+
 -------------------------------------------------------------------------------
 -- Help Display
 -------------------------------------------------------------------------------
 
 local function PrintHelp()
-    print(ns.COLOR_GOLD .. "--- DragonLoot Commands ---" .. ns.COLOR_RESET)
-    print("  " .. ns.COLOR_WHITE .. "/dl" .. ns.COLOR_RESET .. " - Show this help")
-    print("  " .. ns.COLOR_WHITE .. "/dl toggle" .. ns.COLOR_RESET .. " - Toggle addon on/off")
-    print("  " .. ns.COLOR_WHITE .. "/dl config" .. ns.COLOR_RESET .. " - Open settings panel")
-    print("  " .. ns.COLOR_WHITE .. "/dl minimap" .. ns.COLOR_RESET .. " - Toggle minimap icon")
-    print("  " .. ns.COLOR_WHITE .. "/dl reset" .. ns.COLOR_RESET .. " - Reset loot frame position")
-    print("  " .. ns.COLOR_WHITE .. "/dl test" .. ns.COLOR_RESET .. " - Show test loot")
-    print("  " .. ns.COLOR_WHITE .. "/dl testroll" .. ns.COLOR_RESET .. " - Show test roll frames")
-    print("  " .. ns.COLOR_WHITE .. "/dl history" .. ns.COLOR_RESET .. " - Toggle loot history")
-    print("  " .. ns.COLOR_WHITE .. "/dl status" .. ns.COLOR_RESET .. " - Show current settings")
-    print("  " .. ns.COLOR_WHITE .. "/dl help" .. ns.COLOR_RESET .. " - Show this help")
+    print(ns.COLOR_GOLD .. L["--- DragonLoot Commands ---"] .. ns.COLOR_RESET)
+    print("  " .. L["/dl - Toggle addon on/off"])
+    print("  " .. L["/dl config - Open settings panel"])
+    print("  " .. L["/dl minimap - Toggle minimap icon"])
+    print("  " .. L["/dl enable - Enable addon"])
+    print("  " .. L["/dl disable - Disable addon"])
+    print("  " .. L["/dl reset - Reset loot frame position"])
+    print("  " .. L["/dl test - Show test loot"])
+    print("  " .. L["/dl testroll - Show test roll frames"])
+    print("  " .. L["/dl history - Toggle loot history"])
+    print("  " .. L["/dl status - Show current settings"])
+    print("  " .. L["/dl help - Show this help"])
 end
 
 -------------------------------------------------------------------------------
@@ -35,18 +38,18 @@ end
 local function PrintStatus()
     local db = ns.Addon.db.profile
 
-    print(ns.COLOR_GOLD .. "--- DragonLoot Status ---" .. ns.COLOR_RESET)
+    print(ns.COLOR_GOLD .. L["--- DragonLoot Status ---"] .. ns.COLOR_RESET)
 
     local enabledStr = db.enabled
-        and (ns.COLOR_GREEN .. "Yes" .. ns.COLOR_RESET)
-        or (ns.COLOR_RED .. "No" .. ns.COLOR_RESET)
-    print("  Enabled: " .. enabledStr)
+        and (ns.COLOR_GREEN .. L["Yes"] .. ns.COLOR_RESET)
+        or (ns.COLOR_RED .. L["No"] .. ns.COLOR_RESET)
+    print("  " .. L["Enabled:"] .. " " .. enabledStr)
 
-    print("  Loot Window: " .. (db.lootWindow.enabled and "Yes" or "No"))
-    print("  Roll Frame: " .. (db.rollFrame.enabled and "Yes" or "No"))
-    print("  History: " .. (db.history.enabled and "Yes" or "No"))
-    print("  Animations: " .. (db.animation.enabled and "Yes" or "No"))
-    print("  Minimap Icon: " .. (not db.minimap.hide and "Yes" or "No"))
+    print("  " .. L["Loot Window:"] .. " " .. (db.lootWindow.enabled and L["Yes"] or L["No"]))
+    print("  " .. L["Roll Frame:"] .. " " .. (db.rollFrame.enabled and L["Yes"] or L["No"]))
+    print("  " .. L["History:"] .. " " .. (db.history.enabled and L["Yes"] or L["No"]))
+    print("  " .. L["Animations:"] .. " " .. (db.animation.enabled and L["Yes"] or L["No"]))
+    print("  " .. L["Minimap Icon:"] .. " " .. (not db.minimap.hide and L["Yes"] or L["No"]))
 end
 
 -------------------------------------------------------------------------------
@@ -58,10 +61,10 @@ local function ToggleAddon()
     db.enabled = not db.enabled
     if db.enabled then
         ns.Addon:OnEnable()
-        ns.Print("Addon " .. ns.COLOR_GREEN .. "enabled" .. ns.COLOR_RESET)
+        ns.Print(L["Addon enabled"])
     else
         ns.Addon:OnDisable()
-        ns.Print("Addon " .. ns.COLOR_RED .. "disabled" .. ns.COLOR_RESET)
+        ns.Print(L["Addon disabled"])
     end
 end
 
@@ -77,30 +80,30 @@ local commandHandlers = {
     ["reset"] = function()
         if ns.LootFrame.ResetAnchor then
             ns.LootFrame.ResetAnchor()
-            ns.Print("Loot frame position reset.")
+            ns.Print(L["Loot frame position reset."])
         else
-            ns.Print("Loot frame not yet available.")
+            ns.Print(L["Loot frame not yet available."])
         end
     end,
     ["test"] = function()
         if ns.LootFrame.ShowTestLoot then
             ns.LootFrame.ShowTestLoot()
         else
-            ns.Print("Test loot not yet available.")
+            ns.Print(L["Test loot not yet available."])
         end
     end,
     ["testroll"] = function()
         if ns.RollFrame.ShowTestRoll then
             ns.RollFrame.ShowTestRoll()
         else
-            ns.Print("Test roll not yet available.")
+            ns.Print(L["Test roll not yet available."])
         end
     end,
     ["history"] = function()
         if ns.HistoryFrame.Toggle then
             ns.HistoryFrame.Toggle()
         else
-            ns.Print("Loot history not yet available.")
+            ns.Print(L["Loot history not yet available."])
         end
     end,
 }
@@ -117,7 +120,7 @@ function ns.HandleSlashCommand(input)
     if handler then
         handler()
     else
-        ns.Print("Unknown command: " .. ns.COLOR_WHITE .. cmd .. ns.COLOR_RESET)
+        ns.Print(L["Unknown command:"] .. " " .. ns.COLOR_WHITE .. cmd .. ns.COLOR_RESET)
         PrintHelp()
     end
 end

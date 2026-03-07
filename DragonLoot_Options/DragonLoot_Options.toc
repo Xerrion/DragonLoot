@@ -7,7 +7,6 @@
 ## Notes: Custom configuration UI for DragonLoot
 ## Dependencies: DragonLoot
 ## LoadOnDemand: 1
-## X-Part-Of: DragonLoot
 
 Core.lua
 Widgets\Panel.lua

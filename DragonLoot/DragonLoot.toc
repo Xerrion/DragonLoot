@@ -9,13 +9,22 @@
 ## X-License: MIT
 ## X-Curse-Project-ID: 1472582
 ## X-Wago-ID: qKQmADKx
-## OptionalDeps: DragonLoot_Options
 
 # Libraries
 Libs\embeds.xml
 
 # Locales
 Locales\enUS.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\itIT.lua
+Locales\koKR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
 
 # Core
 Core\Init.lua

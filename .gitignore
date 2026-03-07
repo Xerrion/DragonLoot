@@ -5,7 +5,5 @@
 nul
 
 # Libs - track only embeds.xml and submodule directories
-Libs/*
-!Libs/Ace3
-!Libs/LibAnimate
-!Libs/embeds.xml
+DragonLoot/Libs/
+!DragonLoot/Libs/embeds.xml

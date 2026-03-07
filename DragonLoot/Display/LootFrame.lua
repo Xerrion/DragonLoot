@@ -25,6 +25,7 @@ local STANDARD_TEXT_FONT = STANDARD_TEXT_FONT
 local UNKNOWN = UNKNOWN
 local GetLootSlotLink = GetLootSlotLink
 local CreateColor = CreateColor
+local GetCursorPosition = GetCursorPosition
 
 local LSM = LibStub("LibSharedMedia-3.0")
 local L = ns.L
@@ -284,6 +285,14 @@ local function RestoreFramePosition()
     else
         containerFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     end
+end
+
+local function PositionAtCursor()
+    if not containerFrame then return end
+    local x, y = GetCursorPosition()
+    local scale = containerFrame:GetEffectiveScale()
+    containerFrame:ClearAllPoints()
+    containerFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
 end
 
 -------------------------------------------------------------------------------
@@ -814,6 +823,12 @@ function ns.LootFrame.Show(autoLoot)
 
     LayoutSlots()
 
+    -- Position at cursor if enabled
+    local lootDb = ns.Addon.db.profile.lootWindow
+    if lootDb.positionAtCursor then
+        PositionAtCursor()
+    end
+
     -- Fishing indicator
     if IsFishingLoot and IsFishingLoot() then
         containerFrame.fishingText:SetText(L["Fishing"])
@@ -1031,13 +1046,13 @@ local function PopulateTestSlot(slot, testData, index)
     -- Sub-text
     local subTextStr
     if testData.slotType == LOOT_SLOT_CURRENCY then
-        subTextStr = "Currency"
+        subTextStr = L["Currency"]
     elseif testData.slotType == LOOT_SLOT_MONEY then
-        subTextStr = "Money"
+        subTextStr = L["Money"]
     elseif testData.slotType == LOOT_SLOT_ITEM then
         local parts = {}
         if testData.itemLevel and testData.itemLevel > 0 then
-            parts[#parts + 1] = "iLvl " .. testData.itemLevel
+            parts[#parts + 1] = L["iLvl"] .. " " .. testData.itemLevel
         end
         local bindText = testData.bindType and BIND_LABELS[testData.bindType] or nil
         if bindText then
@@ -1069,7 +1084,7 @@ local function PopulateTestSlot(slot, testData, index)
 
     -- Test slot interaction (no real loot)
     slot:SetScript("OnClick", function()
-        ns.Print("Test slot clicked: " .. testData.name)
+        ns.Print(L["Test slot clicked: "] .. testData.name)
     end)
     slot:SetScript("OnEnter", function(self)
         -- Tooltip
@@ -1122,9 +1137,13 @@ function ns.LootFrame.ShowTestLoot()
     end
 
     LayoutSlots()
+    local lootDb = ns.Addon.db.profile.lootWindow
+    if lootDb.positionAtCursor then
+        PositionAtCursor()
+    end
     containerFrame.fishingText:Hide()
 
     ShowWithAnimation()
 
-    ns.Print("Showing test loot window.")
+    ns.Print(L["Showing test loot window."])
 end

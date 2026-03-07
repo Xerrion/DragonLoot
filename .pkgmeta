@@ -3,14 +3,15 @@ enable-toc-creation: yes
 manual-changelog: .release/CHANGELOG.md
 
 move-folders:
+  DragonLoot/DragonLoot: DragonLoot
   DragonLoot/DragonLoot_Options: DragonLoot_Options
 
 externals:
-  Libs/Ace3: https://repos.wowace.com/wow/ace3/trunk
-  Libs/LibDataBroker-1.1: https://github.com/tekkub/libdatabroker-1-1
-  Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
-  Libs/LibSharedMedia-3.0: https://repos.wowace.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
-  Libs/LibAnimate: https://github.com/Xerrion/LibAnimate
+  DragonLoot/Libs/Ace3: https://repos.wowace.com/wow/ace3/trunk
+  DragonLoot/Libs/LibDataBroker-1.1: https://github.com/tekkub/libdatabroker-1-1
+  DragonLoot/Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
+  DragonLoot/Libs/LibSharedMedia-3.0: https://repos.wowace.com/wow/libsharedmedia-3-0/trunk/LibSharedMedia-3.0
+  DragonLoot/Libs/LibAnimate: https://github.com/Xerrion/LibAnimate
 
 ignore:
   - ".git*"

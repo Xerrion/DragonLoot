@@ -58,6 +58,9 @@ ns.Listeners = {}
 
 local Addon = LibStub("AceAddon-3.0"):NewAddon(ADDON_NAME, "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 ns.Addon = Addon
+ns.L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
+local L = ns.L
 
 -------------------------------------------------------------------------------
 -- Utility: Print with addon prefix
@@ -184,7 +187,7 @@ function Addon:OnInitialize()
         ns.MinimapIcon.Initialize()
     end
 
-    ns.Print("Loaded. Type " .. ns.COLOR_WHITE .. "/dl help" .. ns.COLOR_RESET .. " for commands.")
+    ns.Print(L["Loaded. Type /dl help for commands."])
 end
 
 function Addon:OnEnable()

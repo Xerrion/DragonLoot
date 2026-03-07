@@ -27,6 +27,7 @@ local GetLootSlotLink = GetLootSlotLink
 local CreateColor = CreateColor
 
 local LSM = LibStub("LibSharedMedia-3.0")
+local L = ns.L
 
 -------------------------------------------------------------------------------
 -- Version detection
@@ -43,10 +44,10 @@ local LOOT_SLOT_MONEY = 2
 local LOOT_SLOT_CURRENCY = 3
 
 local BIND_LABELS = {
-    [1] = "BoP",
-    [2] = "BoE",
-    [3] = "BoU",
-    [4] = "Quest",
+    [1] = L["BoP"],
+    [2] = L["BoE"],
+    [3] = L["BoU"],
+    [4] = L["Quest"],
 }
 
 -------------------------------------------------------------------------------
@@ -165,14 +166,14 @@ end
 
 local function BuildSubText(slotIndex, lootType)
     if lootType == LOOT_SLOT_CURRENCY then
-        return "Currency"
+        return L["Currency"]
     elseif lootType == LOOT_SLOT_MONEY then
-        return "Money"
+        return L["Money"]
     elseif lootType == LOOT_SLOT_ITEM then
         local itemLevel, bindText, itemSubType = GetItemDetails(slotIndex)
         local parts = {}
         if itemLevel and itemLevel > 0 then
-            parts[#parts + 1] = "iLvl " .. itemLevel
+            parts[#parts + 1] = L["iLvl"] .. " " .. itemLevel
         end
         if bindText then
             parts[#parts + 1] = bindText
@@ -615,7 +616,7 @@ local function CreateContainerFrame()
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -6)
     frame.title:SetFont(fontPath, fontSize, fontOutline)
-    frame.title:SetText("Loot")
+    frame.title:SetText(L["Loot"])
     frame.title:SetTextColor(1, 0.82, 0)
 
     -- Close button
@@ -815,7 +816,7 @@ function ns.LootFrame.Show(autoLoot)
 
     -- Fishing indicator
     if IsFishingLoot and IsFishingLoot() then
-        containerFrame.fishingText:SetText("Fishing")
+        containerFrame.fishingText:SetText(L["Fishing"])
         containerFrame.fishingText:Show()
     else
         containerFrame.fishingText:Hide()
@@ -860,7 +861,10 @@ function ns.LootFrame.UpdateSlot(slotIndex)
         end
     end
 
-    LayoutSlots()
+    -- Skip re-layout during close animation to prevent mid-animation resizing
+    if not ns.LootAnimations.isClosing then
+        LayoutSlots()
+    end
 
     -- Close if all slots gone
     if #activeSlots == 0 then

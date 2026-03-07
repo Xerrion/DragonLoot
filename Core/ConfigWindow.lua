@@ -11,6 +11,8 @@ local ADDON_NAME, ns = ...
 local C_AddOns = C_AddOns
 local IsAddOnLoaded = IsAddOnLoaded
 
+local L = ns.L
+
 -------------------------------------------------------------------------------
 -- Helpers
 -------------------------------------------------------------------------------
@@ -42,7 +44,7 @@ end
 
 function ns.OpenConfigWindow()
     if not LoadOptions() then
-        ns.Print("DragonLoot_Options addon not found. Please ensure it is installed.")
+        ns.Print(L["DragonLoot_Options addon not found. Please ensure it is installed."])
         return
     end
 

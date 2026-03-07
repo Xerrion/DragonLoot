@@ -14,6 +14,9 @@
 # Libraries
 Libs\embeds.xml
 
+# Locales
+Locales\enUS.lua
+
 # Core
 Core\Init.lua
 Core\Config.lua

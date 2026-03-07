@@ -99,10 +99,11 @@ L["Unknown Item"] = true
 -- DragonLoot_Options
 -------------------------------------------------------------------------------
 
+-- DragonLoot_Options/Core.lua
+L["DragonLoot namespace not found."] = true
+
 -- DragonLoot_Options/Core.lua (shared quality values via ns.QualityValues)
 L["Common"] = true
-L["DragonLoot locale table (L) not found."] = true
-L["DragonLoot namespace not found."] = true
 L["Epic"] = true
 L["Legendary"] = true
 L["Poor"] = true

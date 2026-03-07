@@ -191,9 +191,9 @@ local function BuildGrid(frame, opts)
 
     -- Update count display
     if maxItems then
-        frame._countText:SetText(string_format(L and L["%d / %d items"] or "%d / %d items", count, maxItems))
+        frame._countText:SetText(string_format(L["%d / %d items"], count, maxItems))
     else
-        frame._countText:SetText(string_format(L and L["%d items"] or "%d items", count))
+        frame._countText:SetText(string_format(L["%d items"], count))
     end
 
     -- Empty text visibility
@@ -237,7 +237,7 @@ function ns.Widgets.CreateItemList(parent, opts)
     emptyText:SetFont(FONT_PATH, FONT_SIZE, "")
     emptyText:SetTextColor(GRAY_COLOR[1], GRAY_COLOR[2], GRAY_COLOR[3])
     emptyText:SetPoint("CENTER", scrollWrapper.scrollChild, "CENTER", 0, 0)
-    emptyText:SetText(opts.emptyText or (L and L["Drop item here to add"] or "Drop item here to add"))
+    emptyText:SetText(opts.emptyText or L["Drop item here to add"])
     emptyText:Hide()
     frame._emptyText = emptyText
 

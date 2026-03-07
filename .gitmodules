@@ -1,3 +1,6 @@
-[submodule "Libs/Ace3"]
-	path = Libs/Ace3
+[submodule "DragonLoot/Libs/Ace3"]
+	path = DragonLoot/Libs/Ace3
 	url = https://github.com/WoWUIDev/Ace3.git
+[submodule "DragonLoot/Libs/LibAnimate"]
+	path = DragonLoot/Libs/LibAnimate
+	url = https://github.com/Xerrion/LibAnimate.git

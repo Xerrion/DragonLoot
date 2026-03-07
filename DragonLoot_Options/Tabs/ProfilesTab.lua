@@ -42,8 +42,7 @@ local NEW_PROFILE_INPUT_WIDTH = 250
 -------------------------------------------------------------------------------
 
 StaticPopupDialogs["DRAGONLOOT_RESET_PROFILE"] = {
-    text = (L and L["Are you sure you want to reset the current profile to defaults?"]
-        or "Are you sure you want to reset the current profile to defaults?"),
+    text = L["Are you sure you want to reset the current profile to defaults?"],
     button1 = YES,
     button2 = NO,
     OnAccept = function()
@@ -57,8 +56,7 @@ StaticPopupDialogs["DRAGONLOOT_RESET_PROFILE"] = {
 }
 
 StaticPopupDialogs["DRAGONLOOT_DELETE_PROFILE"] = {
-    text = (L and L["Are you sure you want to delete profile \"%s\"?"]
-        or "Are you sure you want to delete profile \"%s\"?"),
+    text = L["Are you sure you want to delete profile \"%s\"?"],
     button1 = YES,
     button2 = NO,
     timeout = 0,

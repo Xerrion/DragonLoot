@@ -31,33 +31,33 @@ Version-specific files are loaded via BigWigsMods packager comment directives (`
 
 | Layer | Directory | Responsibility |
 |-------|-----------|----------------|
-| Core | `Core/` | Addon lifecycle, config, slash commands, minimap icon |
-| Display | `Display/` | UI frames and presentation (loot window, roll frame, history) |
-| Listeners | `Listeners/` | Event handling and version-specific loot/roll/history parsing |
-| Libs | `Libs/` | Embedded Ace3 + utility libraries |
+| Core | `DragonLoot/Core/` | Addon lifecycle, config, slash commands, minimap icon |
+| Display | `DragonLoot/Display/` | UI frames and presentation (loot window, roll frame, history) |
+| Listeners | `DragonLoot/Listeners/` | Event handling and version-specific loot/roll/history parsing |
+| Libs | `DragonLoot/Libs/` | Embedded Ace3 + utility libraries |
 
 ### File Map
 
 | File | Purpose |
 |------|---------|
-| `Core/Init.lua` | AceAddon bootstrap, lifecycle, Blizzard frame suppression |
-| `Core/Config.lua` | AceDB defaults, AceConfig options table, schema migration |
-| `Core/ConfigWindow.lua` | AceConfigDialog toggle |
-| `Core/MinimapIcon.lua` | LDB + LibDBIcon minimap button |
-| `Core/SlashCommands.lua` | `/dl` and `/dragonloot` command router |
-| `Display/LootFrame.lua` | Loot window frame pool, slot rendering, drag/position, test loot |
-| `Display/LootAnimations.lua` | LibAnimate animations for loot window (configurable via config) |
-| `Display/RollFrame.lua` | Roll frame pool (up to 4), timer bar, Need/Greed/DE/Pass/Transmog buttons |
-| `Display/RollAnimations.lua` | LibAnimate animations for roll frames (configurable via config) |
-| `Display/RollManager.lua` | Roll orchestration, overflow FIFO queue, timer tick, DRAGONTOAST_QUEUE_TOAST messaging |
-| `Display/HistoryFrame.lua` | Scrollable loot history, entry pool, class-colored winners, time-ago refresh |
-| `Listeners/LootListener_Retail.lua` | Retail: LOOT_OPENED + LOOT_READY with pendingAutoLoot |
-| `Listeners/LootListener_Classic.lua` | Classic: LOOT_OPENED for TBC/MoP/Cata |
-| `Listeners/RollListener_Retail.lua` | Retail: START_LOOT_ROLL, CANCEL_LOOT_ROLL, CANCEL_ALL_LOOT_ROLLS, recovery |
-| `Listeners/RollListener_Classic.lua` | Classic: same minus CANCEL_ALL_LOOT_ROLLS |
-| `Listeners/HistoryListener_Retail.lua` | Retail: encounter-based C_LootHistory with dedup |
-| `Listeners/HistoryListener_Classic.lua` | Classic: roll-item indexed C_LootHistory |
-| `Listeners/LootHistoryChat.lua` | CHAT_MSG_LOOT parser for direct loot tracking (all versions) |
+| `DragonLoot/Core/Init.lua` | AceAddon bootstrap, lifecycle, Blizzard frame suppression |
+| `DragonLoot/Core/Config.lua` | AceDB defaults, AceConfig options table, schema migration |
+| `DragonLoot/Core/ConfigWindow.lua` | AceConfigDialog toggle |
+| `DragonLoot/Core/MinimapIcon.lua` | LDB + LibDBIcon minimap button |
+| `DragonLoot/Core/SlashCommands.lua` | `/dl` and `/dragonloot` command router |
+| `DragonLoot/Display/LootFrame.lua` | Loot window frame pool, slot rendering, drag/position, test loot |
+| `DragonLoot/Display/LootAnimations.lua` | LibAnimate animations for loot window (configurable via config) |
+| `DragonLoot/Display/RollFrame.lua` | Roll frame pool (up to 4), timer bar, Need/Greed/DE/Pass/Transmog buttons |
+| `DragonLoot/Display/RollAnimations.lua` | LibAnimate animations for roll frames (configurable via config) |
+| `DragonLoot/Display/RollManager.lua` | Roll orchestration, overflow FIFO queue, timer tick, DRAGONTOAST_QUEUE_TOAST messaging |
+| `DragonLoot/Display/HistoryFrame.lua` | Scrollable loot history, entry pool, class-colored winners, time-ago refresh |
+| `DragonLoot/Listeners/LootListener_Retail.lua` | Retail: LOOT_OPENED + LOOT_READY with pendingAutoLoot |
+| `DragonLoot/Listeners/LootListener_Classic.lua` | Classic: LOOT_OPENED for TBC/MoP/Cata |
+| `DragonLoot/Listeners/RollListener_Retail.lua` | Retail: START_LOOT_ROLL, CANCEL_LOOT_ROLL, CANCEL_ALL_LOOT_ROLLS, recovery |
+| `DragonLoot/Listeners/RollListener_Classic.lua` | Classic: same minus CANCEL_ALL_LOOT_ROLLS |
+| `DragonLoot/Listeners/HistoryListener_Retail.lua` | Retail: encounter-based C_LootHistory with dedup |
+| `DragonLoot/Listeners/HistoryListener_Classic.lua` | Classic: roll-item indexed C_LootHistory |
+| `DragonLoot/Listeners/LootHistoryChat.lua` | CHAT_MSG_LOOT parser for direct loot tracking (all versions) |
 
 ### Namespace Pattern
 
@@ -72,21 +72,21 @@ All modules attach to `ns`:
 
 | Sub-table | Set by |
 |-----------|--------|
-| `ns.Addon` | `Core/Init.lua` |
-| `ns.LootFrame` | `Display/LootFrame.lua` |
-| `ns.LootAnimations` | `Display/LootAnimations.lua` |
-| `ns.RollFrame` | `Display/RollFrame.lua` |
-| `ns.RollAnimations` | `Display/RollAnimations.lua` |
-| `ns.RollManager` | `Display/RollManager.lua` |
-| `ns.HistoryFrame` | `Display/HistoryFrame.lua` |
-| `ns.LootListener` | `Listeners/LootListener_*.lua` |
-| `ns.RollListener` | `Listeners/RollListener_*.lua` |
-| `ns.HistoryListener` | `Listeners/HistoryListener_*.lua` |
-| `ns.LootHistoryChat` | `Listeners/LootHistoryChat.lua` |
-| `ns.ConfigWindow` | `Core/ConfigWindow.lua` |
-| `ns.MinimapIcon` | `Core/MinimapIcon.lua` |
-| `ns.Print` | `Core/Init.lua` (helper function) |
-| `ns.DebugPrint` | `Core/Init.lua` (helper function) |
+| `ns.Addon` | `DragonLoot/Core/Init.lua` |
+| `ns.LootFrame` | `DragonLoot/Display/LootFrame.lua` |
+| `ns.LootAnimations` | `DragonLoot/Display/LootAnimations.lua` |
+| `ns.RollFrame` | `DragonLoot/Display/RollFrame.lua` |
+| `ns.RollAnimations` | `DragonLoot/Display/RollAnimations.lua` |
+| `ns.RollManager` | `DragonLoot/Display/RollManager.lua` |
+| `ns.HistoryFrame` | `DragonLoot/Display/HistoryFrame.lua` |
+| `ns.LootListener` | `DragonLoot/Listeners/LootListener_*.lua` |
+| `ns.RollListener` | `DragonLoot/Listeners/RollListener_*.lua` |
+| `ns.HistoryListener` | `DragonLoot/Listeners/HistoryListener_*.lua` |
+| `ns.LootHistoryChat` | `DragonLoot/Listeners/LootHistoryChat.lua` |
+| `ns.ConfigWindow` | `DragonLoot/Core/ConfigWindow.lua` |
+| `ns.MinimapIcon` | `DragonLoot/Core/MinimapIcon.lua` |
+| `ns.Print` | `DragonLoot/Core/Init.lua` (helper function) |
+| `ns.DebugPrint` | `DragonLoot/Core/Init.lua` (helper function) |
 
 ### Config Schema Reference
 
@@ -223,9 +223,9 @@ The following values are placeholders and must be updated before first release:
 
 | Item | Placeholder | File |
 |------|-------------|------|
-| CurseForge Project ID | `0000000` | `DragonLoot.toc` |
-| Wago ID | `TBD` | `DragonLoot.toc` |
-| Icon texture | `Interface\AddOns\DragonLoot\DragonLoot_Icon` | `DragonLoot.toc` |
+| CurseForge Project ID | `0000000` | `DragonLoot/DragonLoot.toc` |
+| Wago ID | `TBD` | `DragonLoot/DragonLoot.toc` |
+| Icon texture | `Interface\AddOns\DragonLoot\DragonLoot_Icon` | `DragonLoot/DragonLoot.toc` |
 
 ---
 
@@ -252,7 +252,7 @@ DragonLoot embeds Ace3 via `Libs/embeds.xml`. The full Ace3 library set is avail
 
 ### Local Dev: Ace3 Submodule
 
-`.pkgmeta` externals only work during CI packaging. For local dev, add Ace3 as a git submodule at `Libs/Ace3/`.
+`.pkgmeta` externals only work during CI packaging. For local dev, add Ace3 as a git submodule at `DragonLoot/Libs/Ace3/`.
 
 ---
 
@@ -295,9 +295,9 @@ DragonLoot embeds Ace3 via `Libs/embeds.xml`. The full Ace3 library set is avail
 
 ### Install Location
 
-Create a directory junction from the WoW addons folder to the repo:
+Create a directory junction from the WoW addons folder to the `DragonLoot/` subdirectory in the repo (not the repo root):
 ```powershell
-New-Item -ItemType Junction -Path "E:\World of Warcraft\_anniversary_\Interface\AddOns\DragonLoot" -Target "F:\Repos\wow-addons\DragonLoot"
+New-Item -ItemType Junction -Path "E:\World of Warcraft\_anniversary_\Interface\AddOns\DragonLoot" -Target "F:\Repos\wow-addons\DragonLoot\DragonLoot"
 ```
 
 ### Testing

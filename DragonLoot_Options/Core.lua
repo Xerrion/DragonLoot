@@ -17,12 +17,7 @@ local tinsert = table.insert
 -- Locale bridge from main addon
 -------------------------------------------------------------------------------
 
-local AceLocale = LibStub and LibStub("AceLocale-3.0", true)
-ns.L = AceLocale and AceLocale:GetLocale("DragonLoot", true)
-if not ns.L then
-    -- Fallback: return key as value (mirrors AceLocale default-locale behavior)
-    ns.L = setmetatable({}, { __index = function(_, key) return key end })
-end
+ns.L = LibStub("AceLocale-3.0"):GetLocale("DragonLoot")
 
 -------------------------------------------------------------------------------
 -- Widget and tab registries (populated by subsequent files)
@@ -38,12 +33,12 @@ ns.Tabs = {}
 local L = ns.L
 
 ns.QualityValues = {
-    { value = "0", text = "|cff9d9d9d" .. (L and L["Poor"] or "Poor") .. "|r" },
-    { value = "1", text = "|cffffffff" .. (L and L["Common"] or "Common") .. "|r" },
-    { value = "2", text = "|cff1eff00" .. (L and L["Uncommon"] or "Uncommon") .. "|r" },
-    { value = "3", text = "|cff0070dd" .. (L and L["Rare"] or "Rare") .. "|r" },
-    { value = "4", text = "|cffa335ee" .. (L and L["Epic"] or "Epic") .. "|r" },
-    { value = "5", text = "|cffff8000" .. (L and L["Legendary"] or "Legendary") .. "|r" },
+    { value = "0", text = "|cff9d9d9d" .. L["Poor"] .. "|r" },
+    { value = "1", text = "|cffffffff" .. L["Common"] .. "|r" },
+    { value = "2", text = "|cff1eff00" .. L["Uncommon"] .. "|r" },
+    { value = "3", text = "|cff0070dd" .. L["Rare"] .. "|r" },
+    { value = "4", text = "|cffa335ee" .. L["Epic"] .. "|r" },
+    { value = "5", text = "|cffff8000" .. L["Legendary"] .. "|r" },
 }
 
 -------------------------------------------------------------------------------
@@ -76,11 +71,7 @@ end
 local function CreateOptionsPanel()
     ns.dlns = _G.DragonLootNS
     if not ns.dlns then
-        print("|cffff6600[DragonLoot_Options]|r " .. (L and L["DragonLoot namespace not found."] or "DragonLoot namespace not found."))
-        return
-    end
-    if not ns.dlns.L then
-        print("|cffff6600[DragonLoot_Options]|r " .. (L and L["DragonLoot locale table (L) not found."] or "DragonLoot locale table (L) not found."))
+        print("|cffff6600[DragonLoot_Options]|r " .. L["DragonLoot namespace not found."])
         return
     end
 
@@ -107,6 +98,7 @@ function DragonLoot_Options.Open()
     if not optionsPanel then
         CreateOptionsPanel()
     end
+    if not optionsPanel then return end
     optionsPanel:Show()
     RefreshVisibleWidgets()
 end

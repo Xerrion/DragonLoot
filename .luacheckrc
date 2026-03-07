@@ -2,7 +2,7 @@ std = "lua51"
 max_line_length = 120
 codes = true
 exclude_files = {
-    "Libs/",
+    "DragonLoot/Libs/",
     "DragonLoot_Options/",
 }
 

@@ -52,7 +52,7 @@ local function GetEntranceValues()
     local lib = LibStub("LibAnimate", true)
     if not lib then return {} end
     local names = lib:GetEntranceAnimations()
-    local values = { { value = "none", text = (L and L["None"] or "None") } }
+    local values = { { value = "none", text = L["None"] } }
     for _, name in ipairs(names) do
         values[#values + 1] = { value = name, text = name }
     end
@@ -63,7 +63,7 @@ local function GetExitValues()
     local lib = LibStub("LibAnimate", true)
     if not lib then return {} end
     local names = lib:GetExitAnimations()
-    local values = { { value = "none", text = (L and L["None"] or "None") } }
+    local values = { { value = "none", text = L["None"] } }
     for _, name in ipairs(names) do
         values[#values + 1] = { value = name, text = name }
     end

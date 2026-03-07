@@ -82,10 +82,10 @@ end
 -------------------------------------------------------------------------------
 
 local FONT_OUTLINE_VALUES = {
-    { value = "", text = (L and L["None"] or "None") },
-    { value = "OUTLINE", text = (L and L["Outline"] or "Outline") },
-    { value = "THICKOUTLINE", text = (L and L["Thick Outline"] or "Thick Outline") },
-    { value = "MONOCHROME", text = (L and L["Monochrome"] or "Monochrome") },
+    { value = "", text = L["None"] },
+    { value = "OUTLINE", text = L["Outline"] },
+    { value = "THICKOUTLINE", text = L["Thick Outline"] },
+    { value = "MONOCHROME", text = L["Monochrome"] },
 }
 
 -------------------------------------------------------------------------------
@@ -93,10 +93,10 @@ local FONT_OUTLINE_VALUES = {
 -------------------------------------------------------------------------------
 
 local SLOT_BG_VALUES = {
-    { value = "gradient", text = (L and L["Gradient"] or "Gradient") },
-    { value = "flat", text = (L and L["Flat"] or "Flat") },
-    { value = "stripe", text = (L and L["Stripe"] or "Stripe") },
-    { value = "none", text = (L and L["None"] or "None") },
+    { value = "gradient", text = L["Gradient"] },
+    { value = "flat", text = L["Flat"] },
+    { value = "stripe", text = L["Stripe"] },
+    { value = "none", text = L["None"] },
 }
 
 -------------------------------------------------------------------------------

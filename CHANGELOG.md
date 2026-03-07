@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/DragonAddons/DragonLoot/compare/0.5.2...0.6.0) (2026-03-07)
+
+
+### 🚀 Features
+
+* open loot frame at mouse cursor ([#50](https://github.com/DragonAddons/DragonLoot/issues/50)) ([#56](https://github.com/DragonAddons/DragonLoot/issues/56)) ([60846ef](https://github.com/DragonAddons/DragonLoot/commit/60846ef8878132c66b3f7bbecc43a2c924cbff59))
+
+
+### 🐛 Bug Fixes
+
+* add issue types to issue templates ([#55](https://github.com/DragonAddons/DragonLoot/issues/55)) ([8b1816c](https://github.com/DragonAddons/DragonLoot/commit/8b1816ce816b34d612b458ca58feeb176d9712f0))
+* clarify slash command help and toggle behavior ([#52](https://github.com/DragonAddons/DragonLoot/issues/52)) ([f944cd3](https://github.com/DragonAddons/DragonLoot/commit/f944cd31605fee6aa924ebaa7859fdd443a7a8d1))
+* correct CHAT_MSG_LOOT guid parameter offset ([#51](https://github.com/DragonAddons/DragonLoot/issues/51)) ([#54](https://github.com/DragonAddons/DragonLoot/issues/54)) ([92a2725](https://github.com/DragonAddons/DragonLoot/commit/92a2725915d2b5a168e837db0c709d4826c3eb9e))
+* resolve loot/roll frame animation jumping ([#60](https://github.com/DragonAddons/DragonLoot/issues/60)) ([9ec9eb1](https://github.com/DragonAddons/DragonLoot/commit/9ec9eb123b814b5757dad6084422be223b90cb0d))
+
 ## [0.5.2](https://github.com/DragonAddons/DragonLoot/compare/0.5.1...0.5.2) (2026-03-06)
 
 

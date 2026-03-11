@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/DragonAddons/DragonLoot/compare/0.6.0...0.6.1) (2026-03-11)
+
+
+### 🐛 Bug Fixes
+
+* robust Blizzard loot frame suppression on Retail ([#65](https://github.com/DragonAddons/DragonLoot/issues/65)) ([debf24d](https://github.com/DragonAddons/DragonLoot/commit/debf24d38b06a0e228add7da35b5589305a7997a))
+
 ## [0.6.0](https://github.com/DragonAddons/DragonLoot/compare/0.5.2...0.6.0) (2026-03-07)
 
 

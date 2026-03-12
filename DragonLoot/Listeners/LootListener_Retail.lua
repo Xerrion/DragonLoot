@@ -5,7 +5,7 @@
 -- Supported versions: Retail
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Version guard: only run on Retail
@@ -66,7 +66,7 @@ local function OnLootSlotCleared(_, slotIndex)
 end
 
 local function OnLootSlotChanged(_, slotIndex)
-    if not isLootOpen then return end
+    if not isLootOpen or not ns.LootFrame.UpdateSlot then return end
     ns.LootFrame.UpdateSlot(slotIndex)
 end
 

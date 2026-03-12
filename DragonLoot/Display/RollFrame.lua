@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -81,6 +81,9 @@ local PASS_ICON = "Interface\\Buttons\\UI-GroupLoot-Pass-Up"
 
 local FRAME_BASE_HEIGHT = 68
 local MAX_VISIBLE_ROLLS = 4
+local DEFAULT_ROLL_ANCHOR_Y = -200
+local ROLL_FRAME_EXTRA_HEIGHT = 18
+local TEST_ROLL_TICK_INTERVAL = 0.1
 
 -------------------------------------------------------------------------------
 -- Roll frame pool
@@ -250,7 +253,7 @@ local function RestoreFramePosition()
     if db.point then
         anchorFrame:SetPoint(db.point, UIParent, db.relativePoint, db.x or 0, db.y or 0)
     else
-        anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+        anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, DEFAULT_ROLL_ANCHOR_Y)
     end
 end
 
@@ -507,7 +510,7 @@ local function PopulateRollFrame(frame, rollID)
 
     local texture, name, count, quality, bindOnPickUp, canNeed, canGreed,
           canDisenchant, reasonNeed, reasonGreed, reasonDisenchant,
-          _deSkillRequired, canTransmog = GetLootRollItemInfo(rollID)
+          _, canTransmog = GetLootRollItemInfo(rollID)
 
     if not texture then return end
 
@@ -519,7 +522,7 @@ local function PopulateRollFrame(frame, rollID)
     frame.iconFrame:SetSize(iconSize, iconSize)
 
     -- Adjust frame height based on icon size
-    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + ROLL_FRAME_EXTRA_HEIGHT))
 
     -- Icon
     frame.iconFrame.icon:SetTexture(texture)
@@ -727,7 +730,7 @@ local function PopulateTestRollFrame(frame, testData)
     end
 
     -- Frame height based on icon size
-    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + ROLL_FRAME_EXTRA_HEIGHT))
 
     ApplyLayoutOffsets(frame)
 end
@@ -743,8 +746,8 @@ local function StartTestTimer(frameIndex, duration)
     local remaining = duration
     local total = duration
 
-    frame.testTimer = C_Timer.NewTicker(0.1, function()
-        remaining = remaining - 0.1
+    frame.testTimer = C_Timer.NewTicker(TEST_ROLL_TICK_INTERVAL, function()
+        remaining = remaining - TEST_ROLL_TICK_INTERVAL
         if remaining <= 0 then
             frame.testTimer:Cancel()
             frame.testTimer = nil
@@ -875,7 +878,7 @@ function ns.RollFrame.ApplySettings()
             end
 
             -- Adjust frame height based on icon size
-            frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+            frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + ROLL_FRAME_EXTRA_HEIGHT))
 
             -- Update layout offsets for border thickness
             ApplyLayoutOffsets(frame)
@@ -912,7 +915,7 @@ function ns.RollFrame.ResetAnchor()
     db.x = nil
     db.y = nil
     anchorFrame:ClearAllPoints()
-    anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+    anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, DEFAULT_ROLL_ANCHOR_Y)
 end
 
 function ns.RollFrame.ShowTestRoll()

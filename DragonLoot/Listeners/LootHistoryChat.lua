@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -17,8 +17,8 @@ local UnitClass = UnitClass
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
 local GetItemInfo = GetItemInfo
 local GetItemInfoInstant = GetItemInfoInstant
-local C_Timer = C_Timer
 local pairs = pairs
+local LifecycleUtil = ns.LifecycleUtil
 
 -------------------------------------------------------------------------------
 -- State
@@ -26,9 +26,11 @@ local pairs = pairs
 
 local addon
 local recentEntries = {}
+local lifecycleState = LifecycleUtil.CreateState()
 
 local DEDUP_WINDOW = 2
 local DEDUP_CLEANUP_AGE = 5
+local QUALITY_RETRY_DELAY = 0.5
 
 -------------------------------------------------------------------------------
 -- Pattern building (at load time)
@@ -123,14 +125,22 @@ local function GetItemIcon(itemLink)
 end
 
 local function ScheduleQualityRetry(entry, itemLink)
-    C_Timer.After(0.5, function()
+    entry.qualityRetryToken = (entry.qualityRetryToken or 0) + 1
+    local retryToken = entry.qualityRetryToken
+
+    LifecycleUtil.After(lifecycleState, QUALITY_RETRY_DELAY, function()
+        if entry.qualityRetryToken ~= retryToken then return end
+
         local _, _, quality = GetItemInfo(itemLink)
-        if quality then
-            entry.quality = quality
-            -- Refresh history display if visible
-            if ns.HistoryFrame and ns.HistoryFrame.Refresh then
-                ns.HistoryFrame.Refresh()
-            end
+        if not quality then return end
+
+        entry.quality = quality
+        entry.qualityRetryToken = nil
+
+        -- Refresh history display if visible
+        local historyFrame = ns.HistoryFrame
+        if historyFrame and historyFrame.Refresh then
+            historyFrame.Refresh()
         end
     end)
 end
@@ -139,7 +149,7 @@ end
 -- Add loot entry to history
 -------------------------------------------------------------------------------
 
-local function AddLootEntry(playerName, playerClass, itemLink, _quantity)
+local function AddLootEntry(playerName, playerClass, itemLink, _)
     local db = ns.Addon.db
     if not db or not db.profile then return end
 
@@ -285,14 +295,19 @@ end
 
 function ns.LootHistoryChat.Initialize(addonRef)
     addon = addonRef
+    LifecycleUtil.Activate(lifecycleState)
     addon:RegisterEvent("CHAT_MSG_LOOT", OnChatMsgLoot)
     ns.DebugPrint("LootHistoryChat initialized")
 end
 
 function ns.LootHistoryChat.Shutdown()
+    LifecycleUtil.Invalidate(lifecycleState)
+
     if addon then
         addon:UnregisterEvent("CHAT_MSG_LOOT")
     end
+
+    addon = nil
     wipe(recentEntries)
     ns.DebugPrint("LootHistoryChat shut down")
 end

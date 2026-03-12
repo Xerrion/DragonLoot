@@ -5,13 +5,15 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
 -------------------------------------------------------------------------------
 
 local UIParent = UIParent
+
+local LOOT_ANIMATION_DISTANCE = 50
 
 -------------------------------------------------------------------------------
 -- LibAnimate reference
@@ -90,7 +92,7 @@ function ns.LootAnimations.PlayOpen(frame)
     local animName = db.animation.lootOpenAnim or "fadeIn"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
-        distance = 50,
+        distance = LOOT_ANIMATION_DISTANCE,
         onFinished = function()
             local s = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
             frame:SetScale(s)
@@ -128,7 +130,7 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
     local animName = db.animation.lootCloseAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
-        distance = 50,
+        distance = LOOT_ANIMATION_DISTANCE,
         onFinished = function()
             local scale = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
             frame:SetAlpha(1)

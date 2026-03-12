@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -16,10 +16,10 @@ local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
 local UnitName = UnitName
 local UnitClass = UnitClass
-local C_Timer = C_Timer
 local max = math.max
 
 local L = ns.L
+local LifecycleUtil = ns.LifecycleUtil
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -27,6 +27,7 @@ local L = ns.L
 
 local MAX_VISIBLE_ROLLS = 4
 local TIMER_INTERVAL = 0.05
+local ROLL_COMPLETE_CANCEL_DELAY = 0.5
 
 -- Canonical roll type enum (shared with listeners)
 local ROLL_TYPE_PASS = 0
@@ -85,6 +86,7 @@ local usedFrames = {}       -- frameIndex -> true/false
 local notifiedRolls = {}    -- rollID -> true (prevent duplicate winner notifications)
 local activeRollCount = 0
 local timerHandle
+local lifecycleState = LifecycleUtil.CreateState()
 
 -------------------------------------------------------------------------------
 -- StaticPopup for roll confirmations (shared by Retail and Classic listeners)
@@ -134,7 +136,8 @@ end
 
 local function OnTimerTick()
     local now = GetTime()
-    for _rollID, roll in pairs(activeRolls) do
+
+    for _, roll in pairs(activeRolls) do
         local elapsed = now - roll.startTime
         local timeLeft = max(0, roll.rollTime - elapsed)
         ns.RollFrame.UpdateTimer(roll.frameIndex, timeLeft, roll.rollTime)
@@ -217,7 +220,7 @@ end
 -- DragonToast integration - notify when a player wins a roll
 -------------------------------------------------------------------------------
 
-local function SendRollWonNotification(rollID, winnerName, _winnerClass, rollType, rollValue)
+local function SendRollWonNotification(rollID, winnerName, _, rollType, rollValue)
     if notifiedRolls[rollID] then return end
     notifiedRolls[rollID] = true
 
@@ -267,7 +270,7 @@ end
 -------------------------------------------------------------------------------
 
 function ns.RollManager.SendRollResultNotification(itemLink, itemName, itemQuality, itemIcon,
-                                                    playerName, _playerClass, rollType, rollValue)
+                                                    playerName, _, rollType, rollValue)
     local db = ns.Addon.db.profile
     if not db.rollNotifications.showRollResults then return end
 
@@ -314,16 +317,36 @@ function ns.RollManager.Initialize(addonRef)
     local db = addon.db and addon.db.profile
     if not db or not db.rollFrame or not db.rollFrame.enabled then return end
 
-    ns.RollFrame.Initialize()
-    ns.RollListener.Initialize(addon)
+    LifecycleUtil.Activate(lifecycleState)
+
+    local rollFrame = ns.RollFrame
+    if rollFrame and rollFrame.Initialize then
+        rollFrame.Initialize()
+    end
+
+    local rollListener = ns.RollListener
+    if rollListener and rollListener.Initialize then
+        rollListener.Initialize(addon)
+    end
+
     ns.DebugPrint("RollManager initialized")
 end
 
 function ns.RollManager.Shutdown()
+    LifecycleUtil.Invalidate(lifecycleState)
     StopTimer()
     ns.RollManager.CancelAllRolls()
-    ns.RollFrame.Shutdown()
-    ns.RollListener.Shutdown()
+
+    local rollFrame = ns.RollFrame
+    if rollFrame and rollFrame.Shutdown then
+        rollFrame.Shutdown()
+    end
+
+    local rollListener = ns.RollListener
+    if rollListener and rollListener.Shutdown then
+        rollListener.Shutdown()
+    end
+
     addon = nil
     ns.DebugPrint("RollManager shut down")
 end
@@ -408,7 +431,9 @@ end
 function ns.RollManager.CancelRoll(rollID)
     local roll = activeRolls[rollID]
     if roll then
+        local lifecycleToken = LifecycleUtil.CaptureToken(lifecycleState)
         local frameIndex = roll.frameIndex
+
         activeRolls[rollID] = nil
         notifiedRolls[rollID] = nil
         activeRollCount = activeRollCount - 1
@@ -416,11 +441,14 @@ function ns.RollManager.CancelRoll(rollID)
             activeRollCount = 0
             StopTimer()
         end
+
         -- Defer frame release and queue promotion until hide animation completes
-        ns.RollFrame.HideRoll(frameIndex, function()
+        ns.RollFrame.HideRoll(frameIndex, LifecycleUtil.Guard(lifecycleState, lifecycleToken, function()
+            if activeRolls[rollID] then return end
             ReleaseFrameIndex(frameIndex)
             PromoteFromQueue()
-        end)
+        end))
+
         return
     end
 
@@ -437,21 +465,32 @@ function ns.RollManager.CancelAllRolls()
     wipe(waitingRolls)
     wipe(notifiedRolls)
     StopTimer()
+
     ns.RollFrame.HideAllRolls()
 end
 
 function ns.RollManager.OnRollComplete(rollID)
     if not rollID then return end
+
     local roll = activeRolls[rollID]
     if roll then roll.completing = true end
 
-    -- Ask the version-specific listener to resolve the winner
-    if ns.RollListener and ns.RollListener.ResolveWinner then
-        ns.RollListener.ResolveWinner(rollID)
+    local completionToken = nil
+    if roll then
+        roll.completionToken = (roll.completionToken or 0) + 1
+        completionToken = roll.completionToken
     end
 
+    -- Ask the version-specific listener to resolve the winner
+    ns.RollListener.ResolveWinner(rollID, completionToken)
+
     -- Delay cancel to keep activeRolls data available for async winner resolution
-    C_Timer.After(0.5, function()
+    LifecycleUtil.After(lifecycleState, ROLL_COMPLETE_CANCEL_DELAY, function()
+        local activeRoll = activeRolls[rollID]
+        if not activeRoll then return end
+        if completionToken and activeRoll.completionToken ~= completionToken then return end
+        if not activeRoll.completing then return end
+
         ns.RollManager.CancelRoll(rollID)
     end)
 end

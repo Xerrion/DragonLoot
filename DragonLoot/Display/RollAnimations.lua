@@ -5,13 +5,15 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- LibAnimate reference
 -------------------------------------------------------------------------------
 
 local lib = LibStub("LibAnimate")
+
+local ROLL_ANIMATION_DISTANCE = 50
 
 -------------------------------------------------------------------------------
 -- State flag: true while a hide animation is in progress
@@ -72,7 +74,7 @@ function ns.RollAnimations.PlayShow(frame)
     local animName = db.animation.rollShowAnim or "slideInRight"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
-        distance = 50,
+        distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
             local s = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
             frame:SetScale(s)
@@ -110,7 +112,7 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
     local animName = db.animation.rollHideAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
-        distance = 50,
+        distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
             local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
             frame:SetAlpha(1)

@@ -5,7 +5,7 @@
 -- Supported versions: MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Version guard: skip on Retail (Classic listener runs on everything else)
@@ -59,7 +59,7 @@ local function RefreshFromAPI()
     local now = GetTime()
     local entries = {}
     for i = 1, numItems do
-        local _rollID, itemLink, numPlayers, isDone, winnerIdx, _isMasterLoot, _isCurrency =
+        local _, itemLink, numPlayers, isDone, winnerIdx, _, _ =
             C_LootHistory.GetItem(i)
 
         local winner, winnerClass, rollType, roll
@@ -97,7 +97,7 @@ local function ProcessClassicRollResult(historyIndex, playerIndex)
     local rollID, itemLink = C_LootHistory.GetItem(historyIndex)
     if not rollID or not itemLink then return end
 
-    local playerName, _playerClass, rollType, roll = C_LootHistory.GetPlayerInfo(historyIndex, playerIndex)
+    local playerName, _, rollType, roll = C_LootHistory.GetPlayerInfo(historyIndex, playerIndex)
     if not playerName then return end
 
     -- Classic ROLL_CHANGED can fire before roll number is assigned

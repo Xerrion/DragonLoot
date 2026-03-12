@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -56,6 +56,8 @@ local BIND_LABELS = {
 -------------------------------------------------------------------------------
 
 local TITLE_BAR_HEIGHT = 24
+local MIN_QUALITY_RARE = 3
+local ICON_GLOW_PADDING = 25
 
 local function GetSlotSpacing()
     return ns.Addon.db.profile.lootWindow.slotSpacing or 2
@@ -91,12 +93,12 @@ local containerFrame
 
 local function GetNormalizedSlotInfo(slotIndex)
     if isRetail then
-        local icon, name, quantity, _currencyID, quality, locked, isQuestItem =
+        local icon, name, quantity, _, quality, locked, isQuestItem =
             GetLootSlotInfo(slotIndex)
         return icon, name, quantity, quality, locked, isQuestItem
     end
     -- Classic/TBC/MoP: 6 returns with currencyID at position 4, no isQuestItem
-    local icon, name, quantity, _currencyID, quality, locked =
+    local icon, name, quantity, _, quality, locked =
         GetLootSlotInfo(slotIndex)
     return icon, name, quantity, quality, locked, nil
 end
@@ -139,7 +141,7 @@ local function ApplySlotBackground(slot, quality)
     local style = ns.Addon.db.profile.appearance.slotBackground or "gradient"
 
     -- Only show quality-tinted backgrounds for Rare+ items (quality >= 3)
-    if not quality or quality < 3 or style == "none" then
+    if not quality or quality < MIN_QUALITY_RARE or style == "none" then
         slot.rowBg:Hide()
         slot.accentStripe:Hide()
         return
@@ -501,7 +503,7 @@ end
 local function PopulateSlot(slot, slotIndex)
     slot.slotIndex = slotIndex
 
-    local icon, name, quantity, quality, _locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
+    local icon, name, quantity, quality, _, isQuestItem = GetNormalizedSlotInfo(slotIndex)
     if not icon then
         slot:Hide()
         return
@@ -536,9 +538,9 @@ local function PopulateSlot(slot, slotIndex)
     end
 
     -- Icon glow for Rare+ items (quality >= 3)
-    if quality and quality >= 3 then
+    if quality and quality >= MIN_QUALITY_RARE then
         slot.iconGlow:SetVertexColor(r, g, b, 0.6)
-        slot.iconGlow:SetSize(iconSize + 25, iconSize + 25)
+        slot.iconGlow:SetSize(iconSize + ICON_GLOW_PADDING, iconSize + ICON_GLOW_PADDING)
         slot.iconGlow:ClearAllPoints()
         slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
         slot.iconGlow:Show()
@@ -1017,9 +1019,9 @@ local function PopulateTestSlot(slot, testData, index)
     end
 
     -- Icon glow for Rare+ items
-    if testData.quality and testData.quality >= 3 then
+    if testData.quality and testData.quality >= MIN_QUALITY_RARE then
         slot.iconGlow:SetVertexColor(r, g, b, 0.6)
-        slot.iconGlow:SetSize(iconSize + 25, iconSize + 25)
+        slot.iconGlow:SetSize(iconSize + ICON_GLOW_PADDING, iconSize + ICON_GLOW_PADDING)
         slot.iconGlow:ClearAllPoints()
         slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
         slot.iconGlow:Show()

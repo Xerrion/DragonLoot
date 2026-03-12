@@ -5,7 +5,7 @@
 -- Supported versions: MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Version guard: skip on Retail (Classic listener runs on everything else)
@@ -21,7 +21,7 @@ local GetActiveLootRollIDs = GetActiveLootRollIDs
 local GetLootRollTimeLeft = GetLootRollTimeLeft
 local StaticPopup_Show = StaticPopup_Show
 local C_LootHistory = C_LootHistory
-local C_Timer = C_Timer
+local LifecycleUtil = ns.LifecycleUtil
 
 -------------------------------------------------------------------------------
 -- State
@@ -29,6 +29,10 @@ local C_Timer = C_Timer
 
 local addon
 local isRollActive = false
+local lifecycleState = LifecycleUtil.CreateState()
+
+local MILLISECONDS_PER_SECOND = 1000
+local WINNER_RESOLVE_DELAY = 0.3
 
 -------------------------------------------------------------------------------
 -- Event Handlers
@@ -36,14 +40,16 @@ local isRollActive = false
 
 local function OnStartLootRoll(_, rollID, rollTime)
     if not isRollActive then return end
+
     -- Classic passes rollTime in milliseconds; convert to seconds for RollManager
-    local rollTimeSec = rollTime / 1000
+    local rollTimeSec = rollTime / MILLISECONDS_PER_SECOND
     ns.RollManager.StartRoll(rollID, rollTimeSec)
     ns.DebugPrint("START_LOOT_ROLL: rollID=" .. tostring(rollID) .. " time=" .. tostring(rollTimeSec) .. "s")
 end
 
 local function OnCancelLootRoll(_, rollID)
     if not isRollActive then return end
+
     local rolls = ns.RollManager.GetActiveRolls()
     if rolls[rollID] and rolls[rollID].completing then return end
     ns.RollManager.CancelRoll(rollID)
@@ -59,14 +65,16 @@ end
 
 local function OnLootRollsComplete(_, lootHandle)
     if not isRollActive then return end
+
     -- Note: LOOT_ROLLS_COMPLETE provides lootHandle which appears to match rollID from
     -- START_LOOT_ROLL in practice. If they ever diverge, a mapping will be needed.
     ns.RollManager.OnRollComplete(lootHandle)
     ns.DebugPrint("LOOT_ROLLS_COMPLETE: handle=" .. tostring(lootHandle))
 end
 
-local function OnLootItemRollWon(_, itemLink, _rollQuantity, rollType, rollValue)
+local function OnLootItemRollWon(_, itemLink, _, rollType, rollValue)
     if not isRollActive then return end
+
     ns.RollManager.OnLootItemRollWon(itemLink, rollType, rollValue)
 end
 
@@ -76,13 +84,14 @@ end
 
 local function RecoverActiveRolls()
     if not GetActiveLootRollIDs then return end
+
     local activeRollIDs = GetActiveLootRollIDs()
     if not activeRollIDs then return end
     for _, rollID in ipairs(activeRollIDs) do
         local timeLeftMs = GetLootRollTimeLeft(rollID)
         if timeLeftMs and timeLeftMs > 0 then
             -- Classic returns milliseconds; convert to seconds for RollManager
-            local timeLeft = timeLeftMs / 1000
+            local timeLeft = timeLeftMs / MILLISECONDS_PER_SECOND
             ns.RollManager.RecoverRoll(rollID, timeLeft, timeLeft)
         end
     end
@@ -93,7 +102,9 @@ end
 -------------------------------------------------------------------------------
 
 local function ResolveWinnerFromHistory(rollID)
-    local roll = ns.RollManager.GetActiveRolls()[rollID]
+    local activeRolls = ns.RollManager.GetActiveRolls()
+
+    local roll = activeRolls[rollID]
     if not roll or not roll.itemName then return end
 
     local numItems = C_LootHistory and C_LootHistory.GetNumItems
@@ -117,6 +128,7 @@ end
 function ns.RollListener.Initialize(addonRef)
     addon = addonRef
     isRollActive = true
+    LifecycleUtil.Activate(lifecycleState)
 
     addon:RegisterEvent("START_LOOT_ROLL", OnStartLootRoll)
     addon:RegisterEvent("CANCEL_LOOT_ROLL", OnCancelLootRoll)
@@ -132,6 +144,7 @@ end
 
 function ns.RollListener.Shutdown()
     isRollActive = false
+    LifecycleUtil.Invalidate(lifecycleState)
 
     if addon then
         addon:UnregisterEvent("START_LOOT_ROLL")
@@ -142,11 +155,21 @@ function ns.RollListener.Shutdown()
         addon:UnregisterEvent("LOOT_ITEM_ROLL_WON")
     end
 
+    addon = nil
+
     ns.DebugPrint("Classic Roll Listener shut down")
 end
 
-function ns.RollListener.ResolveWinner(rollID)
-    C_Timer.After(0.3, function()
+function ns.RollListener.ResolveWinner(rollID, completionToken)
+    LifecycleUtil.After(lifecycleState, WINNER_RESOLVE_DELAY, function()
+        if not isRollActive then return end
+
+        local activeRolls = ns.RollManager.GetActiveRolls()
+
+        local roll = activeRolls[rollID]
+        if not roll or not roll.completing then return end
+        if completionToken and roll.completionToken ~= completionToken then return end
+
         ResolveWinnerFromHistory(rollID)
     end)
 end

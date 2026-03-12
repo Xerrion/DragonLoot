@@ -30,6 +30,7 @@ Locales\zhTW.lua
 
 # Core
 Core\Init.lua
+Core\Lifecycle.lua
 Core\Config.lua
 Core\ConfigWindow.lua
 Core\MinimapIcon.lua

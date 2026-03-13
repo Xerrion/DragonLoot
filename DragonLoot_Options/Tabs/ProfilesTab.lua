@@ -7,13 +7,13 @@
 
 local _, ns = ...
 local L = ns.L
-local LC = ns.LayoutConstants
+
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
 
-local math_abs = math.abs
 local table_sort = table.sort
 local StaticPopup_Show = StaticPopup_Show
 local StaticPopupDialogs = StaticPopupDialogs
@@ -92,112 +92,16 @@ local function GetOtherProfileValues(db)
 end
 
 -------------------------------------------------------------------------------
--- Section: Current Profile header + active dropdown + new profile input
--------------------------------------------------------------------------------
-
-local function CreateCurrentProfileSection(parent, W, db, yOffset, refreshAll)
-    local header = W.CreateHeader(parent, L["Current Profile"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
-
-    local activeDropdown = W.CreateDropdown(parent, {
-        label = L["Active Profile"],
-        values = function() return GetProfileValues(db) end,
-        get = function() return db:GetCurrentProfile() end,
-        set = function(value)
-            db:SetProfile(value)
-            refreshAll()
-        end,
-    })
-    yOffset = LC.AnchorWidget(activeDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
-
-    -- New profile: text input on the left, create button to its right
-    local newProfileInput = W.CreateTextInput(parent, {
-        label = L["New Profile"],
-        width = NEW_PROFILE_INPUT_WIDTH,
-        maxLength = 64,
-    })
-    newProfileInput:SetPoint("TOPLEFT", parent, "TOPLEFT", LC.PADDING_SIDE, yOffset)
-    newProfileInput:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -LC.PADDING_SIDE, yOffset)
-
-    local createBtn = W.CreateButton(parent, {
-        text = L["Create"],
-        width = 80,
-        tooltip = L["Create a new profile with the entered name and switch to it"],
-        onClick = function()
-            local name = newProfileInput:GetValue()
-            if not name or name == "" then return end
-            db:SetProfile(name)
-            newProfileInput:SetValue("")
-            refreshAll()
-        end,
-    })
-    createBtn:ClearAllPoints()
-    createBtn:SetPoint("LEFT", newProfileInput._editBox, "RIGHT", 8, 0)
-
-    yOffset = yOffset - newProfileInput:GetHeight() - LC.SPACING_BETWEEN_SECTIONS
-
-    return yOffset, activeDropdown
-end
-
--------------------------------------------------------------------------------
--- Section: Profile Actions - copy, reset, delete
--------------------------------------------------------------------------------
-
-local function CreateActionsSection(parent, W, db, yOffset, refreshAll)
-    local header = W.CreateHeader(parent, L["Profile Actions"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
-
-    -- Copy From dropdown
-    local copyDropdown = W.CreateDropdown(parent, {
-        label = L["Copy From"],
-        values = function() return GetOtherProfileValues(db) end,
-        get = function() return nil end,
-        set = function(value)
-            db:CopyProfile(value)
-            refreshAll()
-        end,
-    })
-    yOffset = LC.AnchorWidget(copyDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
-
-    -- Reset Current Profile button
-    local resetBtn = W.CreateButton(parent, {
-        text = L["Reset Current Profile"],
-        width = 160,
-        tooltip = L["Reset all settings in the current profile to their default values"],
-        onClick = function()
-            StaticPopup_Show("DRAGONLOOT_RESET_PROFILE")
-        end,
-    })
-    resetBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", LC.PADDING_SIDE, yOffset)
-    yOffset = yOffset - resetBtn:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
-
-    -- Delete Profile dropdown
-    local deleteDropdown = W.CreateDropdown(parent, {
-        label = L["Delete Profile"],
-        values = function() return GetOtherProfileValues(db) end,
-        get = function() return nil end,
-        set = function(value)
-            StaticPopupDialogs["DRAGONLOOT_DELETE_PROFILE"].OnAccept = function()
-                db:DeleteProfile(value)
-                refreshAll()
-            end
-            StaticPopup_Show("DRAGONLOOT_DELETE_PROFILE", value)
-        end,
-    })
-    yOffset = LC.AnchorWidget(deleteDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
-
-    return yOffset, copyDropdown, deleteDropdown
-end
-
--------------------------------------------------------------------------------
 -- Build the Profiles tab content
 -------------------------------------------------------------------------------
 
-local function CreateContent(parent)
+local function CreateContent(scrollChild)
     dlns = ns.dlns
-    local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
+
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
 
     -- Forward-declare widget refs for refresh closure
     local activeDropdown, copyDropdown, deleteDropdown
@@ -208,26 +112,118 @@ local function CreateContent(parent)
         if deleteDropdown then deleteDropdown:Refresh() end
     end
 
-    -- Header + description
-    local header = W.CreateHeader(parent, L["Profiles"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    ---------------------------------------------------------------------------
+    -- Description
+    ---------------------------------------------------------------------------
 
-    local desc = W.CreateDescription(parent,
+    local desc = LDF.CreateDescription(scrollChild,
         L["Profiles allow you to save different settings configurations. You can switch between"
         .. " profiles, copy settings from another profile, or reset to defaults."])
-    yOffset = LC.AnchorWidget(desc, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    stack:AddChild(desc)
 
-    -- Current Profile section
-    yOffset, activeDropdown = CreateCurrentProfileSection(
-        parent, W, db, yOffset, RefreshProfileWidgets
-    )
+    ---------------------------------------------------------------------------
+    -- Section: Current Profile
+    ---------------------------------------------------------------------------
 
-    -- Profile Actions section
-    yOffset, copyDropdown, deleteDropdown = CreateActionsSection(
-        parent, W, db, yOffset, RefreshProfileWidgets
-    )
+    local currentSection = LDF.CreateSection(scrollChild, L["Current Profile"], { columns = 1 })
 
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    local currentStack = LDF.CreateStackLayout(currentSection.content)
+    currentStack:SetPoint("TOPLEFT", currentSection.content, "TOPLEFT")
+    currentStack:SetPoint("RIGHT", currentSection.content, "RIGHT")
+    currentStack:HookScript("OnSizeChanged", function(_, _, h)
+        currentSection.content:SetHeight(h)
+    end)
+
+    -- Dropdown: Active Profile
+    activeDropdown = LDF.CreateDropdown(currentSection.content, {
+        label = L["Active Profile"],
+        values = function() return GetProfileValues(db) end,
+        get = function() return db:GetCurrentProfile() end,
+        set = function(value)
+            db:SetProfile(value)
+            RefreshProfileWidgets()
+        end,
+    })
+    currentStack:AddChild(activeDropdown)
+
+    -- TextInput: New Profile (added to stack for vertical flow)
+    local newProfileInput = LDF.CreateTextInput(currentSection.content, {
+        label = L["New Profile"],
+        width = NEW_PROFILE_INPUT_WIDTH,
+        maxLength = 64,
+    })
+    currentStack:AddChild(newProfileInput)
+
+    -- Button: Create (positioned beside the text input, NOT in stack)
+    local createBtn = LDF.CreateButton(currentSection.content, {
+        text = L["Create"],
+        width = 80,
+        tooltip = L["Create a new profile with the entered name and switch to it"],
+        onClick = function()
+            local name = newProfileInput:GetValue()
+            if not name or name == "" then return end
+            db:SetProfile(name)
+            newProfileInput:SetValue("")
+            RefreshProfileWidgets()
+        end,
+    })
+    createBtn:ClearAllPoints()
+    createBtn:SetPoint("LEFT", newProfileInput._ldf.editBox, "RIGHT", 8, 0)
+
+    stack:AddChild(currentSection)
+
+    ---------------------------------------------------------------------------
+    -- Section: Profile Actions
+    ---------------------------------------------------------------------------
+
+    local actionsSection = LDF.CreateSection(scrollChild, L["Profile Actions"], { columns = 1 })
+
+    local actionsStack = LDF.CreateStackLayout(actionsSection.content)
+    actionsStack:SetPoint("TOPLEFT", actionsSection.content, "TOPLEFT")
+    actionsStack:SetPoint("RIGHT", actionsSection.content, "RIGHT")
+    actionsStack:HookScript("OnSizeChanged", function(_, _, h)
+        actionsSection.content:SetHeight(h)
+    end)
+
+    -- Dropdown: Copy From
+    copyDropdown = LDF.CreateDropdown(actionsSection.content, {
+        label = L["Copy From"],
+        values = function() return GetOtherProfileValues(db) end,
+        get = function() return nil end,
+        set = function(value)
+            db:CopyProfile(value)
+            RefreshProfileWidgets()
+        end,
+    })
+    actionsStack:AddChild(copyDropdown)
+
+    -- Button: Reset Current Profile
+    local resetBtn = LDF.CreateButton(actionsSection.content, {
+        text = L["Reset Current Profile"],
+        width = 160,
+        tooltip = L["Reset all settings in the current profile to their default values"],
+        onClick = function()
+            StaticPopup_Show("DRAGONLOOT_RESET_PROFILE")
+        end,
+    })
+    actionsStack:AddChild(resetBtn)
+
+    -- Dropdown: Delete Profile
+    deleteDropdown = LDF.CreateDropdown(actionsSection.content, {
+        label = L["Delete Profile"],
+        values = function() return GetOtherProfileValues(db) end,
+        get = function() return nil end,
+        set = function(value)
+            StaticPopupDialogs["DRAGONLOOT_DELETE_PROFILE"].OnAccept = function()
+                db:DeleteProfile(value)
+                RefreshProfileWidgets()
+            end
+            StaticPopup_Show("DRAGONLOOT_DELETE_PROFILE", value)
+        end,
+    })
+    actionsStack:AddChild(deleteDropdown)
+
+    stack:AddChild(actionsSection)
 end
 
 -------------------------------------------------------------------------------

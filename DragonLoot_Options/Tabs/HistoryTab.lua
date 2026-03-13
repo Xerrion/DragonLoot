@@ -7,13 +7,13 @@
 
 local _, ns = ...
 local L = ns.L
-local LC = ns.LayoutConstants
+
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
 
-local math_abs = math.abs
 local tostring = tostring
 local tonumber = tonumber
 
@@ -34,12 +34,32 @@ local function ApplyHistorySettings()
 end
 
 -------------------------------------------------------------------------------
--- Build toggles and dropdown section
+-- Build the History tab content
 -------------------------------------------------------------------------------
 
-local function CreateTogglesSection(parent, W, db, yOffset)
-    -- Enable History
-    local enableToggle = W.CreateToggle(parent, {
+local function CreateContent(scrollChild)
+    dlns = ns.dlns
+    local db = dlns.Addon.db
+
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
+
+    ---------------------------------------------------------------------------
+    -- Section: History (toggles + quality dropdown)
+    ---------------------------------------------------------------------------
+
+    local historySection = LDF.CreateSection(scrollChild, L["History"], { columns = 1 })
+
+    local historyStack = LDF.CreateStackLayout(historySection.content)
+    historyStack:SetPoint("TOPLEFT", historySection.content, "TOPLEFT")
+    historyStack:SetPoint("RIGHT", historySection.content, "RIGHT")
+    historyStack:HookScript("OnSizeChanged", function(_, _, h)
+        historySection.content:SetHeight(h)
+    end)
+
+    -- Toggle: Enable History
+    local enableToggle = LDF.CreateToggle(historySection.content, {
         label = L["Enable History"],
         get = function() return db.profile.history.enabled end,
         set = function(value)
@@ -47,75 +67,72 @@ local function CreateTogglesSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    historyStack:AddChild(enableToggle)
 
-    -- Auto Show on Loot
-    local autoShowToggle = W.CreateToggle(parent, {
+    -- Toggle: Auto Show on Loot
+    local autoShowToggle = LDF.CreateToggle(historySection.content, {
         label = L["Auto Show on Loot"],
         get = function() return db.profile.history.autoShow end,
-        set = function(value)
-            db.profile.history.autoShow = value
-        end,
+        set = function(value) db.profile.history.autoShow = value end,
     })
-    yOffset = LC.AnchorWidget(autoShowToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    historyStack:AddChild(autoShowToggle)
 
     -- Forward-declare so the toggle set closure captures the variable
     local qualityDropdown
 
-    -- Track Direct Loot (set callback updates dropdown disabled state)
-    local trackToggle = W.CreateToggle(parent, {
+    -- Toggle: Track Direct Loot (set callback updates dropdown enabled state)
+    local trackToggle = LDF.CreateToggle(historySection.content, {
         label = L["Track Direct Loot"],
         tooltip = L["Track items you pick up directly (not from a loot window)"],
         get = function() return db.profile.history.trackDirectLoot end,
         set = function(value)
             db.profile.history.trackDirectLoot = value
             if qualityDropdown then
-                qualityDropdown:SetDisabled(not value)
+                qualityDropdown:SetEnabled(value)
             end
         end,
     })
-    yOffset = LC.AnchorWidget(trackToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    historyStack:AddChild(trackToggle)
 
-    -- Minimum Quality dropdown
-    qualityDropdown = W.CreateDropdown(parent, {
+    -- Dropdown: Minimum Quality
+    qualityDropdown = LDF.CreateDropdown(historySection.content, {
         label = L["Minimum Quality"],
         values = ns.QualityValues,
         get = function() return tostring(db.profile.history.minQuality) end,
-        set = function(value)
-            db.profile.history.minQuality = tonumber(value)
-        end,
+        set = function(value) db.profile.history.minQuality = tonumber(value) end,
     })
-    yOffset = LC.AnchorWidget(qualityDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    historyStack:AddChild(qualityDropdown)
 
-    -- Apply initial disabled state based on current trackDirectLoot value
-    qualityDropdown:SetDisabled(not db.profile.history.trackDirectLoot)
+    -- Apply initial enabled state based on current trackDirectLoot value
+    qualityDropdown:SetEnabled(db.profile.history.trackDirectLoot)
 
-    return yOffset
-end
+    stack:AddChild(historySection)
 
--------------------------------------------------------------------------------
--- Build layout sliders section
--------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
+    -- Section: Layout (sliders)
+    ---------------------------------------------------------------------------
 
-local function CreateLayoutSection(parent, W, db, yOffset)
-    -- Header: Layout
-    local layoutHeader = W.CreateHeader(parent, L["Layout"])
-    yOffset = LC.AnchorWidget(layoutHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local layoutSection = LDF.CreateSection(scrollChild, L["Layout"], { columns = 1 })
+
+    local layoutStack = LDF.CreateStackLayout(layoutSection.content)
+    layoutStack:SetPoint("TOPLEFT", layoutSection.content, "TOPLEFT")
+    layoutStack:SetPoint("RIGHT", layoutSection.content, "RIGHT")
+    layoutStack:HookScript("OnSizeChanged", function(_, _, h)
+        layoutSection.content:SetHeight(h)
+    end)
 
     -- Slider: Max Entries
-    local maxEntriesSlider = W.CreateSlider(parent, {
+    local maxEntriesSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Max Entries"],
         min = 10, max = 500, step = 10,
         format = "%d",
         get = function() return db.profile.history.maxEntries end,
-        set = function(value)
-            db.profile.history.maxEntries = value
-        end,
+        set = function(value) db.profile.history.maxEntries = value end,
     })
-    yOffset = LC.AnchorWidget(maxEntriesSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(maxEntriesSlider)
 
     -- Slider: Entry Spacing
-    local entrySpacingSlider = W.CreateSlider(parent, {
+    local entrySpacingSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Entry Spacing"],
         min = 0, max = 12, step = 1,
         format = "%d",
@@ -125,10 +142,10 @@ local function CreateLayoutSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    yOffset = LC.AnchorWidget(entrySpacingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(entrySpacingSlider)
 
     -- Slider: Content Padding
-    local contentPaddingSlider = W.CreateSlider(parent, {
+    local contentPaddingSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Content Padding"],
         min = 0, max = 12, step = 1,
         format = "%d",
@@ -138,36 +155,9 @@ local function CreateLayoutSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    yOffset = LC.AnchorWidget(contentPaddingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(contentPaddingSlider)
 
-    return yOffset
-end
-
--------------------------------------------------------------------------------
--- Build the History tab content
--------------------------------------------------------------------------------
-
-local function CreateContent(parent)
-    dlns = ns.dlns
-    local W = ns.Widgets
-    local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
-
-    -- Header: History
-    local header = W.CreateHeader(parent, L["History"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
-
-    -- Toggles and dropdown section
-    yOffset = CreateTogglesSection(parent, W, db, yOffset)
-
-    -- Section gap before layout
-    yOffset = yOffset - LC.SPACING_BETWEEN_SECTIONS + LC.SPACING_BETWEEN_WIDGETS
-
-    -- Layout sliders section
-    yOffset = CreateLayoutSection(parent, W, db, yOffset)
-
-    -- Set content height for scroll frame
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    stack:AddChild(layoutSection)
 end
 
 -------------------------------------------------------------------------------

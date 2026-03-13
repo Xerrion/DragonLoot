@@ -8,10 +8,10 @@
 local _, ns = ...
 
 -------------------------------------------------------------------------------
--- Cached WoW API
+-- Library references
 -------------------------------------------------------------------------------
 
-local tinsert = table.insert
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Locale bridge from main addon
@@ -20,10 +20,9 @@ local tinsert = table.insert
 ns.L = LibStub("AceLocale-3.0"):GetLocale("DragonLoot")
 
 -------------------------------------------------------------------------------
--- Widget and tab registries (populated by subsequent files)
+-- Tab registry (populated by subsequent tab files)
 -------------------------------------------------------------------------------
 
-ns.Widgets = {}
 ns.Tabs = {}
 
 -------------------------------------------------------------------------------
@@ -42,50 +41,62 @@ ns.QualityValues = {
 }
 
 -------------------------------------------------------------------------------
--- Panel state
+-- Shared helpers
 -------------------------------------------------------------------------------
 
-local optionsPanel
-local tabGroup
+local LSM = LibStub("LibSharedMedia-3.0")
+local pairs = pairs
+local table_sort = table.sort
 
--------------------------------------------------------------------------------
--- Refresh all visible widget values from db
--------------------------------------------------------------------------------
-
-local function RefreshVisibleWidgets()
-    if not tabGroup then return end
-    local selectedId = tabGroup:GetSelectedTab()
-    if not selectedId then return end
-    for _, tab in ipairs(ns.Tabs) do
-        if tab.id == selectedId and tab.refreshFunc then
-            tab.refreshFunc()
-            break
-        end
+--- Build a sorted values table from a LibSharedMedia media type.
+--- @param mediaType string LSM media type key (e.g. "font", "statusbar")
+--- @return table values Array of {value=key, text=key}
+function ns.BuildLSMValues(mediaType)
+    local hash = LSM:HashTable(mediaType)
+    local values = {}
+    for key in pairs(hash) do
+        values[#values + 1] = { value = key, text = key }
     end
+    table_sort(values, function(a, b) return a.text < b.text end)
+    return values
+end
+
+--- Notify all DragonLoot display frames to re-apply their settings.
+--- Safe to call at any time; missing modules are silently skipped.
+function ns.NotifyAppearanceChange()
+    local dl = ns.dlns
+    if not dl then return end
+    if dl.LootFrame and dl.LootFrame.ApplySettings then dl.LootFrame.ApplySettings() end
+    if dl.RollManager and dl.RollManager.ApplySettings then dl.RollManager.ApplySettings() end
+    if dl.HistoryFrame and dl.HistoryFrame.ApplySettings then dl.HistoryFrame.ApplySettings() end
 end
 
 -------------------------------------------------------------------------------
--- Create the options panel (called lazily on first Open)
+-- Panel state
 -------------------------------------------------------------------------------
 
-local function CreateOptionsPanel()
+local optionsWindow
+
+-------------------------------------------------------------------------------
+-- Create the options window (called lazily on first Open)
+-------------------------------------------------------------------------------
+
+local function CreateOptionsWindow()
     ns.dlns = _G.DragonLootNS
     if not ns.dlns then
         print("|cffff6600[DragonLoot_Options]|r " .. L["DragonLoot namespace not found."])
         return
     end
 
-    local panel = ns.Widgets.CreatePanel("DragonLootOptionsFrame", 800, 600)
+    optionsWindow = LDF.CreateWindow({
+        name = "DragonLootOptionsFrame",
+        title = "DragonLoot",
+        width = 800,
+        height = 600,
+    })
 
-    -- Tab group below title bar
-    tabGroup = ns.Widgets.CreateTabGroup(panel, ns.Tabs)
-    tabGroup:SetPoint("TOPLEFT", panel, "TOPLEFT", 8, -32)
-    tabGroup:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -8, 8)
-
-    -- ESC-closable
-    tinsert(UISpecialFrames, "DragonLootOptionsFrame")
-
-    optionsPanel = panel
+    -- Tab group inside the window content area
+    LDF.CreateTabGroup(optionsWindow.content, ns.Tabs)
 end
 
 -------------------------------------------------------------------------------
@@ -95,29 +106,22 @@ end
 DragonLoot_Options = {}
 
 function DragonLoot_Options.Open()
-    if not optionsPanel then
-        CreateOptionsPanel()
+    if not optionsWindow then
+        CreateOptionsWindow()
     end
-    if not optionsPanel then return end
-    optionsPanel:Show()
-    RefreshVisibleWidgets()
+    if not optionsWindow then return end
+    optionsWindow:Show()
 end
 
 function DragonLoot_Options.Close()
-    if not optionsPanel then return end
-    optionsPanel:Hide()
+    if not optionsWindow then return end
+    optionsWindow:Hide()
 end
 
 function DragonLoot_Options.Toggle()
-    if optionsPanel and optionsPanel:IsShown() then
+    if optionsWindow and optionsWindow:IsShown() then
         DragonLoot_Options.Close()
     else
         DragonLoot_Options.Open()
     end
 end
-
--------------------------------------------------------------------------------
--- Expose namespace bridge for widgets/tabs
--------------------------------------------------------------------------------
-
-ns.RefreshVisibleWidgets = RefreshVisibleWidgets

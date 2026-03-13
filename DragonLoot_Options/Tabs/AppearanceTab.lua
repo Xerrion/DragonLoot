@@ -7,35 +7,14 @@
 
 local _, ns = ...
 local L = ns.L
-local LC = ns.LayoutConstants
 
--------------------------------------------------------------------------------
--- Cached globals
--------------------------------------------------------------------------------
-
-local math_abs = math.abs
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Namespace references
 -------------------------------------------------------------------------------
 
 local dlns
-
--------------------------------------------------------------------------------
--- LSM list wrappers
--------------------------------------------------------------------------------
-
-local function GetFontValues()
-    return LC.BuildLSMValues("font")
-end
-
-local function GetBackgroundValues()
-    return LC.BuildLSMValues("background")
-end
-
-local function GetBorderValues()
-    return LC.BuildLSMValues("border")
-end
 
 -------------------------------------------------------------------------------
 -- Font outline dropdown values
@@ -60,27 +39,33 @@ local SLOT_BG_VALUES = {
 }
 
 -------------------------------------------------------------------------------
--- Section: Font
+-- Section builders
 -------------------------------------------------------------------------------
 
-local function CreateFontSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Font"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+local function CreateFontSection(scrollChild, stack, db)
+    local section = LDF.CreateSection(scrollChild, L["Font"], { columns = 1 })
 
-    local fontDropdown = W.CreateDropdown(parent, {
+    local sectionStack = LDF.CreateStackLayout(section.content)
+    sectionStack:SetPoint("TOPLEFT", section.content, "TOPLEFT")
+    sectionStack:SetPoint("RIGHT", section.content, "RIGHT")
+    sectionStack:HookScript("OnSizeChanged", function(_, _, h)
+        section.content:SetHeight(h)
+    end)
+
+    local fontDropdown = LDF.CreateDropdown(section.content, {
         label = L["Font Family"],
-        values = GetFontValues,
+        values = function() return ns.BuildLSMValues("font") end,
         sort = true,
         mediaType = "font",
         get = function() return db.profile.appearance.font end,
         set = function(value)
             db.profile.appearance.font = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(fontDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(fontDropdown)
 
-    local fontSizeSlider = W.CreateSlider(parent, {
+    local fontSizeSlider = LDF.CreateSlider(section.content, {
         label = L["Font Size"],
         tooltip = L["Base font size for all DragonLoot frames"],
         min = 8,
@@ -90,34 +75,36 @@ local function CreateFontSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.fontSize end,
         set = function(value)
             db.profile.appearance.fontSize = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(fontSizeSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(fontSizeSlider)
 
-    local outlineDropdown = W.CreateDropdown(parent, {
+    local outlineDropdown = LDF.CreateDropdown(section.content, {
         label = L["Font Outline"],
         values = FONT_OUTLINE_VALUES,
         get = function() return db.profile.appearance.fontOutline end,
         set = function(value)
             db.profile.appearance.fontOutline = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(outlineDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    sectionStack:AddChild(outlineDropdown)
 
-    return yOffset
+    stack:AddChild(section)
 end
 
--------------------------------------------------------------------------------
--- Section: Icon Sizes
--------------------------------------------------------------------------------
+local function CreateIconSection(scrollChild, stack, db)
+    local section = LDF.CreateSection(scrollChild, L["Icon Sizes"], { columns = 1 })
 
-local function CreateIconSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Icon Sizes"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local sectionStack = LDF.CreateStackLayout(section.content)
+    sectionStack:SetPoint("TOPLEFT", section.content, "TOPLEFT")
+    sectionStack:SetPoint("RIGHT", section.content, "RIGHT")
+    sectionStack:HookScript("OnSizeChanged", function(_, _, h)
+        section.content:SetHeight(h)
+    end)
 
-    local lootIconSlider = W.CreateSlider(parent, {
+    local lootIconSlider = LDF.CreateSlider(section.content, {
         label = L["Loot Icon Size"],
         tooltip = L["Icon size in the loot window"],
         min = 16,
@@ -127,12 +114,12 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.lootIconSize end,
         set = function(value)
             db.profile.appearance.lootIconSize = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(lootIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(lootIconSlider)
 
-    local rollIconSlider = W.CreateSlider(parent, {
+    local rollIconSlider = LDF.CreateSlider(section.content, {
         label = L["Roll Icon Size"],
         tooltip = L["Icon size in the roll frame"],
         min = 16,
@@ -142,12 +129,12 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.rollIconSize end,
         set = function(value)
             db.profile.appearance.rollIconSize = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(rollIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(rollIconSlider)
 
-    local historyIconSlider = W.CreateSlider(parent, {
+    local historyIconSlider = LDF.CreateSlider(section.content, {
         label = L["History Icon Size"],
         tooltip = L["Icon size in the history frame"],
         min = 16,
@@ -157,45 +144,47 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.historyIconSize end,
         set = function(value)
             db.profile.appearance.historyIconSize = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(historyIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(historyIconSlider)
 
-    local qualityBorderToggle = W.CreateToggle(parent, {
+    local qualityBorderToggle = LDF.CreateToggle(section.content, {
         label = L["Quality Border"],
         tooltip = L["Show quality-colored borders on item icons"],
         get = function() return db.profile.appearance.qualityBorder end,
         set = function(value)
             db.profile.appearance.qualityBorder = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(qualityBorderToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(qualityBorderToggle)
 
-    local slotBgDropdown = W.CreateDropdown(parent, {
+    local slotBgDropdown = LDF.CreateDropdown(section.content, {
         label = L["Slot Background"],
         values = SLOT_BG_VALUES,
         get = function() return db.profile.appearance.slotBackground end,
         set = function(value)
             db.profile.appearance.slotBackground = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(slotBgDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    sectionStack:AddChild(slotBgDropdown)
 
-    return yOffset
+    stack:AddChild(section)
 end
 
--------------------------------------------------------------------------------
--- Section: Background
--------------------------------------------------------------------------------
+local function CreateBackgroundSection(scrollChild, stack, db)
+    local section = LDF.CreateSection(scrollChild, L["Background"], { columns = 1 })
 
-local function CreateBackgroundSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Background"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local sectionStack = LDF.CreateStackLayout(section.content)
+    sectionStack:SetPoint("TOPLEFT", section.content, "TOPLEFT")
+    sectionStack:SetPoint("RIGHT", section.content, "RIGHT")
+    sectionStack:HookScript("OnSizeChanged", function(_, _, h)
+        section.content:SetHeight(h)
+    end)
 
-    local bgColorPicker = W.CreateColorPicker(parent, {
+    local bgColorPicker = LDF.CreateColorPicker(section.content, {
         label = L["Background Color"],
         hasAlpha = false,
         get = function()
@@ -206,12 +195,12 @@ local function CreateBackgroundSection(parent, W, db, yOffset)
             db.profile.appearance.backgroundColor.r = r
             db.profile.appearance.backgroundColor.g = g
             db.profile.appearance.backgroundColor.b = b
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(bgColorPicker, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(bgColorPicker)
 
-    local bgAlphaSlider = W.CreateSlider(parent, {
+    local bgAlphaSlider = LDF.CreateSlider(section.content, {
         label = L["Background Opacity"],
         tooltip = L["Opacity of the frame background"],
         min = 0,
@@ -221,36 +210,38 @@ local function CreateBackgroundSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.backgroundAlpha end,
         set = function(value)
             db.profile.appearance.backgroundAlpha = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(bgAlphaSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(bgAlphaSlider)
 
-    local bgTextureDropdown = W.CreateDropdown(parent, {
+    local bgTextureDropdown = LDF.CreateDropdown(section.content, {
         label = L["Background Texture"],
-        values = GetBackgroundValues,
+        values = function() return ns.BuildLSMValues("background") end,
         sort = true,
         mediaType = "background",
         get = function() return db.profile.appearance.backgroundTexture end,
         set = function(value)
             db.profile.appearance.backgroundTexture = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(bgTextureDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    sectionStack:AddChild(bgTextureDropdown)
 
-    return yOffset
+    stack:AddChild(section)
 end
 
--------------------------------------------------------------------------------
--- Section: Border
--------------------------------------------------------------------------------
+local function CreateBorderSection(scrollChild, stack, db)
+    local section = LDF.CreateSection(scrollChild, L["Border"], { columns = 1 })
 
-local function CreateBorderSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Border"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local sectionStack = LDF.CreateStackLayout(section.content)
+    sectionStack:SetPoint("TOPLEFT", section.content, "TOPLEFT")
+    sectionStack:SetPoint("RIGHT", section.content, "RIGHT")
+    sectionStack:HookScript("OnSizeChanged", function(_, _, h)
+        section.content:SetHeight(h)
+    end)
 
-    local borderColorPicker = W.CreateColorPicker(parent, {
+    local borderColorPicker = LDF.CreateColorPicker(section.content, {
         label = L["Border Color"],
         hasAlpha = false,
         get = function()
@@ -261,12 +252,12 @@ local function CreateBorderSection(parent, W, db, yOffset)
             db.profile.appearance.borderColor.r = r
             db.profile.appearance.borderColor.g = g
             db.profile.appearance.borderColor.b = b
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(borderColorPicker, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(borderColorPicker)
 
-    local borderSizeSlider = W.CreateSlider(parent, {
+    local borderSizeSlider = LDF.CreateSlider(section.content, {
         label = L["Border Size"],
         tooltip = L["Thickness of the frame border"],
         min = 0,
@@ -276,43 +267,43 @@ local function CreateBorderSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.borderSize end,
         set = function(value)
             db.profile.appearance.borderSize = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(borderSizeSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(borderSizeSlider)
 
-    local borderTextureDropdown = W.CreateDropdown(parent, {
+    local borderTextureDropdown = LDF.CreateDropdown(section.content, {
         label = L["Border Texture"],
-        values = GetBorderValues,
+        values = function() return ns.BuildLSMValues("border") end,
         sort = true,
         mediaType = "border",
         get = function() return db.profile.appearance.borderTexture end,
         set = function(value)
             db.profile.appearance.borderTexture = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(borderTextureDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    sectionStack:AddChild(borderTextureDropdown)
 
-    return yOffset
+    stack:AddChild(section)
 end
 
 -------------------------------------------------------------------------------
 -- Build the Appearance tab content
 -------------------------------------------------------------------------------
 
-local function CreateContent(parent)
+local function CreateContent(scrollChild)
     dlns = ns.dlns
-    local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
 
-    yOffset = CreateFontSection(parent, W, db, yOffset)
-    yOffset = CreateIconSection(parent, W, db, yOffset)
-    yOffset = CreateBackgroundSection(parent, W, db, yOffset)
-    yOffset = CreateBorderSection(parent, W, db, yOffset)
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
 
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    CreateFontSection(scrollChild, stack, db)
+    CreateIconSection(scrollChild, stack, db)
+    CreateBackgroundSection(scrollChild, stack, db)
+    CreateBorderSection(scrollChild, stack, db)
 end
 
 -------------------------------------------------------------------------------

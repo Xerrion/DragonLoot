@@ -3,6 +3,7 @@ max_line_length = 120
 codes = true
 exclude_files = {
     "DragonLoot/Libs/",
+    "DragonLoot_Options/Libs/",
     ".release/",
     ".types.lua",
 }
@@ -103,7 +104,6 @@ files["DragonLoot_Options/"] = {
     globals = {
         "DragonLoot_Options",
         "StaticPopupDialogs",
-        "ColorPickerFrame",
     },
 
     read_globals = {
@@ -112,8 +112,10 @@ files["DragonLoot_Options/"] = {
 
         -- WoW Globals
         "UISpecialFrames", "YES", "NO",
-        "GameFontNormal", "GameFontNormalSmall", "GameFontNormalLarge",
-        "GameFontHighlight", "GameFontHighlightSmall",
+
+        -- Libraries
+        "LibStub",
+        "LibDragonFramework", "LDF_BaseMixin",
 
         -- DragonLoot bridge
         "DragonLootNS",

@@ -7,13 +7,13 @@
 
 local _, ns = ...
 local L = ns.L
-local LC = ns.LayoutConstants
+
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
 
-local math_abs = math.abs
 local ipairs = ipairs
 local LibStub = LibStub
 
@@ -50,112 +50,149 @@ local function GetExitValues()
 end
 
 -------------------------------------------------------------------------------
--- Create an animation dropdown for a given db key
--------------------------------------------------------------------------------
-
-local function CreateAnimDropdown(parent, W, db, yOffset, label, key, valuesFn)
-    local dropdown = W.CreateDropdown(parent, {
-        label = label,
-        values = valuesFn,
-        get = function() return db.profile.animation[key] end,
-        set = function(value)
-            db.profile.animation[key] = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    return LC.AnchorWidget(dropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
-end
-
--------------------------------------------------------------------------------
 -- Build the Animation tab content
 -------------------------------------------------------------------------------
 
-local function CreateContent(parent)
+local function CreateContent(scrollChild)
     dlns = ns.dlns
-    local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
+
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
 
     ---------------------------------------------------------------------------
     -- Section: Animation (global toggle + durations)
     ---------------------------------------------------------------------------
-    local header = W.CreateHeader(parent, L["Animation"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    local enableToggle = W.CreateToggle(parent, {
+    local animSection = LDF.CreateSection(scrollChild, L["Animation"], { columns = 1 })
+
+    local animStack = LDF.CreateStackLayout(animSection.content)
+    animStack:SetPoint("TOPLEFT", animSection.content, "TOPLEFT")
+    animStack:SetPoint("RIGHT", animSection.content, "RIGHT")
+    animStack:HookScript("OnSizeChanged", function(_, _, h)
+        animSection.content:SetHeight(h)
+    end)
+
+    -- Toggle: Enable Animations
+    local enableToggle = LDF.CreateToggle(animSection.content, {
         label = L["Enable Animations"],
         tooltip = L["Enable or disable all DragonLoot animations"],
         get = function() return db.profile.animation.enabled end,
         set = function(value)
             db.profile.animation.enabled = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    animStack:AddChild(enableToggle)
 
-    local openDuration = W.CreateSlider(parent, {
+    -- Slider: Open Duration
+    local openDuration = LDF.CreateSlider(animSection.content, {
         label = L["Open Duration"],
         tooltip = L["Duration of open/show animations in seconds"],
-        min = 0.1,
-        max = 1,
-        step = 0.05,
+        min = 0.1, max = 1, step = 0.05,
         format = "%.2f",
         get = function() return db.profile.animation.openDuration end,
         set = function(value)
             db.profile.animation.openDuration = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(openDuration, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    animStack:AddChild(openDuration)
 
-    local closeDuration = W.CreateSlider(parent, {
+    -- Slider: Close Duration
+    local closeDuration = LDF.CreateSlider(animSection.content, {
         label = L["Close Duration"],
         tooltip = L["Duration of close/hide animations in seconds"],
-        min = 0.1,
-        max = 1,
-        step = 0.05,
+        min = 0.1, max = 1, step = 0.05,
         format = "%.2f",
         get = function() return db.profile.animation.closeDuration end,
         set = function(value)
             db.profile.animation.closeDuration = value
-            LC.NotifyAppearanceChange()
+            ns.NotifyAppearanceChange()
         end,
     })
-    yOffset = LC.AnchorWidget(closeDuration, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    animStack:AddChild(closeDuration)
+
+    stack:AddChild(animSection)
 
     ---------------------------------------------------------------------------
-    -- Section: Loot Window animation types
+    -- Section: Loot Window (animation type selection)
     ---------------------------------------------------------------------------
-    local lootHeader = W.CreateHeader(parent, L["Loot Window"])
-    yOffset = LC.AnchorWidget(lootHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    yOffset = CreateAnimDropdown(
-        parent, W, db, yOffset, L["Open Animation"], "lootOpenAnim", GetEntranceValues
-    )
-    yOffset = CreateAnimDropdown(
-        parent, W, db, yOffset, L["Close Animation"], "lootCloseAnim", GetExitValues
-    )
+    local lootSection = LDF.CreateSection(scrollChild, L["Loot Window"], { columns = 1 })
 
-    -- Extra section spacing before next header
-    yOffset = yOffset - LC.SPACING_BETWEEN_SECTIONS + LC.SPACING_BETWEEN_WIDGETS
+    local lootStack = LDF.CreateStackLayout(lootSection.content)
+    lootStack:SetPoint("TOPLEFT", lootSection.content, "TOPLEFT")
+    lootStack:SetPoint("RIGHT", lootSection.content, "RIGHT")
+    lootStack:HookScript("OnSizeChanged", function(_, _, h)
+        lootSection.content:SetHeight(h)
+    end)
+
+    -- Dropdown: Open Animation
+    local lootOpenDropdown = LDF.CreateDropdown(lootSection.content, {
+        label = L["Open Animation"],
+        values = GetEntranceValues,
+        get = function() return db.profile.animation.lootOpenAnim end,
+        set = function(value)
+            db.profile.animation.lootOpenAnim = value
+            ns.NotifyAppearanceChange()
+        end,
+    })
+    lootStack:AddChild(lootOpenDropdown)
+
+    -- Dropdown: Close Animation
+    local lootCloseDropdown = LDF.CreateDropdown(lootSection.content, {
+        label = L["Close Animation"],
+        values = GetExitValues,
+        get = function() return db.profile.animation.lootCloseAnim end,
+        set = function(value)
+            db.profile.animation.lootCloseAnim = value
+            ns.NotifyAppearanceChange()
+        end,
+    })
+    lootStack:AddChild(lootCloseDropdown)
+
+    stack:AddChild(lootSection)
 
     ---------------------------------------------------------------------------
-    -- Section: Roll Frame animation types
+    -- Section: Roll Frame (animation type selection)
     ---------------------------------------------------------------------------
-    local rollHeader = W.CreateHeader(parent, L["Roll Frame"])
-    yOffset = LC.AnchorWidget(rollHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    yOffset = CreateAnimDropdown(
-        parent, W, db, yOffset, L["Show Animation"], "rollShowAnim", GetEntranceValues
-    )
-    yOffset = CreateAnimDropdown(
-        parent, W, db, yOffset, L["Hide Animation"], "rollHideAnim", GetExitValues
-    )
+    local rollSection = LDF.CreateSection(scrollChild, L["Roll Frame"], { columns = 1 })
 
-    ---------------------------------------------------------------------------
-    -- Set content height for scroll frame
-    ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    local rollStack = LDF.CreateStackLayout(rollSection.content)
+    rollStack:SetPoint("TOPLEFT", rollSection.content, "TOPLEFT")
+    rollStack:SetPoint("RIGHT", rollSection.content, "RIGHT")
+    rollStack:HookScript("OnSizeChanged", function(_, _, h)
+        rollSection.content:SetHeight(h)
+    end)
+
+    -- Dropdown: Show Animation
+    local rollShowDropdown = LDF.CreateDropdown(rollSection.content, {
+        label = L["Show Animation"],
+        values = GetEntranceValues,
+        get = function() return db.profile.animation.rollShowAnim end,
+        set = function(value)
+            db.profile.animation.rollShowAnim = value
+            ns.NotifyAppearanceChange()
+        end,
+    })
+    rollStack:AddChild(rollShowDropdown)
+
+    -- Dropdown: Hide Animation
+    local rollHideDropdown = LDF.CreateDropdown(rollSection.content, {
+        label = L["Hide Animation"],
+        values = GetExitValues,
+        get = function() return db.profile.animation.rollHideAnim end,
+        set = function(value)
+            db.profile.animation.rollHideAnim = value
+            ns.NotifyAppearanceChange()
+        end,
+    })
+    rollStack:AddChild(rollHideDropdown)
+
+    stack:AddChild(rollSection)
 end
 
 -------------------------------------------------------------------------------

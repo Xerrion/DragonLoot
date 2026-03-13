@@ -7,13 +7,13 @@
 
 local _, ns = ...
 local L = ns.L
-local LC = ns.LayoutConstants
+
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
 
-local math_abs = math.abs
 local tostring = tostring
 local tonumber = tonumber
 
@@ -30,103 +30,116 @@ local dlns
 local ITEM_LIST_HEIGHT = 220
 
 -------------------------------------------------------------------------------
--- Section: Smart Auto-Loot header + toggle + quality dropdown
+-- Build the Auto-Loot tab content
 -------------------------------------------------------------------------------
 
-local function CreateSettingsSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Smart Auto-Loot"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+local function CreateContent(scrollChild)
+    dlns = ns.dlns
+    local db = dlns.Addon.db
 
-    local desc = W.CreateDescription(parent,
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
+
+    ---------------------------------------------------------------------------
+    -- Section: Smart Auto-Loot (toggle + quality dropdown)
+    ---------------------------------------------------------------------------
+
+    local settingsSection = LDF.CreateSection(scrollChild, L["Smart Auto-Loot"], { columns = 1 })
+
+    local settingsStack = LDF.CreateStackLayout(settingsSection.content)
+    settingsStack:SetPoint("TOPLEFT", settingsSection.content, "TOPLEFT")
+    settingsStack:SetPoint("RIGHT", settingsSection.content, "RIGHT")
+    settingsStack:HookScript("OnSizeChanged", function(_, _, h)
+        settingsSection.content:SetHeight(h)
+    end)
+
+    -- Description
+    local settingsDesc = LDF.CreateDescription(settingsSection.content,
         L["Automatically loot items that meet your criteria. Items on the whitelist are always"
         .. " picked up. Items on the blacklist are never auto-looted. Everything else is evaluated"
         .. " against the minimum quality threshold."])
-    yOffset = LC.AnchorWidget(desc, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    settingsStack:AddChild(settingsDesc)
 
-    local enableToggle = W.CreateToggle(parent, {
+    -- Toggle: Enable Smart Auto-Loot
+    local enableToggle = LDF.CreateToggle(settingsSection.content, {
         label = L["Enable Smart Auto-Loot"],
         tooltip = L["When enabled, qualifying items are automatically looted based on your filter rules"],
         get = function() return db.profile.autoLoot.enabled end,
         set = function(value) db.profile.autoLoot.enabled = value end,
     })
-    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    settingsStack:AddChild(enableToggle)
 
-    local qualityDropdown = W.CreateDropdown(parent, {
+    -- Dropdown: Minimum Quality
+    local qualityDropdown = LDF.CreateDropdown(settingsSection.content, {
         label = L["Minimum Quality"],
         values = ns.QualityValues,
         get = function() return tostring(db.profile.autoLoot.minQuality) end,
         set = function(value) db.profile.autoLoot.minQuality = tonumber(value) end,
     })
-    yOffset = LC.AnchorWidget(qualityDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    settingsStack:AddChild(qualityDropdown)
 
-    return yOffset
-end
+    stack:AddChild(settingsSection)
 
--------------------------------------------------------------------------------
--- Section: Whitelist item grid
--------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
+    -- Section: Whitelist item grid
+    ---------------------------------------------------------------------------
 
-local function CreateWhitelistSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Whitelist"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local whitelistSection = LDF.CreateSection(scrollChild, L["Whitelist"], { columns = 1 })
 
-    local desc = W.CreateDescription(parent,
+    local whitelistStack = LDF.CreateStackLayout(whitelistSection.content)
+    whitelistStack:SetPoint("TOPLEFT", whitelistSection.content, "TOPLEFT")
+    whitelistStack:SetPoint("RIGHT", whitelistSection.content, "RIGHT")
+    whitelistStack:HookScript("OnSizeChanged", function(_, _, h)
+        whitelistSection.content:SetHeight(h)
+    end)
+
+    -- Description
+    local whitelistDesc = LDF.CreateDescription(whitelistSection.content,
         L["Items on this list are always looted automatically, regardless of quality."
         .. " Drag an item from your bags onto an empty slot to add it."])
-    yOffset = LC.AnchorWidget(desc, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    whitelistStack:AddChild(whitelistDesc)
 
-    local itemList = W.CreateItemList(parent, {
-        label = "",
-        getItems = function() return db.profile.autoLoot.whitelist end,
-        setItems = function(t) db.profile.autoLoot.whitelist = t end,
+    -- Item list
+    local whitelistItems = LDF.CreateItemList(whitelistSection.content, {
+        get = function() return db.profile.autoLoot.whitelist end,
+        set = function(t) db.profile.autoLoot.whitelist = t end,
         emptyText = L["No items - drag items here to add"],
     })
-    itemList:SetHeight(ITEM_LIST_HEIGHT)
-    yOffset = LC.AnchorWidget(itemList, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    whitelistItems:SetHeight(ITEM_LIST_HEIGHT)
+    whitelistStack:AddChild(whitelistItems)
 
-    return yOffset
-end
+    stack:AddChild(whitelistSection)
 
--------------------------------------------------------------------------------
--- Section: Blacklist item grid
--------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
+    -- Section: Blacklist item grid
+    ---------------------------------------------------------------------------
 
-local function CreateBlacklistSection(parent, W, db, yOffset)
-    local header = W.CreateHeader(parent, L["Blacklist"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
+    local blacklistSection = LDF.CreateSection(scrollChild, L["Blacklist"], { columns = 1 })
 
-    local desc = W.CreateDescription(parent,
+    local blacklistStack = LDF.CreateStackLayout(blacklistSection.content)
+    blacklistStack:SetPoint("TOPLEFT", blacklistSection.content, "TOPLEFT")
+    blacklistStack:SetPoint("RIGHT", blacklistSection.content, "RIGHT")
+    blacklistStack:HookScript("OnSizeChanged", function(_, _, h)
+        blacklistSection.content:SetHeight(h)
+    end)
+
+    -- Description
+    local blacklistDesc = LDF.CreateDescription(blacklistSection.content,
         L["Items on this list are never auto-looted, even if they meet the quality threshold."
         .. " They will remain in the loot window for manual pickup."])
-    yOffset = LC.AnchorWidget(desc, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    blacklistStack:AddChild(blacklistDesc)
 
-    local itemList = W.CreateItemList(parent, {
-        label = "",
-        getItems = function() return db.profile.autoLoot.blacklist end,
-        setItems = function(t) db.profile.autoLoot.blacklist = t end,
+    -- Item list
+    local blacklistItems = LDF.CreateItemList(blacklistSection.content, {
+        get = function() return db.profile.autoLoot.blacklist end,
+        set = function(t) db.profile.autoLoot.blacklist = t end,
         emptyText = L["No items - drag items here to add"],
     })
-    itemList:SetHeight(ITEM_LIST_HEIGHT)
-    yOffset = LC.AnchorWidget(itemList, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    blacklistItems:SetHeight(ITEM_LIST_HEIGHT)
+    blacklistStack:AddChild(blacklistItems)
 
-    return yOffset
-end
-
--------------------------------------------------------------------------------
--- Build the Auto-Loot tab content
--------------------------------------------------------------------------------
-
-local function CreateContent(parent)
-    dlns = ns.dlns
-    local W = ns.Widgets
-    local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
-
-    yOffset = CreateSettingsSection(parent, W, db, yOffset)
-    yOffset = CreateWhitelistSection(parent, W, db, yOffset)
-    yOffset = CreateBlacklistSection(parent, W, db, yOffset)
-
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    stack:AddChild(blacklistSection)
 end
 
 -------------------------------------------------------------------------------

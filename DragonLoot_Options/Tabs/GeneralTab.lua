@@ -8,39 +8,35 @@
 local _, ns = ...
 local L = ns.L
 
--------------------------------------------------------------------------------
--- Cached globals
--------------------------------------------------------------------------------
-
-local math_abs = math.abs
-
--------------------------------------------------------------------------------
--- Namespace references
--------------------------------------------------------------------------------
-
-local dlns
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Build the General tab content
 -------------------------------------------------------------------------------
 
-local function CreateContent(parent)
-    dlns = ns.dlns
-    local LC = ns.LayoutConstants
-    local W = ns.Widgets
+local function CreateContent(scrollChild)
+    local dlns = ns.dlns
     local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
+
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
 
     ---------------------------------------------------------------------------
-    -- Header: General
+    -- Section: General
     ---------------------------------------------------------------------------
-    local header = W.CreateHeader(parent, L["General"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    ---------------------------------------------------------------------------
+    local section = LDF.CreateSection(scrollChild, L["General"], { columns = 1 })
+
+    local contentStack = LDF.CreateStackLayout(section.content)
+    contentStack:SetPoint("TOPLEFT", section.content, "TOPLEFT")
+    contentStack:SetPoint("RIGHT", section.content, "RIGHT")
+    contentStack:HookScript("OnSizeChanged", function(_, _, h)
+        section.content:SetHeight(h)
+    end)
+
     -- Toggle: Enable DragonLoot
-    ---------------------------------------------------------------------------
-    local enableToggle = W.CreateToggle(parent, {
+    local enableToggle = LDF.CreateToggle(section.content, {
         label = L["Enable DragonLoot"],
         tooltip = L["Enable or disable the DragonLoot addon"],
         get = function() return db.profile.enabled end,
@@ -53,12 +49,10 @@ local function CreateContent(parent)
             end
         end,
     })
-    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    contentStack:AddChild(enableToggle)
 
-    ---------------------------------------------------------------------------
     -- Toggle: Show Minimap Icon
-    ---------------------------------------------------------------------------
-    local minimapToggle = W.CreateToggle(parent, {
+    local minimapToggle = LDF.CreateToggle(section.content, {
         label = L["Show Minimap Icon"],
         tooltip = L["Show or hide the minimap button"],
         get = function() return not db.profile.minimap.hide end,
@@ -69,12 +63,10 @@ local function CreateContent(parent)
             end
         end,
     })
-    yOffset = LC.AnchorWidget(minimapToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    contentStack:AddChild(minimapToggle)
 
-    ---------------------------------------------------------------------------
     -- Toggle: Debug Mode
-    ---------------------------------------------------------------------------
-    local debugToggle = W.CreateToggle(parent, {
+    local debugToggle = LDF.CreateToggle(section.content, {
         label = L["Debug Mode"],
         tooltip = L["Enable verbose debug output in chat"],
         get = function() return db.profile.debug end,
@@ -82,12 +74,9 @@ local function CreateContent(parent)
             db.profile.debug = value
         end,
     })
-    yOffset = LC.AnchorWidget(debugToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    contentStack:AddChild(debugToggle)
 
-    ---------------------------------------------------------------------------
-    -- Set content height for scroll frame
-    ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    stack:AddChild(section)
 end
 
 -------------------------------------------------------------------------------

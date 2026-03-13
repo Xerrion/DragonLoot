@@ -1,4 +1,4 @@
-## Interface: 120001, 110207, 120000
+## Interface: 120005
 ## Interface-BCC: 20505
 ## Interface-Mists: 50503
 ## Title: DragonLoot Options
@@ -7,22 +7,8 @@
 ## Dependencies: DragonLoot
 ## LoadOnDemand: 1
 
+Libs\LibDragonFramework\lib.xml
 Core.lua
-Widgets\WidgetConstants.lua
-Widgets\Panel.lua
-Widgets\ScrollFrame.lua
-Widgets\TabGroup.lua
-Widgets\Header.lua
-Widgets\Description.lua
-Widgets\Toggle.lua
-Widgets\Slider.lua
-Widgets\Dropdown.lua
-Widgets\ColorPicker.lua
-Widgets\TextInput.lua
-Widgets\Button.lua
-Widgets\ItemSlot.lua
-Widgets\ItemList.lua
-LayoutConstants.lua
 Tabs\GeneralTab.lua
 Tabs\LootWindowTab.lua
 Tabs\LootRollTab.lua

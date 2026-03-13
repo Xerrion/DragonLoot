@@ -8,11 +8,7 @@
 local _, ns = ...
 local L = ns.L
 
--------------------------------------------------------------------------------
--- Cached globals
--------------------------------------------------------------------------------
-
-local math_abs = math.abs
+local LDF = LibDragonFramework
 
 -------------------------------------------------------------------------------
 -- Namespace references
@@ -34,23 +30,28 @@ end
 -- Build the Loot Window tab content
 -------------------------------------------------------------------------------
 
-local function CreateContent(parent)
+local function CreateContent(scrollChild)
     dlns = ns.dlns
-    local LC = ns.LayoutConstants
-    local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = LC.PADDING_TOP
+
+    local stack = LDF.CreateStackLayout(scrollChild)
+    stack:SetPoint("TOPLEFT", scrollChild, "TOPLEFT")
+    stack:SetPoint("RIGHT", scrollChild, "RIGHT")
 
     ---------------------------------------------------------------------------
-    -- Header: Loot Window
+    -- Section: Loot Window (3 toggles)
     ---------------------------------------------------------------------------
-    local header = W.CreateHeader(parent, L["Loot Window"])
-    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    ---------------------------------------------------------------------------
-    -- Toggle: Enable Custom Loot Window
-    ---------------------------------------------------------------------------
-    local enableToggle = W.CreateToggle(parent, {
+    local lootSection = LDF.CreateSection(scrollChild, L["Loot Window"], { columns = 1 })
+
+    local lootStack = LDF.CreateStackLayout(lootSection.content)
+    lootStack:SetPoint("TOPLEFT", lootSection.content, "TOPLEFT")
+    lootStack:SetPoint("RIGHT", lootSection.content, "RIGHT")
+    lootStack:HookScript("OnSizeChanged", function(_, _, h)
+        lootSection.content:SetHeight(h)
+    end)
+
+    local enableToggle = LDF.CreateToggle(lootSection.content, {
         label = L["Enable Custom Loot Window"],
         tooltip = L["Replace the default loot window with DragonLoot's custom frame"],
         get = function() return db.profile.lootWindow.enabled end,
@@ -59,12 +60,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    lootStack:AddChild(enableToggle)
 
-    ---------------------------------------------------------------------------
-    -- Toggle: Lock Position
-    ---------------------------------------------------------------------------
-    local lockToggle = W.CreateToggle(parent, {
+    local lockToggle = LDF.CreateToggle(lootSection.content, {
         label = L["Lock Position"],
         tooltip = L["Prevent the loot window from being moved"],
         get = function() return db.profile.lootWindow.lock end,
@@ -72,12 +70,9 @@ local function CreateContent(parent)
             db.profile.lootWindow.lock = value
         end,
     })
-    yOffset = LC.AnchorWidget(lockToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    lootStack:AddChild(lockToggle)
 
-    ---------------------------------------------------------------------------
-    -- Toggle: Position at Cursor
-    ---------------------------------------------------------------------------
-    local cursorToggle = W.CreateToggle(parent, {
+    local cursorToggle = LDF.CreateToggle(lootSection.content, {
         label = L["Position at Cursor"],
         tooltip = L["Open the loot window at the mouse cursor instead of the saved position"],
         get = function() return db.profile.lootWindow.positionAtCursor end,
@@ -85,18 +80,24 @@ local function CreateContent(parent)
             db.profile.lootWindow.positionAtCursor = value
         end,
     })
-    yOffset = LC.AnchorWidget(cursorToggle, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+    lootStack:AddChild(cursorToggle)
+
+    stack:AddChild(lootSection)
 
     ---------------------------------------------------------------------------
-    -- Header: Layout
+    -- Section: Layout (5 sliders)
     ---------------------------------------------------------------------------
-    local layoutHeader = W.CreateHeader(parent, L["Layout"])
-    yOffset = LC.AnchorWidget(layoutHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
-    ---------------------------------------------------------------------------
-    -- Slider: Scale
-    ---------------------------------------------------------------------------
-    local scaleSlider = W.CreateSlider(parent, {
+    local layoutSection = LDF.CreateSection(scrollChild, L["Layout"], { columns = 1 })
+
+    local layoutStack = LDF.CreateStackLayout(layoutSection.content)
+    layoutStack:SetPoint("TOPLEFT", layoutSection.content, "TOPLEFT")
+    layoutStack:SetPoint("RIGHT", layoutSection.content, "RIGHT")
+    layoutStack:HookScript("OnSizeChanged", function(_, _, h)
+        layoutSection.content:SetHeight(h)
+    end)
+
+    local scaleSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Scale"],
         min = 0.5, max = 2, step = 0.05,
         get = function() return db.profile.lootWindow.scale end,
@@ -105,12 +106,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(scaleSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(scaleSlider)
 
-    ---------------------------------------------------------------------------
-    -- Slider: Width
-    ---------------------------------------------------------------------------
-    local widthSlider = W.CreateSlider(parent, {
+    local widthSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Width"],
         min = 150, max = 400, step = 10,
         format = "%d",
@@ -120,12 +118,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(widthSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(widthSlider)
 
-    ---------------------------------------------------------------------------
-    -- Slider: Height
-    ---------------------------------------------------------------------------
-    local heightSlider = W.CreateSlider(parent, {
+    local heightSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Height"],
         min = 150, max = 600, step = 10,
         format = "%d",
@@ -135,12 +130,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(heightSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(heightSlider)
 
-    ---------------------------------------------------------------------------
-    -- Slider: Slot Spacing
-    ---------------------------------------------------------------------------
-    local slotSpacingSlider = W.CreateSlider(parent, {
+    local slotSpacingSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Slot Spacing"],
         min = 0, max = 12, step = 1,
         format = "%d",
@@ -150,12 +142,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(slotSpacingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(slotSpacingSlider)
 
-    ---------------------------------------------------------------------------
-    -- Slider: Content Padding
-    ---------------------------------------------------------------------------
-    local contentPaddingSlider = W.CreateSlider(parent, {
+    local contentPaddingSlider = LDF.CreateSlider(layoutSection.content, {
         label = L["Content Padding"],
         min = 0, max = 12, step = 1,
         format = "%d",
@@ -165,12 +154,9 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    yOffset = LC.AnchorWidget(contentPaddingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+    layoutStack:AddChild(contentPaddingSlider)
 
-    ---------------------------------------------------------------------------
-    -- Set content height for scroll frame
-    ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
+    stack:AddChild(layoutSection)
 end
 
 -------------------------------------------------------------------------------

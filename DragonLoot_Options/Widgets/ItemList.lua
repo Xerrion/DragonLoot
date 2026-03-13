@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON__NAME, ns = ...
+local ADDON_NAME, ns = ...
 local WC = ns.WidgetConstants
 local L = ns.L
 

@@ -18,9 +18,14 @@ if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then return end
 -------------------------------------------------------------------------------
 
 local C_LootHistory = C_LootHistory
-local GetItemInfoInstant = GetItemInfoInstant
 local GetItemInfo = GetItemInfo
 local GetTime = GetTime
+
+-------------------------------------------------------------------------------
+-- Shared listener utilities
+-------------------------------------------------------------------------------
+
+local GetItemTexture = ns.ListenerShared.GetItemTexture
 
 -------------------------------------------------------------------------------
 -- State
@@ -30,20 +35,6 @@ local addon
 local processedDrops = {}
 local notifiedRollResults = {}
 local isInitializing = false
-
--------------------------------------------------------------------------------
--- Item texture helper
--------------------------------------------------------------------------------
-
-local function GetItemTexture(itemLink)
-    if not itemLink then return nil end
-    if GetItemInfoInstant then
-        local _, _, _, _, icon = GetItemInfoInstant(itemLink)
-        return icon
-    end
-    local _, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemLink)
-    return icon
-end
 
 -------------------------------------------------------------------------------
 -- Item quality helper

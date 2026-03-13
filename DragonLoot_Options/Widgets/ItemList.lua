@@ -6,6 +6,7 @@
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
+local WC = ns.WidgetConstants
 local L = ns.L
 
 -------------------------------------------------------------------------------
@@ -23,17 +24,17 @@ local string_format = string.format
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
+local FONT_PATH = WC.FONT_PATH
 local FONT_SIZE = 12
 local LABEL_FONT_SIZE = 11
 local SLOT_SIZE = 36
 local SLOT_SPACING = 4
 local SLOTS_PER_ROW = 6
-local WHITE_COLOR = { 1, 1, 1 }
-local GRAY_COLOR = { 0.7, 0.7, 0.7 }
+local WHITE_COLOR = WC.WHITE_COLOR
+local GRAY_COLOR = WC.GRAY_COLOR
 local HEADER_HEIGHT = 18
 local COUNT_HEIGHT = 16
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE8x8 = WC.WHITE8x8
 local DASHED_BORDER_COLOR = { 0.6, 0.6, 0.6, 0.5 }
 local ADD_SLOT_BG = { 0.08, 0.08, 0.08, 0.6 }
 

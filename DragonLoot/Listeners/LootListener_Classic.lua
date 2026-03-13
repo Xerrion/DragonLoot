@@ -43,30 +43,15 @@ local function OnLootOpened(_, autoLoot)
 end
 
 local function OnLootSlotCleared(_, slotIndex)
-    if isLootOpen and ns.LootFrame.UpdateSlot then
-        ns.LootFrame.UpdateSlot(slotIndex)
-    end
+    ns.ListenerShared.OnLootSlotCleared(isLootOpen, slotIndex)
 end
 
 local function OnLootSlotChanged(_, slotIndex)
-    if not isLootOpen or not ns.LootFrame.UpdateSlot then return end
-    ns.LootFrame.UpdateSlot(slotIndex)
+    ns.ListenerShared.OnLootSlotChanged(isLootOpen, slotIndex)
 end
 
 local function OnLootClosed()
-    if isLootOpen then
-        isLootOpen = false
-
-        -- pcall Hide so UNSUPPRESS always fires even if Hide errors
-        local ok, err = pcall(ns.LootFrame.Hide)
-        if not ok then
-            ns.DebugPrint("LootFrame.Hide error: " .. tostring(err))
-        end
-
-        -- Always resume DragonToast item toasts
-        ns.Addon:SendMessage("DRAGONTOAST_UNSUPPRESS", "DragonLoot")
-        ns.DebugPrint("LOOT_CLOSED fired (Classic)")
-    end
+    isLootOpen = ns.ListenerShared.OnLootClosed(isLootOpen, "Classic")
 end
 
 -------------------------------------------------------------------------------

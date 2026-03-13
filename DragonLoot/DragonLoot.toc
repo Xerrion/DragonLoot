@@ -37,6 +37,7 @@ Core\MinimapIcon.lua
 Core\SlashCommands.lua
 
 # Display (shared)
+Display\DisplayUtils.lua
 Display\LootFrame.lua
 Display\LootAnimations.lua
 Display\RollFrame.lua
@@ -44,22 +45,20 @@ Display\RollAnimations.lua
 Display\RollManager.lua
 Display\HistoryFrame.lua
 
-# Version-specific listeners
-#@version-bcc@
-Listeners\LootListener_Classic.lua
-Listeners\RollListener_Classic.lua
-Listeners\HistoryListener_Classic.lua
-#@end-version-bcc@
-#@version-mists@
-Listeners\LootListener_Classic.lua
-Listeners\RollListener_Classic.lua
-Listeners\HistoryListener_Classic.lua
-#@end-version-mists@
-#@version-retail@
+# Listeners (shared utilities)
+Listeners\ListenerShared.lua
+
+# Listeners (version-specific)
+#@retail@
 Listeners\LootListener_Retail.lua
 Listeners\RollListener_Retail.lua
 Listeners\HistoryListener_Retail.lua
-#@end-version-retail@
+#@end-retail@
+#@non-retail@
+Listeners\LootListener_Classic.lua
+Listeners\RollListener_Classic.lua
+Listeners\HistoryListener_Classic.lua
+#@end-non-retail@
 
 # Listeners (shared)
 Listeners\LootHistoryChat.lua

@@ -21,32 +21,21 @@ local math_abs = math.abs
 local dlns
 
 -------------------------------------------------------------------------------
--- Constants
--------------------------------------------------------------------------------
-
-local PADDING_SIDE = 10
-local PADDING_TOP = -10
-local SPACING_AFTER_HEADER = 8
-local SPACING_BETWEEN_WIDGETS = 6
-local PADDING_BOTTOM = 20
-
--------------------------------------------------------------------------------
 -- Build the General tab content
 -------------------------------------------------------------------------------
 
 local function CreateContent(parent)
     dlns = ns.dlns
+    local LC = ns.LayoutConstants
     local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = PADDING_TOP
+    local yOffset = LC.PADDING_TOP
 
     ---------------------------------------------------------------------------
     -- Header: General
     ---------------------------------------------------------------------------
     local header = W.CreateHeader(parent, L["General"])
-    header:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    header:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - header:GetHeight() - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     ---------------------------------------------------------------------------
     -- Toggle: Enable DragonLoot
@@ -64,9 +53,7 @@ local function CreateContent(parent)
             end
         end,
     })
-    enableToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    enableToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - enableToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Toggle: Show Minimap Icon
@@ -82,9 +69,7 @@ local function CreateContent(parent)
             end
         end,
     })
-    minimapToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    minimapToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - minimapToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(minimapToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Toggle: Debug Mode
@@ -97,14 +82,12 @@ local function CreateContent(parent)
             db.profile.debug = value
         end,
     })
-    debugToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    debugToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - debugToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(debugToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame
     ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + PADDING_BOTTOM)
+    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
 
 -------------------------------------------------------------------------------

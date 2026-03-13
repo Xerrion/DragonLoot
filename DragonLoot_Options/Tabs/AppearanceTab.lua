@@ -5,17 +5,15 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 local L = ns.L
+local LC = ns.LayoutConstants
 
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
 
 local math_abs = math.abs
-local table_sort = table.sort
-local pairs = pairs
-local LibStub = LibStub
 
 -------------------------------------------------------------------------------
 -- Namespace references
@@ -24,57 +22,19 @@ local LibStub = LibStub
 local dlns
 
 -------------------------------------------------------------------------------
--- Constants
+-- LSM list wrappers
 -------------------------------------------------------------------------------
-
-local PADDING_SIDE = 10
-local PADDING_TOP = -10
-local SPACING_AFTER_HEADER = 8
-local SPACING_BETWEEN_WIDGETS = 6
-local SPACING_BETWEEN_SECTIONS = 16
-local PADDING_BOTTOM = 20
-
--------------------------------------------------------------------------------
--- Shared media
--------------------------------------------------------------------------------
-
-local LSM = LibStub("LibSharedMedia-3.0")
-
--------------------------------------------------------------------------------
--- Notify appearance change helper
--------------------------------------------------------------------------------
-
-local function NotifyAppearanceChange()
-    local dl = ns.dlns
-    if dl.LootFrame and dl.LootFrame.ApplySettings then dl.LootFrame.ApplySettings() end
-    if dl.RollManager and dl.RollManager.ApplySettings then dl.RollManager.ApplySettings() end
-    if dl.HistoryFrame and dl.HistoryFrame.ApplySettings then dl.HistoryFrame.ApplySettings() end
-end
-
--------------------------------------------------------------------------------
--- LSM list builders
--------------------------------------------------------------------------------
-
-local function BuildLSMValues(mediaType)
-    local hash = LSM:HashTable(mediaType)
-    local values = {}
-    for key in pairs(hash) do
-        values[#values + 1] = { value = key, text = key }
-    end
-    table_sort(values, function(a, b) return a.text < b.text end)
-    return values
-end
 
 local function GetFontValues()
-    return BuildLSMValues("font")
+    return LC.BuildLSMValues("font")
 end
 
 local function GetBackgroundValues()
-    return BuildLSMValues("background")
+    return LC.BuildLSMValues("background")
 end
 
 local function GetBorderValues()
-    return BuildLSMValues("border")
+    return LC.BuildLSMValues("border")
 end
 
 -------------------------------------------------------------------------------
@@ -100,22 +60,12 @@ local SLOT_BG_VALUES = {
 }
 
 -------------------------------------------------------------------------------
--- Anchor a widget to the parent at the current yOffset
--------------------------------------------------------------------------------
-
-local function AnchorWidget(widget, parent, yOffset)
-    widget:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    widget:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    return yOffset - widget:GetHeight()
-end
-
--------------------------------------------------------------------------------
 -- Section: Font
 -------------------------------------------------------------------------------
 
 local function CreateFontSection(parent, W, db, yOffset)
     local header = W.CreateHeader(parent, L["Font"])
-    yOffset = AnchorWidget(header, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     local fontDropdown = W.CreateDropdown(parent, {
         label = L["Font Family"],
@@ -125,10 +75,10 @@ local function CreateFontSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.font end,
         set = function(value)
             db.profile.appearance.font = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(fontDropdown, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(fontDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local fontSizeSlider = W.CreateSlider(parent, {
         label = L["Font Size"],
@@ -140,10 +90,10 @@ local function CreateFontSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.fontSize end,
         set = function(value)
             db.profile.appearance.fontSize = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(fontSizeSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(fontSizeSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local outlineDropdown = W.CreateDropdown(parent, {
         label = L["Font Outline"],
@@ -151,10 +101,10 @@ local function CreateFontSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.fontOutline end,
         set = function(value)
             db.profile.appearance.fontOutline = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(outlineDropdown, parent, yOffset) - SPACING_BETWEEN_SECTIONS
+    yOffset = LC.AnchorWidget(outlineDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
     return yOffset
 end
@@ -165,7 +115,7 @@ end
 
 local function CreateIconSection(parent, W, db, yOffset)
     local header = W.CreateHeader(parent, L["Icon Sizes"])
-    yOffset = AnchorWidget(header, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     local lootIconSlider = W.CreateSlider(parent, {
         label = L["Loot Icon Size"],
@@ -177,10 +127,10 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.lootIconSize end,
         set = function(value)
             db.profile.appearance.lootIconSize = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(lootIconSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(lootIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local rollIconSlider = W.CreateSlider(parent, {
         label = L["Roll Icon Size"],
@@ -192,10 +142,10 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.rollIconSize end,
         set = function(value)
             db.profile.appearance.rollIconSize = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(rollIconSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(rollIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local historyIconSlider = W.CreateSlider(parent, {
         label = L["History Icon Size"],
@@ -207,10 +157,10 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.historyIconSize end,
         set = function(value)
             db.profile.appearance.historyIconSize = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(historyIconSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(historyIconSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local qualityBorderToggle = W.CreateToggle(parent, {
         label = L["Quality Border"],
@@ -218,10 +168,10 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.qualityBorder end,
         set = function(value)
             db.profile.appearance.qualityBorder = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(qualityBorderToggle, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(qualityBorderToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local slotBgDropdown = W.CreateDropdown(parent, {
         label = L["Slot Background"],
@@ -229,10 +179,10 @@ local function CreateIconSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.slotBackground end,
         set = function(value)
             db.profile.appearance.slotBackground = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(slotBgDropdown, parent, yOffset) - SPACING_BETWEEN_SECTIONS
+    yOffset = LC.AnchorWidget(slotBgDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
     return yOffset
 end
@@ -243,7 +193,7 @@ end
 
 local function CreateBackgroundSection(parent, W, db, yOffset)
     local header = W.CreateHeader(parent, L["Background"])
-    yOffset = AnchorWidget(header, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     local bgColorPicker = W.CreateColorPicker(parent, {
         label = L["Background Color"],
@@ -256,10 +206,10 @@ local function CreateBackgroundSection(parent, W, db, yOffset)
             db.profile.appearance.backgroundColor.r = r
             db.profile.appearance.backgroundColor.g = g
             db.profile.appearance.backgroundColor.b = b
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(bgColorPicker, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(bgColorPicker, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local bgAlphaSlider = W.CreateSlider(parent, {
         label = L["Background Opacity"],
@@ -271,10 +221,10 @@ local function CreateBackgroundSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.backgroundAlpha end,
         set = function(value)
             db.profile.appearance.backgroundAlpha = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(bgAlphaSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(bgAlphaSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local bgTextureDropdown = W.CreateDropdown(parent, {
         label = L["Background Texture"],
@@ -284,10 +234,10 @@ local function CreateBackgroundSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.backgroundTexture end,
         set = function(value)
             db.profile.appearance.backgroundTexture = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(bgTextureDropdown, parent, yOffset) - SPACING_BETWEEN_SECTIONS
+    yOffset = LC.AnchorWidget(bgTextureDropdown, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
     return yOffset
 end
@@ -298,7 +248,7 @@ end
 
 local function CreateBorderSection(parent, W, db, yOffset)
     local header = W.CreateHeader(parent, L["Border"])
-    yOffset = AnchorWidget(header, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     local borderColorPicker = W.CreateColorPicker(parent, {
         label = L["Border Color"],
@@ -311,10 +261,10 @@ local function CreateBorderSection(parent, W, db, yOffset)
             db.profile.appearance.borderColor.r = r
             db.profile.appearance.borderColor.g = g
             db.profile.appearance.borderColor.b = b
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(borderColorPicker, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(borderColorPicker, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local borderSizeSlider = W.CreateSlider(parent, {
         label = L["Border Size"],
@@ -326,10 +276,10 @@ local function CreateBorderSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.borderSize end,
         set = function(value)
             db.profile.appearance.borderSize = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(borderSizeSlider, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(borderSizeSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local borderTextureDropdown = W.CreateDropdown(parent, {
         label = L["Border Texture"],
@@ -339,10 +289,10 @@ local function CreateBorderSection(parent, W, db, yOffset)
         get = function() return db.profile.appearance.borderTexture end,
         set = function(value)
             db.profile.appearance.borderTexture = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(borderTextureDropdown, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(borderTextureDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     return yOffset
 end
@@ -355,14 +305,14 @@ local function CreateContent(parent)
     dlns = ns.dlns
     local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = PADDING_TOP
+    local yOffset = LC.PADDING_TOP
 
     yOffset = CreateFontSection(parent, W, db, yOffset)
     yOffset = CreateIconSection(parent, W, db, yOffset)
     yOffset = CreateBackgroundSection(parent, W, db, yOffset)
     yOffset = CreateBorderSection(parent, W, db, yOffset)
 
-    parent:SetHeight(math_abs(yOffset) + PADDING_BOTTOM)
+    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
 
 -------------------------------------------------------------------------------

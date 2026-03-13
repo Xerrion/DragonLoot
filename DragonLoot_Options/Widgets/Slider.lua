@@ -6,6 +6,7 @@
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -23,14 +24,14 @@ local format = string.format
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
+local FONT_PATH = WC.FONT_PATH
 local LABEL_FONT_SIZE = 12
 local VALUE_FONT_SIZE = 11
 local MIN_MAX_FONT_SIZE = 10
-local WHITE_COLOR = { 1, 1, 1 }
-local GRAY_COLOR = { 0.7, 0.7, 0.7 }
-local DISABLED_COLOR = { 0.5, 0.5, 0.5 }
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE_COLOR = WC.WHITE_COLOR
+local GRAY_COLOR = WC.GRAY_COLOR
+local DISABLED_COLOR = WC.DISABLED_COLOR
+local WHITE8x8 = WC.WHITE8x8
 local THUMB_TEXTURE = "Interface\\Buttons\\UI-SliderBar-Button-Horizontal"
 local EDITBOX_WIDTH = 50
 local FRAME_HEIGHT = 55

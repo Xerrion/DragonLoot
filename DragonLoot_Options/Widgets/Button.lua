@@ -6,43 +6,28 @@
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
-local GameTooltip = GameTooltip
 local pcall = pcall
 
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
-local FONT_SIZE = 12
+local FONT_PATH = WC.FONT_PATH
+local FONT_SIZE = WC.FONT_SIZE
 local DEFAULT_WIDTH = 120
 local BUTTON_HEIGHT = 24
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE8x8 = WC.WHITE8x8
 local NORMAL_BG = { 0.15, 0.15, 0.15, 0.9 }
 local NORMAL_BORDER = { 0.4, 0.4, 0.4, 1 }
-local DISABLED_COLOR = { 0.5, 0.5, 0.5 }
-local WHITE_COLOR = { 1, 1, 1 }
-
--------------------------------------------------------------------------------
--- Tooltip handlers
--------------------------------------------------------------------------------
-
-local function OnEnter(self)
-    if not self._tooltipText then return end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(self._tooltipText, 1, 1, 1, 1, true)
-    GameTooltip:Show()
-end
-
-local function OnLeave()
-    GameTooltip:Hide()
-end
+local DISABLED_COLOR = WC.DISABLED_COLOR
+local WHITE_COLOR = WC.WHITE_COLOR
 
 -------------------------------------------------------------------------------
 -- Build a custom styled button (fallback when template is unavailable)
@@ -106,8 +91,8 @@ function ns.Widgets.CreateButton(parent, opts)
         if opts.onClick then opts.onClick() end
     end)
 
-    btn:SetScript("OnEnter", OnEnter)
-    btn:SetScript("OnLeave", OnLeave)
+    btn:SetScript("OnEnter", WC.ShowTooltip)
+    btn:SetScript("OnLeave", WC.HideTooltip)
 
     -- SetDisabled
     function btn:SetDisabled(state)

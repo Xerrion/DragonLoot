@@ -16,9 +16,14 @@ local UnitName = UnitName
 local UnitClass = UnitClass
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
 local GetItemInfo = GetItemInfo
-local GetItemInfoInstant = GetItemInfoInstant
 local pairs = pairs
 local LifecycleUtil = ns.LifecycleUtil
+
+-------------------------------------------------------------------------------
+-- Shared listener utilities
+-------------------------------------------------------------------------------
+
+local GetItemTexture = ns.ListenerShared.GetItemTexture
 
 -------------------------------------------------------------------------------
 -- State
@@ -114,16 +119,6 @@ end
 -- Item info retrieval with retry
 -------------------------------------------------------------------------------
 
-local function GetItemIcon(itemLink)
-    if not itemLink then return nil end
-    if GetItemInfoInstant then
-        local _, _, _, _, icon = GetItemInfoInstant(itemLink)
-        return icon
-    end
-    local _, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemLink)
-    return icon
-end
-
 local function ScheduleQualityRetry(entry, itemLink)
     entry.qualityRetryToken = (entry.qualityRetryToken or 0) + 1
     local retryToken = entry.qualityRetryToken
@@ -156,7 +151,7 @@ local function AddLootEntry(playerName, playerClass, itemLink, _)
     -- Config checks
     if not db.profile.history.trackDirectLoot then return end
 
-    local icon = GetItemIcon(itemLink)
+    local icon = GetItemTexture(itemLink)
     local _, _, quality = GetItemInfo(itemLink)
 
     -- Quality filter (only for direct loot, rolled items are always tracked)

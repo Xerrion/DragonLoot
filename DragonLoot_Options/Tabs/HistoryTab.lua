@@ -5,8 +5,9 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 local L = ns.L
+local LC = ns.LayoutConstants
 
 -------------------------------------------------------------------------------
 -- Cached globals
@@ -23,17 +24,6 @@ local tonumber = tonumber
 local dlns
 
 -------------------------------------------------------------------------------
--- Constants
--------------------------------------------------------------------------------
-
-local PADDING_SIDE = 10
-local PADDING_TOP = -10
-local SPACING_AFTER_HEADER = 8
-local SPACING_BETWEEN_WIDGETS = 6
-local SPACING_BETWEEN_SECTIONS = 16
-local PADDING_BOTTOM = 20
-
--------------------------------------------------------------------------------
 -- Helper: call HistoryFrame.ApplySettings if available
 -------------------------------------------------------------------------------
 
@@ -41,15 +31,6 @@ local function ApplyHistorySettings()
     if dlns.HistoryFrame and dlns.HistoryFrame.ApplySettings then
         dlns.HistoryFrame.ApplySettings()
     end
-end
-
--------------------------------------------------------------------------------
--- Anchor a widget to parent at the current yOffset
--------------------------------------------------------------------------------
-
-local function AnchorWidget(widget, parent, yOffset)
-    widget:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    widget:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
 end
 
 -------------------------------------------------------------------------------
@@ -66,8 +47,7 @@ local function CreateTogglesSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    AnchorWidget(enableToggle, parent, yOffset)
-    yOffset = yOffset - enableToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Auto Show on Loot
     local autoShowToggle = W.CreateToggle(parent, {
@@ -77,8 +57,7 @@ local function CreateTogglesSection(parent, W, db, yOffset)
             db.profile.history.autoShow = value
         end,
     })
-    AnchorWidget(autoShowToggle, parent, yOffset)
-    yOffset = yOffset - autoShowToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(autoShowToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Forward-declare so the toggle set closure captures the variable
     local qualityDropdown
@@ -95,8 +74,7 @@ local function CreateTogglesSection(parent, W, db, yOffset)
             end
         end,
     })
-    AnchorWidget(trackToggle, parent, yOffset)
-    yOffset = yOffset - trackToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(trackToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Minimum Quality dropdown
     qualityDropdown = W.CreateDropdown(parent, {
@@ -107,8 +85,7 @@ local function CreateTogglesSection(parent, W, db, yOffset)
             db.profile.history.minQuality = tonumber(value)
         end,
     })
-    AnchorWidget(qualityDropdown, parent, yOffset)
-    yOffset = yOffset - qualityDropdown:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(qualityDropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Apply initial disabled state based on current trackDirectLoot value
     qualityDropdown:SetDisabled(not db.profile.history.trackDirectLoot)
@@ -123,8 +100,7 @@ end
 local function CreateLayoutSection(parent, W, db, yOffset)
     -- Header: Layout
     local layoutHeader = W.CreateHeader(parent, L["Layout"])
-    AnchorWidget(layoutHeader, parent, yOffset)
-    yOffset = yOffset - layoutHeader:GetHeight() - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(layoutHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     -- Slider: Max Entries
     local maxEntriesSlider = W.CreateSlider(parent, {
@@ -136,8 +112,7 @@ local function CreateLayoutSection(parent, W, db, yOffset)
             db.profile.history.maxEntries = value
         end,
     })
-    AnchorWidget(maxEntriesSlider, parent, yOffset)
-    yOffset = yOffset - maxEntriesSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(maxEntriesSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Slider: Entry Spacing
     local entrySpacingSlider = W.CreateSlider(parent, {
@@ -150,8 +125,7 @@ local function CreateLayoutSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    AnchorWidget(entrySpacingSlider, parent, yOffset)
-    yOffset = yOffset - entrySpacingSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(entrySpacingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Slider: Content Padding
     local contentPaddingSlider = W.CreateSlider(parent, {
@@ -164,8 +138,7 @@ local function CreateLayoutSection(parent, W, db, yOffset)
             ApplyHistorySettings()
         end,
     })
-    AnchorWidget(contentPaddingSlider, parent, yOffset)
-    yOffset = yOffset - contentPaddingSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(contentPaddingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     return yOffset
 end
@@ -178,24 +151,23 @@ local function CreateContent(parent)
     dlns = ns.dlns
     local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = PADDING_TOP
+    local yOffset = LC.PADDING_TOP
 
     -- Header: History
     local header = W.CreateHeader(parent, L["History"])
-    AnchorWidget(header, parent, yOffset)
-    yOffset = yOffset - header:GetHeight() - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     -- Toggles and dropdown section
     yOffset = CreateTogglesSection(parent, W, db, yOffset)
 
     -- Section gap before layout
-    yOffset = yOffset - SPACING_BETWEEN_SECTIONS + SPACING_BETWEEN_WIDGETS
+    yOffset = yOffset - LC.SPACING_BETWEEN_SECTIONS + LC.SPACING_BETWEEN_WIDGETS
 
     -- Layout sliders section
     yOffset = CreateLayoutSection(parent, W, db, yOffset)
 
     -- Set content height for scroll frame
-    parent:SetHeight(math_abs(yOffset) + PADDING_BOTTOM)
+    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
 
 -------------------------------------------------------------------------------

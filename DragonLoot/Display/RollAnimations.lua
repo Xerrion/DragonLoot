@@ -16,32 +16,16 @@ local lib = LibStub("LibAnimate")
 local ROLL_ANIMATION_DISTANCE = 50
 
 -------------------------------------------------------------------------------
+-- DisplayUtils shorthand
+-------------------------------------------------------------------------------
+
+local DU = ns.DisplayUtils
+
+-------------------------------------------------------------------------------
 -- State flag: true while a hide animation is in progress
 -------------------------------------------------------------------------------
 
 ns.RollAnimations.isClosing = false
-
--------------------------------------------------------------------------------
--- Helpers
--------------------------------------------------------------------------------
-
---- Capture the frame's current visual state before StopAll wipes it.
-local function CaptureVisualState(frame)
-    local alpha = frame:GetAlpha()
-    local scale = frame:GetScale()
-    local point, relativeTo, relativePoint, x, y = frame:GetPoint()
-    return alpha, scale, point, relativeTo, relativePoint, x, y
-end
-
---- Restore a previously captured visual state onto the frame.
-local function RestoreVisualState(frame, alpha, scale, point, relativeTo, relativePoint, x, y)
-    frame:SetAlpha(alpha)
-    frame:SetScale(scale)
-    if point then
-        frame:ClearAllPoints()
-        frame:SetPoint(point, relativeTo, relativePoint, x, y)
-    end
-end
 
 -------------------------------------------------------------------------------
 -- Public Interface: ns.RollAnimations
@@ -101,13 +85,13 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
 
     -- Snapshot where the frame visually is RIGHT NOW (mid-show-animation or idle).
     local curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY =
-        CaptureVisualState(frame)
+        DU.CaptureVisualState(frame)
 
     -- StopAll restores the frame to its pre-animation state (e.g. alpha=0 if the
     -- show animation was still running). We immediately overwrite with the snapshot
     -- so the hide animation starts from where the user actually saw the frame.
     ns.RollAnimations.StopAll(frame)
-    RestoreVisualState(frame, curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY)
+    DU.RestoreVisualState(frame, curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY)
 
     local animName = db.animation.rollHideAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {

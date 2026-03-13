@@ -6,6 +6,7 @@
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -20,7 +21,7 @@ local math_max = math.max
 
 local SCROLLBAR_WIDTH = 14
 local SCROLL_STEP = 20
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE8x8 = WC.WHITE8x8
 
 -------------------------------------------------------------------------------
 -- Scrollbar value changed handler (shared, avoids per-instance closures)

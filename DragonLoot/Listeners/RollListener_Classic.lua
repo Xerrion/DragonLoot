@@ -19,9 +19,14 @@ if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then return end
 
 local GetActiveLootRollIDs = GetActiveLootRollIDs
 local GetLootRollTimeLeft = GetLootRollTimeLeft
-local StaticPopup_Show = StaticPopup_Show
 local C_LootHistory = C_LootHistory
 local LifecycleUtil = ns.LifecycleUtil
+
+-------------------------------------------------------------------------------
+-- Shared listener utilities
+-------------------------------------------------------------------------------
+
+local LS = ns.ListenerShared
 
 -------------------------------------------------------------------------------
 -- State
@@ -31,51 +36,28 @@ local addon
 local isRollActive = false
 local lifecycleState = LifecycleUtil.CreateState()
 
-local MILLISECONDS_PER_SECOND = 1000
-local WINNER_RESOLVE_DELAY = 0.3
-
 -------------------------------------------------------------------------------
 -- Event Handlers
 -------------------------------------------------------------------------------
 
 local function OnStartLootRoll(_, rollID, rollTime)
-    if not isRollActive then return end
-
-    -- Classic passes rollTime in milliseconds; convert to seconds for RollManager
-    local rollTimeSec = rollTime / MILLISECONDS_PER_SECOND
-    ns.RollManager.StartRoll(rollID, rollTimeSec)
-    ns.DebugPrint("START_LOOT_ROLL: rollID=" .. tostring(rollID) .. " time=" .. tostring(rollTimeSec) .. "s")
+    LS.OnStartLootRoll(isRollActive, rollID, rollTime, LS.MILLISECONDS_PER_SECOND, "Classic")
 end
 
 local function OnCancelLootRoll(_, rollID)
-    if not isRollActive then return end
-
-    local rolls = ns.RollManager.GetActiveRolls()
-    if rolls[rollID] and rolls[rollID].completing then return end
-    ns.RollManager.CancelRoll(rollID)
-    ns.DebugPrint("CANCEL_LOOT_ROLL: rollID=" .. tostring(rollID))
+    LS.OnCancelLootRoll(isRollActive, rollID)
 end
 
 local function OnConfirmRoll(_, rollID, rollType)
-    local dialog = StaticPopup_Show("DRAGONLOOT_CONFIRM_LOOT_ROLL")
-    if dialog then
-        dialog.data = { rollID = rollID, rollType = rollType }
-    end
+    LS.OnConfirmRoll(rollID, rollType)
 end
 
 local function OnLootRollsComplete(_, lootHandle)
-    if not isRollActive then return end
-
-    -- Note: LOOT_ROLLS_COMPLETE provides lootHandle which appears to match rollID from
-    -- START_LOOT_ROLL in practice. If they ever diverge, a mapping will be needed.
-    ns.RollManager.OnRollComplete(lootHandle)
-    ns.DebugPrint("LOOT_ROLLS_COMPLETE: handle=" .. tostring(lootHandle))
+    LS.OnLootRollsComplete(isRollActive, lootHandle)
 end
 
 local function OnLootItemRollWon(_, itemLink, _, rollType, rollValue)
-    if not isRollActive then return end
-
-    ns.RollManager.OnLootItemRollWon(itemLink, rollType, rollValue)
+    LS.OnLootItemRollWon(isRollActive, itemLink, rollType, rollValue)
 end
 
 -------------------------------------------------------------------------------
@@ -91,7 +73,7 @@ local function RecoverActiveRolls()
         local timeLeftMs = GetLootRollTimeLeft(rollID)
         if timeLeftMs and timeLeftMs > 0 then
             -- Classic returns milliseconds; convert to seconds for RollManager
-            local timeLeft = timeLeftMs / MILLISECONDS_PER_SECOND
+            local timeLeft = timeLeftMs / LS.MILLISECONDS_PER_SECOND
             ns.RollManager.RecoverRoll(rollID, timeLeft, timeLeft)
         end
     end
@@ -161,15 +143,6 @@ function ns.RollListener.Shutdown()
 end
 
 function ns.RollListener.ResolveWinner(rollID, completionToken)
-    LifecycleUtil.After(lifecycleState, WINNER_RESOLVE_DELAY, function()
-        if not isRollActive then return end
-
-        local activeRolls = ns.RollManager.GetActiveRolls()
-
-        local roll = activeRolls[rollID]
-        if not roll or not roll.completing then return end
-        if completionToken and roll.completionToken ~= completionToken then return end
-
-        ResolveWinnerFromHistory(rollID)
-    end)
+    LS.ResolveWinner(function() return isRollActive end, lifecycleState, rollID, completionToken,
+        ResolveWinnerFromHistory)
 end

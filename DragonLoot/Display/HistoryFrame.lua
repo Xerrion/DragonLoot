@@ -15,15 +15,14 @@ local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local UIParent = UIParent
 local GetTime = GetTime
-local ITEM_QUALITY_COLORS = ITEM_QUALITY_COLORS
-local STANDARD_TEXT_FONT = STANDARD_TEXT_FONT
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local HandleModifiedItemClick = HandleModifiedItemClick
 local math_floor = math.floor
 local string_format = string.format
 
-local LSM = LibStub("LibSharedMedia-3.0")
 local L = ns.L
+local DU = ns.DisplayUtils
+
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -71,26 +70,16 @@ local activeEntries = {}
 ns.historyData = {}
 
 -------------------------------------------------------------------------------
--- Quality color helper
+-- Backdrop and font wrappers (delegate to DisplayUtils)
 -------------------------------------------------------------------------------
 
-local function GetQualityColor(quality)
-    if quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then
-        local qc = ITEM_QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    if quality and ns.QUALITY_COLORS and ns.QUALITY_COLORS[quality] then
-        local qc = ns.QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    return 1, 1, 1
+local function GetFont()
+    return DU.GetFont(ns.Addon.db)
 end
 
--------------------------------------------------------------------------------
--- Font helper
--------------------------------------------------------------------------------
-
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local function ApplyBackdrop(frame)
+    DU.ApplyBackdrop(frame, ns.Addon.db)
+end
 
 local function GetHistoryIconSize()
     return ns.Addon.db.profile.appearance.historyIconSize or 24
@@ -98,36 +87,6 @@ end
 
 local function GetEntryHeight()
     return GetHistoryIconSize() + 6
-end
-
-local function GetFont()
-    local db = ns.Addon.db.profile.appearance
-    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
-    return fontPath, db.fontSize, db.fontOutline
-end
-
-local function GetBackdropSettings()
-    local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
-    local settings = { bgFile = bgTexture }
-    if (db.borderSize or 1) > 0 then
-        local edgeFile = LSM:Fetch("border", db.borderTexture)
-        if edgeFile then
-            settings.edgeFile = edgeFile
-            settings.edgeSize = db.borderSize
-        end
-    end
-    return settings
-end
-
-local function ApplyBackdrop(frame)
-    local db = ns.Addon.db.profile.appearance
-    frame:SetBackdrop(GetBackdropSettings())
-    local bg = db.backgroundColor
-    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
-    local border = db.borderColor
-    -- Border alpha is intentionally fixed at 0.8 for visual consistency
-    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
 end
 
 local function ApplyLayoutOffsets(frame)
@@ -329,7 +288,7 @@ local function PopulateEntry(entry, data)
     entry.icon:SetTexture(data.itemTexture)
 
     -- Quality border
-    local qr, qg, qb = GetQualityColor(data.quality)
+    local qr, qg, qb = DU.GetQualityColor(data.quality)
     if ns.Addon.db.profile.appearance.qualityBorder then
         entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
         entry.iconBorder:Show()
@@ -552,7 +511,7 @@ local function CreateScrollComponents(parent)
     bar:SetValue(0)
     bar:SetValueStep(GetEntryHeight())
     bar:SetBackdrop({
-        bgFile = WHITE8x8,
+        bgFile = DU.WHITE8x8,
     })
     bar:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
 
@@ -722,7 +681,7 @@ function ns.HistoryFrame.ApplySettings()
             -- Refresh quality border visibility
             if entry.itemLink and db.appearance.qualityBorder then
                 if entry.quality then
-                    local qr, qg, qb = GetQualityColor(entry.quality)
+                    local qr, qg, qb = DU.GetQualityColor(entry.quality)
                     entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
                 end
                 entry.iconBorder:Show()

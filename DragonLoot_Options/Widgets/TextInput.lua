@@ -5,7 +5,8 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -17,12 +18,12 @@ local CreateFrame = CreateFrame
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
+local FONT_PATH = WC.FONT_PATH
 local LABEL_FONT_SIZE = 12
 local INPUT_FONT_SIZE = 11
-local WHITE_COLOR = { 1, 1, 1 }
-local DISABLED_COLOR = { 0.5, 0.5, 0.5 }
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE_COLOR = WC.WHITE_COLOR
+local DISABLED_COLOR = WC.DISABLED_COLOR
+local WHITE8x8 = WC.WHITE8x8
 local INPUT_BG = { 0.08, 0.08, 0.08, 0.9 }
 local INPUT_BORDER = { 0.3, 0.3, 0.3, 1 }
 local DEFAULT_WIDTH = 200

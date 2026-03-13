@@ -5,8 +5,9 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 local L = ns.L
+local LC = ns.LayoutConstants
 
 -------------------------------------------------------------------------------
 -- Cached globals
@@ -21,28 +22,6 @@ local LibStub = LibStub
 -------------------------------------------------------------------------------
 
 local dlns
-
--------------------------------------------------------------------------------
--- Constants
--------------------------------------------------------------------------------
-
-local PADDING_SIDE = 10
-local PADDING_TOP = -10
-local SPACING_AFTER_HEADER = 8
-local SPACING_BETWEEN_WIDGETS = 6
-local SPACING_BETWEEN_SECTIONS = 16
-local PADDING_BOTTOM = 20
-
--------------------------------------------------------------------------------
--- Notify appearance change helper
--------------------------------------------------------------------------------
-
-local function NotifyAppearanceChange()
-    local dl = ns.dlns
-    if dl.LootFrame and dl.LootFrame.ApplySettings then dl.LootFrame.ApplySettings() end
-    if dl.RollManager and dl.RollManager.ApplySettings then dl.RollManager.ApplySettings() end
-    if dl.HistoryFrame and dl.HistoryFrame.ApplySettings then dl.HistoryFrame.ApplySettings() end
-end
 
 -------------------------------------------------------------------------------
 -- Build entrance/exit animation name values from LibAnimate
@@ -71,16 +50,6 @@ local function GetExitValues()
 end
 
 -------------------------------------------------------------------------------
--- Anchor a widget to the parent at the current yOffset
--------------------------------------------------------------------------------
-
-local function AnchorWidget(widget, parent, yOffset)
-    widget:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    widget:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    return yOffset - widget:GetHeight()
-end
-
--------------------------------------------------------------------------------
 -- Create an animation dropdown for a given db key
 -------------------------------------------------------------------------------
 
@@ -91,10 +60,10 @@ local function CreateAnimDropdown(parent, W, db, yOffset, label, key, valuesFn)
         get = function() return db.profile.animation[key] end,
         set = function(value)
             db.profile.animation[key] = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    return AnchorWidget(dropdown, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    return LC.AnchorWidget(dropdown, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 end
 
 -------------------------------------------------------------------------------
@@ -105,13 +74,13 @@ local function CreateContent(parent)
     dlns = ns.dlns
     local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = PADDING_TOP
+    local yOffset = LC.PADDING_TOP
 
     ---------------------------------------------------------------------------
     -- Section: Animation (global toggle + durations)
     ---------------------------------------------------------------------------
     local header = W.CreateHeader(parent, L["Animation"])
-    yOffset = AnchorWidget(header, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     local enableToggle = W.CreateToggle(parent, {
         label = L["Enable Animations"],
@@ -119,10 +88,10 @@ local function CreateContent(parent)
         get = function() return db.profile.animation.enabled end,
         set = function(value)
             db.profile.animation.enabled = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(enableToggle, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local openDuration = W.CreateSlider(parent, {
         label = L["Open Duration"],
@@ -134,10 +103,10 @@ local function CreateContent(parent)
         get = function() return db.profile.animation.openDuration end,
         set = function(value)
             db.profile.animation.openDuration = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(openDuration, parent, yOffset) - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(openDuration, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     local closeDuration = W.CreateSlider(parent, {
         label = L["Close Duration"],
@@ -149,16 +118,16 @@ local function CreateContent(parent)
         get = function() return db.profile.animation.closeDuration end,
         set = function(value)
             db.profile.animation.closeDuration = value
-            NotifyAppearanceChange()
+            LC.NotifyAppearanceChange()
         end,
     })
-    yOffset = AnchorWidget(closeDuration, parent, yOffset) - SPACING_BETWEEN_SECTIONS
+    yOffset = LC.AnchorWidget(closeDuration, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
     ---------------------------------------------------------------------------
     -- Section: Loot Window animation types
     ---------------------------------------------------------------------------
     local lootHeader = W.CreateHeader(parent, L["Loot Window"])
-    yOffset = AnchorWidget(lootHeader, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(lootHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     yOffset = CreateAnimDropdown(
         parent, W, db, yOffset, L["Open Animation"], "lootOpenAnim", GetEntranceValues
@@ -168,13 +137,13 @@ local function CreateContent(parent)
     )
 
     -- Extra section spacing before next header
-    yOffset = yOffset - SPACING_BETWEEN_SECTIONS + SPACING_BETWEEN_WIDGETS
+    yOffset = yOffset - LC.SPACING_BETWEEN_SECTIONS + LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Section: Roll Frame animation types
     ---------------------------------------------------------------------------
     local rollHeader = W.CreateHeader(parent, L["Roll Frame"])
-    yOffset = AnchorWidget(rollHeader, parent, yOffset) - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(rollHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     yOffset = CreateAnimDropdown(
         parent, W, db, yOffset, L["Show Animation"], "rollShowAnim", GetEntranceValues
@@ -186,7 +155,7 @@ local function CreateContent(parent)
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame
     ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + PADDING_BOTTOM)
+    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
 
 -------------------------------------------------------------------------------

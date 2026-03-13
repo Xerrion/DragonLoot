@@ -5,7 +5,8 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -21,13 +22,13 @@ local LibStub = LibStub
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
-local FONT_SIZE = 12
+local FONT_PATH = WC.FONT_PATH
+local FONT_SIZE = WC.FONT_SIZE
 local LABEL_FONT_SIZE = 11
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
-local WHITE_COLOR = { 1, 1, 1 }
-local GRAY_COLOR = { 0.7, 0.7, 0.7 }
-local DISABLED_COLOR = { 0.5, 0.5, 0.5 }
+local WHITE8x8 = WC.WHITE8x8
+local WHITE_COLOR = WC.WHITE_COLOR
+local GRAY_COLOR = WC.GRAY_COLOR
+local DISABLED_COLOR = WC.DISABLED_COLOR
 
 local BUTTON_WIDTH = 200
 local BUTTON_HEIGHT = 24
@@ -294,7 +295,7 @@ end
 -- Create the fullscreen overlay for outside-click closing
 -------------------------------------------------------------------------------
 
-local function CreateOverlay(_dropdown)
+local function CreateOverlay(_)
     local overlay = CreateFrame("Button", nil, UIParent, "BackdropTemplate")
     overlay:SetAllPoints(UIParent)
     overlay:SetFrameStrata("FULLSCREEN")

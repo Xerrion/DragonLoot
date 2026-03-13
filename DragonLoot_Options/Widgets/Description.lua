@@ -5,7 +5,8 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -17,7 +18,7 @@ local CreateFrame = CreateFrame
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
+local FONT_PATH = WC.FONT_PATH
 local FONT_SIZE = 11
 local GRAY_COLOR = { 0.7, 0.7, 0.7 }
 local PADDING_BOTTOM = 4

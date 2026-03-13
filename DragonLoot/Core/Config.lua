@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Database Defaults
@@ -166,11 +166,8 @@ local function MigrateProfile(db)
     local profile = db.profile
     local version = profile.schemaVersion or 0
 
-    if version < 1 then
-        FillMissingDefaults(profile)
-    end
-
-    if version < 2 then
+    -- Always fill missing defaults on any migration
+    if version < CURRENT_SCHEMA then
         FillMissingDefaults(profile)
     end
 

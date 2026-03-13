@@ -6,7 +6,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 local C_AddOns = C_AddOns
 local IsAddOnLoaded = IsAddOnLoaded

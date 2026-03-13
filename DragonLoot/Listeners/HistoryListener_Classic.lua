@@ -5,7 +5,7 @@
 -- Supported versions: MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Version guard: skip on Retail (Classic listener runs on everything else)
@@ -18,9 +18,14 @@ if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then return end
 -------------------------------------------------------------------------------
 
 local C_LootHistory = C_LootHistory
-local GetItemInfoInstant = GetItemInfoInstant
 local GetItemInfo = GetItemInfo
 local GetTime = GetTime
+
+-------------------------------------------------------------------------------
+-- Shared listener utilities
+-------------------------------------------------------------------------------
+
+local GetItemTexture = ns.ListenerShared.GetItemTexture
 
 -------------------------------------------------------------------------------
 -- State
@@ -28,20 +33,6 @@ local GetTime = GetTime
 
 local addon
 local notifiedRollResults = {}
-
--------------------------------------------------------------------------------
--- Item texture helper
--------------------------------------------------------------------------------
-
-local function GetItemTexture(itemLink)
-    if not itemLink then return nil end
-    if GetItemInfoInstant then
-        local _, _, _, _, icon = GetItemInfoInstant(itemLink)
-        return icon
-    end
-    local _, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemLink)
-    return icon
-end
 
 -------------------------------------------------------------------------------
 -- Rebuild history from C_LootHistory API
@@ -59,7 +50,7 @@ local function RefreshFromAPI()
     local now = GetTime()
     local entries = {}
     for i = 1, numItems do
-        local _rollID, itemLink, numPlayers, isDone, winnerIdx, _isMasterLoot, _isCurrency =
+        local _, itemLink, numPlayers, isDone, winnerIdx, _, _ =
             C_LootHistory.GetItem(i)
 
         local winner, winnerClass, rollType, roll
@@ -97,7 +88,7 @@ local function ProcessClassicRollResult(historyIndex, playerIndex)
     local rollID, itemLink = C_LootHistory.GetItem(historyIndex)
     if not rollID or not itemLink then return end
 
-    local playerName, _playerClass, rollType, roll = C_LootHistory.GetPlayerInfo(historyIndex, playerIndex)
+    local playerName, _, rollType, roll = C_LootHistory.GetPlayerInfo(historyIndex, playerIndex)
     if not playerName then return end
 
     -- Classic ROLL_CHANGED can fire before roll number is assigned

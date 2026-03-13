@@ -195,6 +195,17 @@ DragonLootNS = ns
 -- AceAddon Lifecycle
 -------------------------------------------------------------------------------
 
+-- Module initialization order matters: display modules first, then listeners.
+-- passAddon = true passes the AceAddon object to Initialize(addon).
+local MODULES = {
+    { name = "LootFrame" },
+    { name = "RollManager" },
+    { name = "HistoryFrame" },
+    { name = "HistoryListener", passAddon = true },
+    { name = "LootHistoryChat", passAddon = true },
+    { name = "Listeners", passAddon = true },
+}
+
 function Addon:OnInitialize()
     ns.InitializeDB(self)
 
@@ -231,15 +242,17 @@ function Addon:OnEnable()
         SuppressBlizzardRollFrames()
     end
 
-    -- Initialize modules if present
-    if ns.LootFrame.Initialize then ns.LootFrame.Initialize() end
-    if ns.RollManager.Initialize then ns.RollManager.Initialize() end
-    if ns.HistoryFrame.Initialize then ns.HistoryFrame.Initialize() end
-    if ns.HistoryListener.Initialize then ns.HistoryListener.Initialize(self) end
-    if ns.LootHistoryChat.Initialize then ns.LootHistoryChat.Initialize(self) end
-    if ns.Listeners.Initialize then ns.Listeners.Initialize(self) end
-
-
+    -- Initialize modules in declared order
+    for _, mod in ipairs(MODULES) do
+        local m = ns[mod.name]
+        if m and m.Initialize then
+            if mod.passAddon then
+                m.Initialize(self)
+            else
+                m.Initialize()
+            end
+        end
+    end
 end
 
 function Addon:OnDisable()
@@ -250,13 +263,13 @@ function Addon:OnDisable()
     -- Stop watching for Blizzard LoD addon if still waiting
     pcall(self.UnregisterEvent, self, "ADDON_LOADED")
 
-    -- Shutdown modules if present
-    if ns.LootFrame.Shutdown then ns.LootFrame.Shutdown() end
-    if ns.RollManager.Shutdown then ns.RollManager.Shutdown() end
-    if ns.HistoryListener.Shutdown then ns.HistoryListener.Shutdown() end
-    if ns.LootHistoryChat.Shutdown then ns.LootHistoryChat.Shutdown() end
-    if ns.HistoryFrame.Shutdown then ns.HistoryFrame.Shutdown() end
-    if ns.Listeners.Shutdown then ns.Listeners.Shutdown() end
+    -- Shutdown modules in reverse order for clean teardown
+    for i = #MODULES, 1, -1 do
+        local m = ns[MODULES[i].name]
+        if m and m.Shutdown then
+            m.Shutdown()
+        end
+    end
 end
 
 function Addon:OnSlashCommand(input)

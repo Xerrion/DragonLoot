@@ -4,7 +4,7 @@
 --
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
-local ADDON_NAME, ns = ... -- luacheck: ignore 211/ns
+local ADDON_NAME, _ = ... -- luacheck: ignore 211/ns
 local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "enUS", true, true)
 if not L then return end
 
@@ -14,17 +14,17 @@ L["Loaded. Type /dl help for commands."] = true
 -- Core/SlashCommands.lua
 L["--- DragonLoot Commands ---"] = true
 L["--- DragonLoot Status ---"] = true
-L["/dl - Toggle addon on/off"] = true
-L["/dl config - Open settings panel"] = true
-L["/dl disable - Disable addon"] = true
-L["/dl enable - Enable addon"] = true
-L["/dl help - Show this help"] = true
-L["/dl history - Toggle loot history"] = true
-L["/dl minimap - Toggle minimap icon"] = true
-L["/dl reset - Reset loot frame position"] = true
-L["/dl status - Show current settings"] = true
-L["/dl test - Show test loot"] = true
-L["/dl testroll - Show test roll frames"] = true
+L["Disable addon"] = true
+L["Enable addon"] = true
+L["Open settings panel"] = true
+L["Reset loot frame position"] = true
+L["Show current settings"] = true
+L["Show test loot"] = true
+L["Show test roll frames"] = true
+L["Show this help"] = true
+L["Toggle addon on/off"] = true
+L["Toggle loot history"] = true
+L["Toggle minimap icon"] = true
 L["Addon disabled"] = true
 L["Addon enabled"] = true
 L["Animations:"] = true

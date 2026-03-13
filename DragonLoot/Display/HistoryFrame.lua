@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -15,15 +15,14 @@ local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
 local UIParent = UIParent
 local GetTime = GetTime
-local ITEM_QUALITY_COLORS = ITEM_QUALITY_COLORS
-local STANDARD_TEXT_FONT = STANDARD_TEXT_FONT
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local HandleModifiedItemClick = HandleModifiedItemClick
 local math_floor = math.floor
 local string_format = string.format
 
-local LSM = LibStub("LibSharedMedia-3.0")
 local L = ns.L
+local DU = ns.DisplayUtils
+
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -34,6 +33,10 @@ local FRAME_HEIGHT = 400
 local TITLE_BAR_HEIGHT = 24
 local SCROLL_STEP = 3
 local SCROLLBAR_WIDTH = 14
+local SCROLLBAR_GAP = 2
+local DEFAULT_HISTORY_X_OFFSET = 200
+local SCROLLBAR_THUMB_HEIGHT = 30
+local TIME_REFRESH_INTERVAL = 10
 
 local function GetEntrySpacing()
     return ns.Addon.db.profile.history.entrySpacing or 2
@@ -67,26 +70,16 @@ local activeEntries = {}
 ns.historyData = {}
 
 -------------------------------------------------------------------------------
--- Quality color helper
+-- Backdrop and font wrappers (delegate to DisplayUtils)
 -------------------------------------------------------------------------------
 
-local function GetQualityColor(quality)
-    if quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then
-        local qc = ITEM_QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    if quality and ns.QUALITY_COLORS and ns.QUALITY_COLORS[quality] then
-        local qc = ns.QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    return 1, 1, 1
+local function GetFont()
+    return DU.GetFont(ns.Addon.db)
 end
 
--------------------------------------------------------------------------------
--- Font helper
--------------------------------------------------------------------------------
-
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local function ApplyBackdrop(frame)
+    DU.ApplyBackdrop(frame, ns.Addon.db)
+end
 
 local function GetHistoryIconSize()
     return ns.Addon.db.profile.appearance.historyIconSize or 24
@@ -94,36 +87,6 @@ end
 
 local function GetEntryHeight()
     return GetHistoryIconSize() + 6
-end
-
-local function GetFont()
-    local db = ns.Addon.db.profile.appearance
-    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
-    return fontPath, db.fontSize, db.fontOutline
-end
-
-local function GetBackdropSettings()
-    local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
-    local settings = { bgFile = bgTexture }
-    if (db.borderSize or 1) > 0 then
-        local edgeFile = LSM:Fetch("border", db.borderTexture)
-        if edgeFile then
-            settings.edgeFile = edgeFile
-            settings.edgeSize = db.borderSize
-        end
-    end
-    return settings
-end
-
-local function ApplyBackdrop(frame)
-    local db = ns.Addon.db.profile.appearance
-    frame:SetBackdrop(GetBackdropSettings())
-    local bg = db.backgroundColor
-    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
-    local border = db.borderColor
-    -- Border alpha is intentionally fixed at 0.8 for visual consistency
-    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
 end
 
 local function ApplyLayoutOffsets(frame)
@@ -142,7 +105,7 @@ local function ApplyLayoutOffsets(frame)
         scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT",
             padding + borderSize, -(TITLE_BAR_HEIGHT + padding + borderSize))
         scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
-            -(padding + SCROLLBAR_WIDTH + 2 + borderSize), padding + borderSize)
+            -(padding + SCROLLBAR_WIDTH + SCROLLBAR_GAP + borderSize), padding + borderSize)
     end
     if scrollBar then
         scrollBar:ClearAllPoints()
@@ -325,7 +288,7 @@ local function PopulateEntry(entry, data)
     entry.icon:SetTexture(data.itemTexture)
 
     -- Quality border
-    local qr, qg, qb = GetQualityColor(data.quality)
+    local qr, qg, qb = DU.GetQualityColor(data.quality)
     if ns.Addon.db.profile.appearance.qualityBorder then
         entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
         entry.iconBorder:Show()
@@ -456,7 +419,7 @@ local function RestoreFramePosition()
         containerFrame:SetPoint(db.history.point, UIParent, db.history.relativePoint,
             db.history.x or 0, db.history.y or 0)
     else
-        containerFrame:SetPoint("CENTER", UIParent, "CENTER", 200, 0)
+        containerFrame:SetPoint("CENTER", UIParent, "CENTER", DEFAULT_HISTORY_X_OFFSET, 0)
     end
 end
 
@@ -518,7 +481,7 @@ end
 -- Scroll frame creation
 -------------------------------------------------------------------------------
 
-local function OnScrollBarValueChanged(self, value)
+local function OnScrollBarValueChanged(_, value)
     if scrollFrame then
         scrollFrame:SetVerticalScroll(value)
     end
@@ -530,11 +493,11 @@ local function CreateScrollComponents(parent)
     -- Scroll frame (clip region)
     local sf = CreateFrame("ScrollFrame", "DragonLootHistoryScroll", parent)
     sf:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -(TITLE_BAR_HEIGHT + padding))
-    sf:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + SCROLLBAR_WIDTH + 2), padding)
+    sf:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + SCROLLBAR_WIDTH + SCROLLBAR_GAP), padding)
 
     -- Scroll child
     local child = CreateFrame("Frame", nil, sf)
-    child:SetWidth(sf:GetWidth() or (FRAME_WIDTH - padding * 2 - SCROLLBAR_WIDTH - 2))
+    child:SetWidth(sf:GetWidth() or (FRAME_WIDTH - padding * 2 - SCROLLBAR_WIDTH - SCROLLBAR_GAP))
     child:SetHeight(1)
     sf:SetScrollChild(child)
 
@@ -548,14 +511,14 @@ local function CreateScrollComponents(parent)
     bar:SetValue(0)
     bar:SetValueStep(GetEntryHeight())
     bar:SetBackdrop({
-        bgFile = WHITE8x8,
+        bgFile = DU.WHITE8x8,
     })
     bar:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
 
     -- Thumb texture
     bar.thumb = bar:CreateTexture(nil, "OVERLAY")
     bar.thumb:SetColorTexture(0.4, 0.4, 0.4, 0.8)
-    bar.thumb:SetSize(SCROLLBAR_WIDTH - 2, 30)
+    bar.thumb:SetSize(SCROLLBAR_WIDTH - SCROLLBAR_GAP, SCROLLBAR_THUMB_HEIGHT)
     bar:SetThumbTexture(bar.thumb)
 
     bar:SetScript("OnValueChanged", OnScrollBarValueChanged)
@@ -629,7 +592,7 @@ local function StartTimeRefresh()
                 entry.timeText:SetText(FormatTimeAgo(entry.timestampValue))
             end
         end
-    end, 10)
+    end, TIME_REFRESH_INTERVAL)
 end
 
 local function StopTimeRefresh()
@@ -718,7 +681,7 @@ function ns.HistoryFrame.ApplySettings()
             -- Refresh quality border visibility
             if entry.itemLink and db.appearance.qualityBorder then
                 if entry.quality then
-                    local qr, qg, qb = GetQualityColor(entry.quality)
+                    local qr, qg, qb = DU.GetQualityColor(entry.quality)
                     entry.iconBorder:SetColorTexture(qr, qg, qb, 0.8)
                 end
                 entry.iconBorder:Show()

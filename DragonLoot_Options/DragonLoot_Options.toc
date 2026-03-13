@@ -1,6 +1,5 @@
-## Interface: 110207, 120001, 120000
+## Interface: 120001
 ## Interface-BCC: 20505
-## Interface-Cata: 40402
 ## Interface-Mists: 50503
 ## Title: DragonLoot Options
 ## Author: Xerrion
@@ -9,6 +8,7 @@
 ## LoadOnDemand: 1
 
 Core.lua
+Widgets\WidgetConstants.lua
 Widgets\Panel.lua
 Widgets\ScrollFrame.lua
 Widgets\TabGroup.lua
@@ -22,6 +22,7 @@ Widgets\TextInput.lua
 Widgets\Button.lua
 Widgets\ItemSlot.lua
 Widgets\ItemList.lua
+LayoutConstants.lua
 Tabs\GeneralTab.lua
 Tabs\LootWindowTab.lua
 Tabs\LootRollTab.lua

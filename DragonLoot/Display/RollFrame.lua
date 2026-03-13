@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -18,12 +18,11 @@ local UIParent = UIParent
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
 local RollOnLoot = RollOnLoot
-local ITEM_QUALITY_COLORS = ITEM_QUALITY_COLORS
-local STANDARD_TEXT_FONT = STANDARD_TEXT_FONT
 local HandleModifiedItemClick = HandleModifiedItemClick
 
 local LSM = LibStub("LibSharedMedia-3.0")
 local L = ns.L
+local DU = ns.DisplayUtils
 
 -------------------------------------------------------------------------------
 -- Roll type constants (values used by RollOnLoot)
@@ -81,6 +80,9 @@ local PASS_ICON = "Interface\\Buttons\\UI-GroupLoot-Pass-Up"
 
 local FRAME_BASE_HEIGHT = 68
 local MAX_VISIBLE_ROLLS = 4
+local DEFAULT_ROLL_ANCHOR_Y = -200
+local ROLL_FRAME_EXTRA_HEIGHT = 18
+local TEST_ROLL_TICK_INTERVAL = 0.1
 
 -------------------------------------------------------------------------------
 -- Roll frame pool
@@ -91,59 +93,19 @@ local rollFrameCount = 0
 local anchorFrame
 
 -------------------------------------------------------------------------------
--- Quality color helper
+-- Backdrop and font wrappers (delegate to DisplayUtils)
 -------------------------------------------------------------------------------
-
-local function GetQualityColor(quality)
-    if quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then
-        local qc = ITEM_QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    if quality and ns.QUALITY_COLORS and ns.QUALITY_COLORS[quality] then
-        local qc = ns.QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    return 1, 1, 1
-end
-
--------------------------------------------------------------------------------
--- Font helper
--------------------------------------------------------------------------------
-
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
-
-local function GetRollIconSize()
-    return ns.Addon.db.profile.appearance.rollIconSize or 36
-end
 
 local function GetFont()
-    local db = ns.Addon.db.profile.appearance
-    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
-    return fontPath, db.fontSize, db.fontOutline
-end
-
-local function GetBackdropSettings()
-    local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
-    local settings = { bgFile = bgTexture }
-    if (db.borderSize or 1) > 0 then
-        local edgeFile = LSM:Fetch("border", db.borderTexture)
-        if edgeFile then
-            settings.edgeFile = edgeFile
-            settings.edgeSize = db.borderSize
-        end
-    end
-    return settings
+    return DU.GetFont(ns.Addon.db)
 end
 
 local function ApplyBackdrop(frame)
-    local db = ns.Addon.db.profile.appearance
-    frame:SetBackdrop(GetBackdropSettings())
-    local bg = db.backgroundColor
-    frame:SetBackdropColor(bg.r, bg.g, bg.b, db.backgroundAlpha)
-    local border = db.borderColor
-    -- Border alpha is intentionally fixed at 0.8 for visual consistency
-    frame:SetBackdropBorderColor(border.r, border.g, border.b, 0.8)
+    DU.ApplyBackdrop(frame, ns.Addon.db)
+end
+
+local function GetRollIconSize()
+    return ns.Addon.db.profile.appearance.rollIconSize or 36
 end
 
 local function GetFrameWidth()
@@ -250,7 +212,7 @@ local function RestoreFramePosition()
     if db.point then
         anchorFrame:SetPoint(db.point, UIParent, db.relativePoint, db.x or 0, db.y or 0)
     else
-        anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+        anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, DEFAULT_ROLL_ANCHOR_Y)
     end
 end
 
@@ -499,30 +461,84 @@ local function SetButtonState(btn, canUse, reason)
 end
 
 -------------------------------------------------------------------------------
--- Populate a roll frame with item data
+-- Boundary parsing: normalize roll data into a RollData table
+--
+-- RollData = {
+--     texture,           -- icon texture
+--     name,              -- item name
+--     count,             -- stack count
+--     quality,           -- quality enum
+--     bindOnPickUp,      -- boolean (BoP)
+--     canNeed,           -- boolean
+--     canGreed,          -- boolean
+--     canDisenchant,     -- boolean
+--     canTransmog,       -- boolean (nil on Classic)
+--     reasonNeed,        -- string or nil
+--     reasonGreed,       -- string or nil
+--     reasonDisenchant,  -- string or nil
+--     duration,          -- timer duration in seconds (test only)
+-- }
 -------------------------------------------------------------------------------
 
-local function PopulateRollFrame(frame, rollID)
-    frame.rollID = rollID
-
+local function BuildRollData(rollID)
     local texture, name, count, quality, bindOnPickUp, canNeed, canGreed,
           canDisenchant, reasonNeed, reasonGreed, reasonDisenchant,
-          _deSkillRequired, canTransmog = GetLootRollItemInfo(rollID)
+          _, canTransmog = GetLootRollItemInfo(rollID)
 
-    if not texture then return end
+    if not texture then return nil end
 
+    return {
+        texture = texture,
+        name = name or "",
+        count = count,
+        quality = quality,
+        bindOnPickUp = bindOnPickUp or false,
+        canNeed = canNeed or false,
+        canGreed = canGreed or false,
+        canDisenchant = canDisenchant or false,
+        canTransmog = canTransmog or false,
+        reasonNeed = reasonNeed,
+        reasonGreed = reasonGreed,
+        reasonDisenchant = reasonDisenchant,
+        duration = nil,
+    }
+end
+
+local function BuildTestRollData(testEntry)
+    return {
+        texture = testEntry.texture,
+        name = testEntry.name,
+        count = testEntry.count,
+        quality = testEntry.quality,
+        bindOnPickUp = testEntry.bindOnPickUp or false,
+        canNeed = testEntry.canNeed ~= false,
+        canGreed = testEntry.canGreed ~= false,
+        canDisenchant = testEntry.canDisenchant or false,
+        canTransmog = testEntry.canTransmog or false,
+        reasonNeed = nil,
+        reasonGreed = nil,
+        reasonDisenchant = nil,
+        duration = testEntry.duration,
+    }
+end
+
+-------------------------------------------------------------------------------
+-- Unified roll frame rendering (visual output identical for real and test data)
+-------------------------------------------------------------------------------
+
+local function RenderRollFrame(frame, data, rollID, isTest)
     local fontPath, fontSize, fontOutline = GetFont()
-    local r, g, b = GetQualityColor(quality)
+    local r, g, b = DU.GetQualityColor(data.quality)
 
     -- Resize icon to current config value
     local iconSize = GetRollIconSize()
     frame.iconFrame:SetSize(iconSize, iconSize)
 
     -- Adjust frame height based on icon size
-    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + ROLL_FRAME_EXTRA_HEIGHT))
 
     -- Icon
-    frame.iconFrame.icon:SetTexture(texture)
+    frame.iconFrame.icon:SetTexture(data.texture)
 
     -- Quality border
     if ns.Addon.db.profile.appearance.qualityBorder then
@@ -534,11 +550,11 @@ local function PopulateRollFrame(frame, rollID)
 
     -- Item name
     frame.itemName:SetFont(fontPath, fontSize, fontOutline)
-    frame.itemName:SetText(name or "")
+    frame.itemName:SetText(data.name)
     frame.itemName:SetTextColor(r, g, b)
 
     -- BoP indicator
-    if bindOnPickUp then
+    if data.bindOnPickUp then
         frame.bindText:SetText(L["BoP"])
         frame.bindText:Show()
     else
@@ -549,28 +565,32 @@ local function PopulateRollFrame(frame, rollID)
     frame.timerBar:SetMinMaxValues(0, 1)
     frame.timerBar:SetValue(1)
     frame.timerBar:SetStatusBarColor(0, 1, 0)
-    frame.timerBar.text:SetText("")
+    if isTest and data.duration then
+        frame.timerBar.text:SetText(string.format("%.0f", data.duration))
+    else
+        frame.timerBar.text:SetText("")
+    end
 
     -- Count text on icon (for stackable items)
-    if count and count > 1 then
+    if data.count and data.count > 1 then
         if not frame.iconFrame.count then
             frame.iconFrame.count = frame.iconFrame:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
             frame.iconFrame.count:SetPoint("BOTTOMRIGHT", frame.iconFrame, "BOTTOMRIGHT", 2, -2)
         end
-        frame.iconFrame.count:SetText(count)
+        frame.iconFrame.count:SetText(data.count)
         frame.iconFrame.count:Show()
     elseif frame.iconFrame.count then
         frame.iconFrame.count:Hide()
     end
 
     -- Button states
-    SetButtonState(frame.needButton, canNeed, reasonNeed)
-    SetButtonState(frame.greedButton, canGreed, reasonGreed)
-    SetButtonState(frame.disenchantButton, canDisenchant, reasonDisenchant)
+    SetButtonState(frame.needButton, data.canNeed, data.reasonNeed)
+    SetButtonState(frame.greedButton, data.canGreed, data.reasonGreed)
+    SetButtonState(frame.disenchantButton, data.canDisenchant, data.reasonDisenchant)
     SetButtonState(frame.passButton, true, nil)
 
     if frame.transmogButton then
-        if canTransmog then
+        if data.canTransmog then
             frame.transmogButton:Show()
             SetButtonState(frame.transmogButton, true, nil)
         else
@@ -578,8 +598,31 @@ local function PopulateRollFrame(frame, rollID)
         end
     end
 
+    -- Mode-specific frame state
+    if isTest then
+        frame.isTestMode = true
+        frame.testItemName = data.name
+        frame.testQuality = data.quality
+        frame.rollID = nil
+    else
+        frame.isTestMode = false
+        frame.testItemName = nil
+        frame.testQuality = nil
+        frame.rollID = rollID
+    end
+
     -- Reposition children for current border thickness
     ApplyLayoutOffsets(frame)
+end
+
+-------------------------------------------------------------------------------
+-- Populate a roll frame with item data
+-------------------------------------------------------------------------------
+
+local function PopulateRollFrame(frame, rollID)
+    local data = BuildRollData(rollID)
+    if not data then return end
+    RenderRollFrame(frame, data, rollID, false)
 end
 
 -------------------------------------------------------------------------------
@@ -656,80 +699,8 @@ end
 -------------------------------------------------------------------------------
 
 local function PopulateTestRollFrame(frame, testData)
-    frame.rollID = nil
-    frame.isTestMode = true
-    frame.testItemName = testData.name
-    frame.testQuality = testData.quality
-
-    local db = ns.Addon.db.profile
-    local iconSize = db.appearance.rollIconSize or 36
-    local fontPath, fontSize, fontOutline = GetFont()
-    local r, g, b = GetQualityColor(testData.quality)
-
-    -- Icon
-    frame.iconFrame.icon:SetTexture(testData.texture)
-    frame.iconFrame:SetSize(iconSize, iconSize)
-
-    -- Quality border
-    if db.appearance.qualityBorder then
-        frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
-        frame.iconFrame.border:Show()
-    else
-        frame.iconFrame.border:Hide()
-    end
-
-    -- Item name
-    frame.itemName:SetFont(fontPath, fontSize, fontOutline)
-    frame.itemName:SetText(testData.name)
-    frame.itemName:SetTextColor(r, g, b)
-
-    -- BoP indicator
-    if testData.bindOnPickUp then
-        frame.bindText:SetText(L["BoP"])
-        frame.bindText:Show()
-    else
-        frame.bindText:Hide()
-    end
-
-    -- Timer bar starts full
-    frame.timerBar:SetMinMaxValues(0, 1)
-    frame.timerBar:SetValue(1)
-    frame.timerBar:SetStatusBarColor(0, 1, 0)
-    frame.timerBar.text:SetText(string.format("%.0f", testData.duration))
-
-    -- Stack count on icon
-    if testData.count and testData.count > 1 then
-        if not frame.iconFrame.count then
-            frame.iconFrame.count = frame.iconFrame:CreateFontString(
-                nil, "OVERLAY", "NumberFontNormal")
-            frame.iconFrame.count:SetPoint(
-                "BOTTOMRIGHT", frame.iconFrame, "BOTTOMRIGHT", 2, -2)
-        end
-        frame.iconFrame.count:SetText(testData.count)
-        frame.iconFrame.count:Show()
-    elseif frame.iconFrame.count then
-        frame.iconFrame.count:Hide()
-    end
-
-    -- Button states
-    SetButtonState(frame.needButton, testData.canNeed, nil)
-    SetButtonState(frame.greedButton, testData.canGreed, nil)
-    SetButtonState(frame.disenchantButton, testData.canDisenchant, nil)
-    SetButtonState(frame.passButton, true, nil)
-
-    if frame.transmogButton then
-        if testData.canTransmog then
-            frame.transmogButton:Show()
-            SetButtonState(frame.transmogButton, true, nil)
-        else
-            frame.transmogButton:Hide()
-        end
-    end
-
-    -- Frame height based on icon size
-    frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
-
-    ApplyLayoutOffsets(frame)
+    local data = BuildTestRollData(testData)
+    RenderRollFrame(frame, data, nil, true)
 end
 
 -------------------------------------------------------------------------------
@@ -743,8 +714,8 @@ local function StartTestTimer(frameIndex, duration)
     local remaining = duration
     local total = duration
 
-    frame.testTimer = C_Timer.NewTicker(0.1, function()
-        remaining = remaining - 0.1
+    frame.testTimer = C_Timer.NewTicker(TEST_ROLL_TICK_INTERVAL, function()
+        remaining = remaining - TEST_ROLL_TICK_INTERVAL
         if remaining <= 0 then
             frame.testTimer:Cancel()
             frame.testTimer = nil
@@ -875,7 +846,7 @@ function ns.RollFrame.ApplySettings()
             end
 
             -- Adjust frame height based on icon size
-            frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + 18))
+            frame:SetHeight(math.max(FRAME_BASE_HEIGHT, iconSize + ROLL_FRAME_EXTRA_HEIGHT))
 
             -- Update layout offsets for border thickness
             ApplyLayoutOffsets(frame)
@@ -891,7 +862,7 @@ function ns.RollFrame.ApplySettings()
             if frame.rollID and frame:IsShown() then
                 local _, _, _, quality = GetLootRollItemInfo(frame.rollID)
                 if appearance.qualityBorder then
-                    local r, g, b = GetQualityColor(quality)
+                    local r, g, b = DU.GetQualityColor(quality)
                     frame.iconFrame.border:SetColorTexture(r, g, b, 0.8)
                     frame.iconFrame.border:Show()
                 else
@@ -912,7 +883,7 @@ function ns.RollFrame.ResetAnchor()
     db.x = nil
     db.y = nil
     anchorFrame:ClearAllPoints()
-    anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, -200)
+    anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, DEFAULT_ROLL_ANCHOR_Y)
 end
 
 function ns.RollFrame.ShowTestRoll()

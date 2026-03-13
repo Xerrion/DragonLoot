@@ -5,45 +5,30 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
-local GameTooltip = GameTooltip
 
 -------------------------------------------------------------------------------
 -- Constants
 -------------------------------------------------------------------------------
 
-local FONT_PATH = "Fonts\\FRIZQT__.TTF"
-local FONT_SIZE = 12
+local FONT_PATH = WC.FONT_PATH
+local FONT_SIZE = WC.FONT_SIZE
 local BOX_SIZE = 20
-local WHITE_COLOR = { 1, 1, 1 }
-local DISABLED_COLOR = { 0.5, 0.5, 0.5 }
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local WHITE_COLOR = WC.WHITE_COLOR
+local DISABLED_COLOR = WC.DISABLED_COLOR
+local WHITE8x8 = WC.WHITE8x8
 local CHECK_TEXTURE = "Interface\\Buttons\\UI-CheckBox-Check"
 local BOX_BG = { 0.1, 0.1, 0.1, 0.9 }
 local BOX_BORDER = { 0.4, 0.4, 0.4, 1 }
 local FRAME_HEIGHT = 24
 local LABEL_OFFSET = 6
-
--------------------------------------------------------------------------------
--- Show tooltip on enter
--------------------------------------------------------------------------------
-
-local function OnEnter(frame)
-    if not frame._tooltipText then return end
-    GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
-    GameTooltip:SetText(frame._tooltipText, 1, 1, 1, 1, true)
-    GameTooltip:Show()
-end
-
-local function OnLeave()
-    GameTooltip:Hide()
-end
 
 -------------------------------------------------------------------------------
 -- Create the checkbox box frame
@@ -103,8 +88,8 @@ function ns.Widgets.CreateToggle(parent, opts)
 
     -- Click handler on the entire frame
     frame:EnableMouse(true)
-    frame:SetScript("OnEnter", OnEnter)
-    frame:SetScript("OnLeave", OnLeave)
+    frame:SetScript("OnEnter", WC.ShowTooltip)
+    frame:SetScript("OnLeave", WC.HideTooltip)
     frame:SetScript("OnMouseUp", function()
         if disabled then return end
         checked = not checked

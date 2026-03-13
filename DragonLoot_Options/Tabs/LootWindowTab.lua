@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 local L = ns.L
 
 -------------------------------------------------------------------------------
@@ -19,17 +19,6 @@ local math_abs = math.abs
 -------------------------------------------------------------------------------
 
 local dlns
-
--------------------------------------------------------------------------------
--- Constants
--------------------------------------------------------------------------------
-
-local PADDING_SIDE = 10
-local PADDING_TOP = -10
-local SPACING_AFTER_HEADER = 8
-local SPACING_BETWEEN_WIDGETS = 6
-local SPACING_BETWEEN_SECTIONS = 16
-local PADDING_BOTTOM = 20
 
 -------------------------------------------------------------------------------
 -- Helper: call LootFrame.ApplySettings if available
@@ -47,17 +36,16 @@ end
 
 local function CreateContent(parent)
     dlns = ns.dlns
+    local LC = ns.LayoutConstants
     local W = ns.Widgets
     local db = dlns.Addon.db
-    local yOffset = PADDING_TOP
+    local yOffset = LC.PADDING_TOP
 
     ---------------------------------------------------------------------------
     -- Header: Loot Window
     ---------------------------------------------------------------------------
     local header = W.CreateHeader(parent, L["Loot Window"])
-    header:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    header:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - header:GetHeight() - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(header, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     ---------------------------------------------------------------------------
     -- Toggle: Enable Custom Loot Window
@@ -71,9 +59,7 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    enableToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    enableToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - enableToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(enableToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Toggle: Lock Position
@@ -86,9 +72,7 @@ local function CreateContent(parent)
             db.profile.lootWindow.lock = value
         end,
     })
-    lockToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    lockToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - lockToggle:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(lockToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Toggle: Position at Cursor
@@ -101,17 +85,13 @@ local function CreateContent(parent)
             db.profile.lootWindow.positionAtCursor = value
         end,
     })
-    cursorToggle:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    cursorToggle:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - cursorToggle:GetHeight() - SPACING_BETWEEN_SECTIONS
+    yOffset = LC.AnchorWidget(cursorToggle, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
     ---------------------------------------------------------------------------
     -- Header: Layout
     ---------------------------------------------------------------------------
     local layoutHeader = W.CreateHeader(parent, L["Layout"])
-    layoutHeader:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    layoutHeader:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - layoutHeader:GetHeight() - SPACING_AFTER_HEADER
+    yOffset = LC.AnchorWidget(layoutHeader, parent, yOffset) - LC.SPACING_AFTER_HEADER
 
     ---------------------------------------------------------------------------
     -- Slider: Scale
@@ -125,9 +105,7 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    scaleSlider:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    scaleSlider:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - scaleSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(scaleSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Slider: Width
@@ -142,9 +120,7 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    widthSlider:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    widthSlider:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - widthSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(widthSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Slider: Height
@@ -159,9 +135,7 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    heightSlider:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    heightSlider:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - heightSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(heightSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Slider: Slot Spacing
@@ -176,9 +150,7 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    slotSpacingSlider:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    slotSpacingSlider:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - slotSpacingSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(slotSpacingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Slider: Content Padding
@@ -193,14 +165,12 @@ local function CreateContent(parent)
             ApplyLootSettings()
         end,
     })
-    contentPaddingSlider:SetPoint("TOPLEFT", parent, "TOPLEFT", PADDING_SIDE, yOffset)
-    contentPaddingSlider:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -PADDING_SIDE, yOffset)
-    yOffset = yOffset - contentPaddingSlider:GetHeight() - SPACING_BETWEEN_WIDGETS
+    yOffset = LC.AnchorWidget(contentPaddingSlider, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame
     ---------------------------------------------------------------------------
-    parent:SetHeight(math_abs(yOffset) + PADDING_BOTTOM)
+    parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
 
 -------------------------------------------------------------------------------

@@ -5,7 +5,7 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -20,15 +20,13 @@ local GetLootSlotType = GetLootSlotType
 local LootSlot = LootSlot
 local CloseLoot = CloseLoot
 local IsFishingLoot = IsFishingLoot
-local ITEM_QUALITY_COLORS = ITEM_QUALITY_COLORS
-local STANDARD_TEXT_FONT = STANDARD_TEXT_FONT
 local UNKNOWN = UNKNOWN
 local GetLootSlotLink = GetLootSlotLink
 local CreateColor = CreateColor
 local GetCursorPosition = GetCursorPosition
 
-local LSM = LibStub("LibSharedMedia-3.0")
 local L = ns.L
+local DU = ns.DisplayUtils
 
 -------------------------------------------------------------------------------
 -- Version detection
@@ -56,6 +54,8 @@ local BIND_LABELS = {
 -------------------------------------------------------------------------------
 
 local TITLE_BAR_HEIGHT = 24
+local MIN_QUALITY_RARE = 3
+local ICON_GLOW_PADDING = 25
 
 local function GetSlotSpacing()
     return ns.Addon.db.profile.lootWindow.slotSpacing or 2
@@ -91,30 +91,14 @@ local containerFrame
 
 local function GetNormalizedSlotInfo(slotIndex)
     if isRetail then
-        local icon, name, quantity, _currencyID, quality, locked, isQuestItem =
+        local icon, name, quantity, _, quality, locked, isQuestItem =
             GetLootSlotInfo(slotIndex)
         return icon, name, quantity, quality, locked, isQuestItem
     end
     -- Classic/TBC/MoP: 6 returns with currencyID at position 4, no isQuestItem
-    local icon, name, quantity, _currencyID, quality, locked =
+    local icon, name, quantity, _, quality, locked =
         GetLootSlotInfo(slotIndex)
     return icon, name, quantity, quality, locked, nil
-end
-
--------------------------------------------------------------------------------
--- Quality color helper
--------------------------------------------------------------------------------
-
-local function GetQualityColor(quality)
-    if quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then
-        local qc = ITEM_QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    if quality and ns.QUALITY_COLORS and ns.QUALITY_COLORS[quality] then
-        local qc = ns.QUALITY_COLORS[quality]
-        return qc.r, qc.g, qc.b
-    end
-    return 1, 1, 1
 end
 
 -------------------------------------------------------------------------------
@@ -139,13 +123,13 @@ local function ApplySlotBackground(slot, quality)
     local style = ns.Addon.db.profile.appearance.slotBackground or "gradient"
 
     -- Only show quality-tinted backgrounds for Rare+ items (quality >= 3)
-    if not quality or quality < 3 or style == "none" then
+    if not quality or quality < MIN_QUALITY_RARE or style == "none" then
         slot.rowBg:Hide()
         slot.accentStripe:Hide()
         return
     end
 
-    local r, g, b = GetQualityColor(quality)
+    local r, g, b = DU.GetQualityColor(quality)
 
     if style == "gradient" then
         slot.rowBg:SetColorTexture(1, 1, 1)
@@ -190,50 +174,15 @@ local function BuildSubText(slotIndex, lootType)
 end
 
 -------------------------------------------------------------------------------
--- Font helper
+-- Backdrop and font wrappers (delegate to DisplayUtils)
 -------------------------------------------------------------------------------
 
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
-
 local function GetFont()
-    local db = ns.Addon.db.profile.appearance
-    local fontPath = LSM:Fetch("font", db.font) or STANDARD_TEXT_FONT
-    return fontPath, db.fontSize, db.fontOutline
-end
-
-local function GetBackdropSettings()
-    local db = ns.Addon.db.profile.appearance
-    local bgTexture = LSM:Fetch("background", db.backgroundTexture) or WHITE8x8
-    local settings = { bgFile = bgTexture }
-    if (db.borderSize or 1) > 0 then
-        local edgeFile = LSM:Fetch("border", db.borderTexture)
-        if edgeFile then
-            settings.edgeFile = edgeFile
-            settings.edgeSize = db.borderSize
-        end
-    end
-    return settings
+    return DU.GetFont(ns.Addon.db)
 end
 
 local function ApplyBackdrop(frame)
-    local db = ns.Addon.db.profile.appearance
-    if not db then return end
-
-    frame:SetBackdrop(GetBackdropSettings())
-
-    local bg = db.backgroundColor
-    if bg then
-        frame:SetBackdropColor(bg.r or 0.05, bg.g or 0.05, bg.b or 0.05, db.backgroundAlpha or 0.9)
-    else
-        frame:SetBackdropColor(0.05, 0.05, 0.05, db.backgroundAlpha or 0.9)
-    end
-
-    local border = db.borderColor
-    if border then
-        frame:SetBackdropBorderColor(border.r or 0.3, border.g or 0.3, border.b or 0.3, 0.8)
-    else
-        frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
-    end
+    DU.ApplyBackdrop(frame, ns.Addon.db)
 end
 
 local function ApplyLayoutOffsets(frame)
@@ -495,31 +444,94 @@ local function ReleaseAllSlots()
 end
 
 -------------------------------------------------------------------------------
--- Populate a single slot with loot data
+-- Boundary parsing: normalize loot data into a SlotData table
+--
+-- SlotData = {
+--     icon,          -- texture path/ID
+--     name,          -- item name string
+--     quantity,      -- stack count
+--     quality,       -- quality enum (0-7)
+--     isQuestItem,   -- boolean
+--     slotType,      -- number (loot slot type)
+--     subText,       -- formatted sub-text string
+--     locked,        -- boolean
+-- }
 -------------------------------------------------------------------------------
 
-local function PopulateSlot(slot, slotIndex)
-    slot.slotIndex = slotIndex
+local function BuildSlotData(slotIndex)
+    local icon, name, quantity, quality, locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
+    if not icon then return nil end
 
-    local icon, name, quantity, quality, _locked, isQuestItem = GetNormalizedSlotInfo(slotIndex)
-    if not icon then
-        slot:Hide()
-        return
+    local lootType = GetLootSlotType(slotIndex)
+    local subText = BuildSubText(slotIndex, lootType)
+
+    return {
+        icon = icon,
+        name = name or UNKNOWN,
+        quantity = quantity,
+        quality = quality,
+        isQuestItem = isQuestItem or false,
+        slotType = lootType,
+        subText = subText,
+        locked = locked or false,
+    }
+end
+
+local function BuildTestSlotData(testItem, _)
+    local subText
+    if testItem.slotType == LOOT_SLOT_CURRENCY then
+        subText = L["Currency"]
+    elseif testItem.slotType == LOOT_SLOT_MONEY then
+        subText = L["Money"]
+    elseif testItem.slotType == LOOT_SLOT_ITEM then
+        local parts = {}
+        if testItem.itemLevel and testItem.itemLevel > 0 then
+            parts[#parts + 1] = L["iLvl"] .. " " .. testItem.itemLevel
+        end
+        local bindText = testItem.bindType and BIND_LABELS[testItem.bindType] or nil
+        if bindText then
+            parts[#parts + 1] = bindText
+        end
+        if testItem.itemSubType then
+            parts[#parts + 1] = testItem.itemSubType
+        end
+        if #parts > 0 then
+            subText = table.concat(parts, "  \194\183  ")
+        end
     end
 
+    return {
+        icon = testItem.icon,
+        name = testItem.name,
+        quantity = testItem.quantity,
+        quality = testItem.quality,
+        isQuestItem = testItem.isQuestItem or false,
+        slotType = testItem.slotType,
+        subText = subText,
+        locked = false,
+    }
+end
+
+-------------------------------------------------------------------------------
+-- Unified slot rendering (visual output identical for real and test data)
+-------------------------------------------------------------------------------
+
+local function RenderSlot(slot, data, isTest)
     local db = ns.Addon.db.profile
     local iconSize = db.appearance.lootIconSize or 36
     local fontPath, fontSize, fontOutline = GetFont()
 
     -- Icon
-    slot.icon:SetTexture(icon)
+    slot.icon:SetTexture(data.icon)
     slot.iconFrame:SetSize(iconSize, iconSize)
     slot.icon:SetDesaturated(false)
+    slot.icon:SetVertexColor(1, 1, 1)
+    slot.icon:SetAlpha(1)
 
     -- Quality color
-    local r, g, b = GetQualityColor(quality)
+    local r, g, b = DU.GetQualityColor(data.quality)
     slot._qr, slot._qg, slot._qb = r, g, b
-    slot._quality = quality
+    slot._quality = data.quality
 
     -- Quality border
     if db.appearance.qualityBorder then
@@ -530,15 +542,15 @@ local function PopulateSlot(slot, slotIndex)
     end
 
     -- Quest item override for border
-    if isQuestItem then
+    if data.isQuestItem then
         slot.iconBorder:SetColorTexture(1, 0.82, 0, 0.9)
         slot.iconBorder:Show()
     end
 
     -- Icon glow for Rare+ items (quality >= 3)
-    if quality and quality >= 3 then
+    if data.quality and data.quality >= MIN_QUALITY_RARE then
         slot.iconGlow:SetVertexColor(r, g, b, 0.6)
-        slot.iconGlow:SetSize(iconSize + 25, iconSize + 25)
+        slot.iconGlow:SetSize(iconSize + ICON_GLOW_PADDING, iconSize + ICON_GLOW_PADDING)
         slot.iconGlow:ClearAllPoints()
         slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
         slot.iconGlow:Show()
@@ -548,24 +560,22 @@ local function PopulateSlot(slot, slotIndex)
 
     -- Item name
     slot.itemName:SetFont(fontPath, fontSize, fontOutline)
-    slot.itemName:SetText(name or UNKNOWN)
+    slot.itemName:SetText(data.name)
     slot.itemName:SetTextColor(r, g, b)
 
     -- Quantity badge
-    if quantity and quantity > 1 then
-        slot.quantity:SetText(quantity)
+    if data.quantity and data.quantity > 1 then
+        slot.quantity:SetText(data.quantity)
         slot.quantity:Show()
     else
         slot.quantity:Hide()
     end
 
     -- Sub-text (item details or slot type)
-    local lootType = GetLootSlotType(slotIndex)
-    local subTextStr = BuildSubText(slotIndex, lootType)
-    if subTextStr then
+    if data.subText then
         local subFontSize = math.max(fontSize - 2, 8)
         slot.subText:SetFont(fontPath, subFontSize, fontOutline)
-        slot.subText:SetText(subTextStr)
+        slot.subText:SetText(data.subText)
         slot.subText:SetTextColor(0.6, 0.6, 0.6)
         slot.subText:Show()
     else
@@ -573,14 +583,73 @@ local function PopulateSlot(slot, slotIndex)
     end
 
     -- Row background (quality-tinted, configurable)
-    ApplySlotBackground(slot, quality)
+    ApplySlotBackground(slot, data.quality)
 
     -- Quality-tinted hover highlight
     slot.highlight:SetColorTexture(r, g, b, 0.15)
 
     -- Slot height
     slot:SetHeight(iconSize + 8)
+
+    -- Interaction scripts differ by mode
+    if isTest then
+        slot:SetScript("OnClick", function()
+            ns.Print(L["Test slot clicked: "] .. data.name)
+        end)
+        slot:SetScript("OnEnter", function(self)
+            -- Tooltip
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(data.name, r, g, b)
+            if data.subText then
+                GameTooltip:AddLine(data.subText, 0.6, 0.6, 0.6)
+            end
+            GameTooltip:Show()
+
+            -- Visual hover effects
+            if self.iconBorder:IsShown() then
+                self.iconBorder:SetColorTexture(r, g, b, 1.0)
+            end
+            if self.iconGlow:IsShown() then
+                self.iconGlow:SetAlpha(0.9)
+            end
+            self.itemName:SetTextColor(
+                math.min(r + 0.15, 1),
+                math.min(g + 0.15, 1),
+                math.min(b + 0.15, 1))
+        end)
+        slot:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+
+            -- Restore visual state
+            if self.iconBorder:IsShown() then
+                self.iconBorder:SetColorTexture(r, g, b, 0.8)
+            end
+            if self.iconGlow:IsShown() then
+                self.iconGlow:SetAlpha(0.6)
+            end
+            self.itemName:SetTextColor(r, g, b)
+        end)
+    else
+        slot:SetScript("OnClick", OnSlotClick)
+        slot:SetScript("OnEnter", OnSlotEnter)
+        slot:SetScript("OnLeave", OnSlotLeave)
+    end
+
     slot:Show()
+end
+
+-------------------------------------------------------------------------------
+-- Populate a single slot with loot data
+-------------------------------------------------------------------------------
+
+local function PopulateSlot(slot, slotIndex)
+    local data = BuildSlotData(slotIndex)
+    if not data then
+        slot:Hide()
+        return
+    end
+    RenderSlot(slot, data, false)
+    slot.slotIndex = slotIndex
 end
 
 -------------------------------------------------------------------------------
@@ -912,7 +981,7 @@ function ns.LootFrame.ApplySettings()
             if slot.slotIndex then
                 local _, _, _, quality = GetNormalizedSlotInfo(slot.slotIndex)
                 if db.appearance.qualityBorder then
-                    local r, g, b = GetQualityColor(quality)
+                    local r, g, b = DU.GetQualityColor(quality)
                     slot._qr, slot._qg, slot._qb = r, g, b
                     slot._quality = quality
                     slot.iconBorder:SetColorTexture(r, g, b, 0.8)
@@ -984,143 +1053,10 @@ local TEST_ITEMS = {
 }
 
 local function PopulateTestSlot(slot, testData, index)
+    local data = BuildTestSlotData(testData, index)
+    RenderSlot(slot, data, true)
     slot.slotIndex = index
-
-    local db = ns.Addon.db.profile
-    local iconSize = db.appearance.lootIconSize or 36
-    local fontPath, fontSize, fontOutline = GetFont()
-
-    -- Icon
-    slot.icon:SetTexture(testData.icon)
-    slot.iconFrame:SetSize(iconSize, iconSize)
-    slot.icon:SetDesaturated(false)
-    slot.icon:SetVertexColor(1, 1, 1)
-    slot.icon:SetAlpha(1)
-
-    -- Quality color
-    local r, g, b = GetQualityColor(testData.quality)
-    slot._qr, slot._qg, slot._qb = r, g, b
-    slot._quality = testData.quality
-
-    -- Quality border
-    if db.appearance.qualityBorder then
-        slot.iconBorder:SetColorTexture(r, g, b, 0.8)
-        slot.iconBorder:Show()
-    else
-        slot.iconBorder:Hide()
-    end
-
-    -- Quest item override
-    if testData.isQuestItem then
-        slot.iconBorder:SetColorTexture(1, 0.82, 0, 0.9)
-        slot.iconBorder:Show()
-    end
-
-    -- Icon glow for Rare+ items
-    if testData.quality and testData.quality >= 3 then
-        slot.iconGlow:SetVertexColor(r, g, b, 0.6)
-        slot.iconGlow:SetSize(iconSize + 25, iconSize + 25)
-        slot.iconGlow:ClearAllPoints()
-        slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
-        slot.iconGlow:Show()
-    else
-        slot.iconGlow:Hide()
-    end
-
-    -- Item name
-    slot.itemName:SetFont(fontPath, fontSize, fontOutline)
-    slot.itemName:SetText(testData.name)
-    slot.itemName:SetTextColor(r, g, b)
-
-    -- Quality-tinted hover highlight
-    slot.highlight:SetColorTexture(r, g, b, 0.15)
-
-    -- Quantity
-    if testData.quantity and testData.quantity > 1 then
-        slot.quantity:SetText(testData.quantity)
-        slot.quantity:Show()
-    else
-        slot.quantity:Hide()
-    end
-
-    -- Sub-text
-    local subTextStr
-    if testData.slotType == LOOT_SLOT_CURRENCY then
-        subTextStr = L["Currency"]
-    elseif testData.slotType == LOOT_SLOT_MONEY then
-        subTextStr = L["Money"]
-    elseif testData.slotType == LOOT_SLOT_ITEM then
-        local parts = {}
-        if testData.itemLevel and testData.itemLevel > 0 then
-            parts[#parts + 1] = L["iLvl"] .. " " .. testData.itemLevel
-        end
-        local bindText = testData.bindType and BIND_LABELS[testData.bindType] or nil
-        if bindText then
-            parts[#parts + 1] = bindText
-        end
-        if testData.itemSubType then
-            parts[#parts + 1] = testData.itemSubType
-        end
-        if #parts > 0 then
-            subTextStr = table.concat(parts, "  \194\183  ")
-        end
-    end
-
-    if subTextStr then
-        local subFontSize = math.max(fontSize - 2, 8)
-        slot.subText:SetFont(fontPath, subFontSize, fontOutline)
-        slot.subText:SetText(subTextStr)
-        slot.subText:SetTextColor(0.6, 0.6, 0.6)
-        slot.subText:Show()
-    else
-        slot.subText:Hide()
-    end
-
-    -- Row background
-    ApplySlotBackground(slot, testData.quality)
-
-    -- Slot height
-    slot:SetHeight(iconSize + 8)
-
-    -- Test slot interaction (no real loot)
-    slot:SetScript("OnClick", function()
-        ns.Print(L["Test slot clicked: "] .. testData.name)
-    end)
-    slot:SetScript("OnEnter", function(self)
-        -- Tooltip
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:AddLine(testData.name, r, g, b)
-        if subTextStr then
-            GameTooltip:AddLine(subTextStr, 0.6, 0.6, 0.6)
-        end
-        GameTooltip:Show()
-
-        -- Visual hover effects
-        if self.iconBorder:IsShown() then
-            self.iconBorder:SetColorTexture(r, g, b, 1.0)
-        end
-        if self.iconGlow:IsShown() then
-            self.iconGlow:SetAlpha(0.9)
-        end
-        self.itemName:SetTextColor(
-            math.min(r + 0.15, 1),
-            math.min(g + 0.15, 1),
-            math.min(b + 0.15, 1))
-    end)
-    slot:SetScript("OnLeave", function(self)
-        GameTooltip:Hide()
-
-        -- Restore visual state
-        if self.iconBorder:IsShown() then
-            self.iconBorder:SetColorTexture(r, g, b, 0.8)
-        end
-        if self.iconGlow:IsShown() then
-            self.iconGlow:SetAlpha(0.6)
-        end
-        self.itemName:SetTextColor(r, g, b)
-    end)
-
-    slot:Show()
+    slot.testData = testData
 end
 
 function ns.LootFrame.ShowTestLoot()

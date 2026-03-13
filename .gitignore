@@ -7,3 +7,6 @@ nul
 # Libs - track only embeds.xml and submodule directories
 DragonLoot/Libs/
 !DragonLoot/Libs/embeds.xml
+
+# Release.sh
+release.sh

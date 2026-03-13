@@ -5,7 +5,8 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local ADDON_NAME, ns = ...
+local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -23,8 +24,8 @@ local GameTooltip = GameTooltip
 -------------------------------------------------------------------------------
 
 local DEFAULT_SIZE = 36
-local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
-local EMPTY_ICON = "Interface\\PaperDoll\\UI-Backpack-EmptySlot"
+local WHITE8x8 = WC.WHITE8x8
+local EMPTY_ICON = WC.EMPTY_ICON
 local EMPTY_BORDER_COLOR = { 0.4, 0.4, 0.4, 1 }
 local MAX_RETRIES = 3
 local RETRY_DELAY = 0.5

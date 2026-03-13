@@ -5,10 +5,15 @@
 -- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
-local _, ns = ...
+local ADDON_NAME, ns = ...
+
+-------------------------------------------------------------------------------
+-- Cached references
+-------------------------------------------------------------------------------
 
 local print = print
-local strtrim = strtrim
+local string_lower = string.lower
+local string_match = string.match
 
 local L = ns.L
 
@@ -16,19 +21,25 @@ local L = ns.L
 -- Help Display
 -------------------------------------------------------------------------------
 
+local HELP_ENTRIES = {
+    { "",             L["Toggle addon on/off"] },
+    { " config",      L["Open settings panel"] },
+    { " minimap",     L["Toggle minimap icon"] },
+    { " enable",      L["Enable addon"] },
+    { " disable",     L["Disable addon"] },
+    { " reset",       L["Reset loot frame position"] },
+    { " test",        L["Show test loot"] },
+    { " testroll",    L["Show test roll frames"] },
+    { " history",     L["Toggle loot history"] },
+    { " status",      L["Show current settings"] },
+    { " help",        L["Show this help"] },
+}
+
 local function PrintHelp()
     print(ns.COLOR_GOLD .. L["--- DragonLoot Commands ---"] .. ns.COLOR_RESET)
-    print("  " .. L["/dl - Toggle addon on/off"])
-    print("  " .. L["/dl config - Open settings panel"])
-    print("  " .. L["/dl minimap - Toggle minimap icon"])
-    print("  " .. L["/dl enable - Enable addon"])
-    print("  " .. L["/dl disable - Disable addon"])
-    print("  " .. L["/dl reset - Reset loot frame position"])
-    print("  " .. L["/dl test - Show test loot"])
-    print("  " .. L["/dl testroll - Show test roll frames"])
-    print("  " .. L["/dl history - Toggle loot history"])
-    print("  " .. L["/dl status - Show current settings"])
-    print("  " .. L["/dl help - Show this help"])
+    for _, entry in ipairs(HELP_ENTRIES) do
+        print("  " .. ns.COLOR_WHITE .. "/dl" .. entry[1] .. ns.COLOR_RESET .. " - " .. entry[2])
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -56,69 +67,95 @@ end
 -- Command Router
 -------------------------------------------------------------------------------
 
+local function NormalizeCommand(input)
+    local trimmedInput = string_match(input or "", "^%s*(.-)%s*$")
+    return string_lower(trimmedInput)
+end
+
 local function ToggleAddon()
     local db = ns.Addon.db.profile
     db.enabled = not db.enabled
+
     if db.enabled then
         ns.Addon:OnEnable()
         ns.Print(L["Addon enabled"])
-    else
-        ns.Addon:OnDisable()
-        ns.Print(L["Addon disabled"])
+        return
     end
+
+    ns.Addon:OnDisable()
+    ns.Print(L["Addon disabled"])
 end
 
-local commandHandlers = {
-    ["config"]   = function() if ns.ToggleConfigWindow then ns.ToggleConfigWindow() end end,
-    ["options"]  = function() if ns.ToggleConfigWindow then ns.ToggleConfigWindow() end end,
-    ["settings"] = function() if ns.ToggleConfigWindow then ns.ToggleConfigWindow() end end,
-    ["minimap"]  = function() if ns.MinimapIcon.Toggle then ns.MinimapIcon.Toggle() end end,
-    ["toggle"]   = ToggleAddon,
-    ["status"]   = PrintStatus,
-    ["help"]     = PrintHelp,
-    ["?"]        = PrintHelp,
-    ["reset"] = function()
+function ns.HandleSlashCommand(input)
+    local cmd = NormalizeCommand(input)
+
+    if cmd == "" then
+        PrintHelp()
+
+    elseif cmd == "config" or cmd == "options" or cmd == "settings" then
+        if ns.ToggleConfigWindow then
+            ns.ToggleConfigWindow()
+        end
+
+    elseif cmd == "minimap" then
+        if ns.MinimapIcon.Toggle then
+            ns.MinimapIcon.Toggle()
+        end
+
+    elseif cmd == "toggle" then
+        ToggleAddon()
+
+    elseif cmd == "enable" then
+        local db = ns.Addon.db.profile
+        if not db.enabled then
+            db.enabled = true
+            ns.Addon:OnEnable()
+        end
+        ns.Print(L["Addon enabled"])
+
+    elseif cmd == "disable" then
+        local db = ns.Addon.db.profile
+        if db.enabled then
+            db.enabled = false
+            ns.Addon:OnDisable()
+        end
+        ns.Print(L["Addon disabled"])
+
+    elseif cmd == "reset" then
         if ns.LootFrame.ResetAnchor then
             ns.LootFrame.ResetAnchor()
             ns.Print(L["Loot frame position reset."])
         else
             ns.Print(L["Loot frame not yet available."])
         end
-    end,
-    ["test"] = function()
+
+    elseif cmd == "test" then
         if ns.LootFrame.ShowTestLoot then
             ns.LootFrame.ShowTestLoot()
         else
             ns.Print(L["Test loot not yet available."])
         end
-    end,
-    ["testroll"] = function()
+
+    elseif cmd == "testroll" then
         if ns.RollFrame.ShowTestRoll then
             ns.RollFrame.ShowTestRoll()
         else
             ns.Print(L["Test roll not yet available."])
         end
-    end,
-    ["history"] = function()
+
+    elseif cmd == "history" then
         if ns.HistoryFrame.Toggle then
             ns.HistoryFrame.Toggle()
         else
             ns.Print(L["Loot history not yet available."])
         end
-    end,
-}
 
-function ns.HandleSlashCommand(input)
-    local cmd = strtrim((input or ""):lower())
+    elseif cmd == "status" then
+        PrintStatus()
 
-    if cmd == "" then
+    elseif cmd == "help" or cmd == "?" then
         PrintHelp()
-        return
-    end
 
-    local handler = commandHandlers[cmd]
-    if handler then
-        handler()
     else
         ns.Print(L["Unknown command:"] .. " " .. ns.COLOR_WHITE .. cmd .. ns.COLOR_RESET)
         PrintHelp()

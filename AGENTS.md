@@ -10,7 +10,7 @@ DragonLoot is a customizable loot addon that replaces the default Blizzard loot 
 
 **Status**: Feature-complete (Phases 1-5, 8, 10-11). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, appearance expansion (font outline, quality borders, background/border customization), and direct loot history tracking (CHAT_MSG_LOOT) are all implemented.
 
-**GitHub**: https://github.com/DragonAddons/DragonLoot
+**GitHub**: https://github.com/Xerrion/DragonLoot
 
 ---
 
@@ -571,9 +571,6 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 4. Squash merge only: `gh pr merge <number> --squash`
 5. Branches are auto-deleted after merge
 
-### Project Boards
-
-DragonLoot uses the **DragonAddons** org-level GitHub project board (#2) for issue tracking and sprint planning.
 
 #### Board Columns
 

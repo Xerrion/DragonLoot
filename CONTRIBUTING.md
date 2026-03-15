@@ -5,11 +5,11 @@ Thank you for your interest in contributing to **DragonLoot** - a loot tracking 
 ## How to Contribute
 
 ### Reporting Bugs
-- Use the [bug report template](https://github.com/DragonAddons/DragonLoot/issues/new?template=bug-report.yml)
+- Use the [bug report template](https://github.com/Xerrion/DragonLoot/issues/new?template=bug-report.yml)
 - Include your WoW version, DragonLoot version, and steps to reproduce
 
 ### Suggesting Features
-- Use the [feature request template](https://github.com/DragonAddons/DragonLoot/issues/new?template=feature-request.yml)
+- Use the [feature request template](https://github.com/Xerrion/DragonLoot/issues/new?template=feature-request.yml)
 - Explain the problem your feature would solve
 
 ### Contributing Code

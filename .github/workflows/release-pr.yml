@@ -5,8 +5,10 @@ on:
     branches: [master]
 
 permissions:
+permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   release-please:

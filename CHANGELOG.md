@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.5](https://github.com/DragonAddons/DragonLoot/compare/0.6.4...0.6.5) (2026-03-15)
+
+
+### ⚙️ Miscellaneous Tasks
+
+* update TOC Interface versions ([#77](https://github.com/DragonAddons/DragonLoot/issues/77)) ([b87f044](https://github.com/DragonAddons/DragonLoot/commit/b87f0447a1f780cea361a324649856004c677a10))
+
 ## [0.6.4](https://github.com/DragonAddons/DragonLoot/compare/0.6.3...0.6.4) (2026-03-13)
 
 

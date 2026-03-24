@@ -654,6 +654,8 @@ local function RenderRollFrame(frame, data, rollID, isTest)
 
     -- Item name
     frame.itemName:SetFont(fontPath, fontSize, fontOutline)
+    frame.bindText:SetFont(fontPath, fontSize, fontOutline)
+    frame.timerBar.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(frame.itemName, ns.Addon.db)
     DU.ApplyFontShadow(frame.bindText, ns.Addon.db)
     DU.ApplyFontShadow(frame.timerBar.text, ns.Addon.db)
@@ -985,6 +987,8 @@ function ns.RollFrame.ApplySettings()
 
             -- Update fonts
             frame.itemName:SetFont(fontPath, fontSize, fontOutline)
+            frame.bindText:SetFont(fontPath, fontSize, fontOutline)
+            frame.timerBar.text:SetFont(fontPath, fontSize, fontOutline)
             DU.ApplyFontShadow(frame.itemName, ns.Addon.db)
             DU.ApplyFontShadow(frame.bindText, ns.Addon.db)
             DU.ApplyFontShadow(frame.timerBar.text, ns.Addon.db)

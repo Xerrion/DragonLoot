@@ -199,7 +199,7 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
             -- bindText sits to the left of the buttons
             frame.bindText:ClearAllPoints()
             frame.bindText:SetPoint("RIGHT", leftmostButton, "LEFT", -4, 0)
-            frame.bindText:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
+            frame.bindText:SetPoint("TOP", frame, "TOP", 0, -(padding + borderSize))
 
             -- itemName fills remaining space, stopping before bindText
             frame.itemName:SetPoint("RIGHT", frame.bindText, "LEFT", -2, 0)

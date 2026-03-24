@@ -177,6 +177,66 @@ local function GetTimerBarMinimalHeight()
     return ns.Addon.db.profile.rollFrame.timerBarMinimalHeight or 3
 end
 
+local function ApplyTextLayoutOffsets(frame, db, compact, iconSize, padding, borderSize, rowSpacing)
+    -- Item name top-left anchor (shared by both modes)
+    frame.itemName:ClearAllPoints()
+    frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT",
+        iconSize + padding + 6 + borderSize, -(padding + borderSize))
+
+    if compact then
+        -- Compact: buttons sit on the same row as the item name
+        frame.passButton:ClearAllPoints()
+        frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
+        frame.passButton:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
+
+        -- Determine leftmost button
+        local leftmostButton = frame.needButton
+        if frame.transmogButton and frame.transmogButton:IsShown() then
+            leftmostButton = frame.transmogButton
+        end
+
+        -- bindText sits to the left of the buttons
+        frame.bindText:ClearAllPoints()
+        frame.bindText:SetPoint("RIGHT", leftmostButton, "LEFT", -4, 0)
+        frame.bindText:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
+
+        -- itemName fills remaining space, stopping before bindText
+        frame.itemName:SetPoint("RIGHT", frame.bindText, "LEFT", -2, 0)
+    else
+        -- Normal: stacked rows
+        frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
+
+        frame.bindText:ClearAllPoints()
+        frame.bindText:SetPoint("TOPLEFT", frame.itemName, "BOTTOMLEFT", 0, -rowSpacing)
+
+        frame.passButton:ClearAllPoints()
+        frame.passButton:SetPoint("TOPRIGHT", frame.itemName, "BOTTOMRIGHT", 0, -rowSpacing)
+    end
+end
+
+local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
+    local timerBarAnchor = frame.timerBar.container or frame.timerBar
+    timerBarAnchor:ClearAllPoints()
+
+    if GetTimerBarStyle() == "minimal" then
+        -- Minimal: full width at very bottom, thin bar, no text
+        local minimalHeight = GetTimerBarMinimalHeight()
+        timerBarAnchor:SetHeight(minimalHeight)
+        timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", borderSize, borderSize)
+        timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -borderSize, borderSize)
+        frame.timerBar.text:Hide()
+    else
+        -- Normal: indented past icon, configurable height, text visible
+        local barHeight = db.rollFrame.timerBarHeight or 12
+        timerBarAnchor:SetHeight(barHeight)
+        timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT",
+            iconSize + padding + 6 + borderSize, timerBarSpacing + borderSize)
+        timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
+            -(padding + 2 + borderSize), timerBarSpacing + borderSize)
+        frame.timerBar.text:Show()
+    end
+end
+
 local function ApplyLayoutOffsets(frame)
     local db = ns.Addon.db.profile
     local borderSize = db.appearance.borderSize or 1
@@ -190,57 +250,8 @@ local function ApplyLayoutOffsets(frame)
     frame.iconFrame:ClearAllPoints()
     frame.iconFrame:SetPoint("LEFT", frame, "LEFT", padding + borderSize, 0)
 
-    -- Item name
-    frame.itemName:ClearAllPoints()
-    frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT",
-        iconSize + padding + 6 + borderSize, -(padding + borderSize))
-
-    if compact then
-        -- Compact: position buttons first, then anchor item name to leftmost button
-        frame.passButton:ClearAllPoints()
-        frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
-        frame.passButton:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
-
-        local leftmostButton = frame.needButton
-        if frame.transmogButton and frame.transmogButton:IsShown() then
-            leftmostButton = frame.transmogButton
-        end
-        frame.itemName:SetPoint("RIGHT", leftmostButton, "LEFT", -4, 0)
-
-        frame.bindText:ClearAllPoints()
-        frame.bindText:SetPoint("LEFT", frame.itemName, "RIGHT", 4, 0)
-    else
-        -- Normal: stacked rows
-        frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
-
-        frame.bindText:ClearAllPoints()
-        frame.bindText:SetPoint("TOPLEFT", frame.itemName, "BOTTOMLEFT", 0, -rowSpacing)
-
-        frame.passButton:ClearAllPoints()
-        frame.passButton:SetPoint("TOPRIGHT", frame.itemName, "BOTTOMRIGHT", 0, -rowSpacing)
-    end
-
-    -- Timer bar container - style-dependent positioning
-    local timerBarAnchor = frame.timerBar.container or frame.timerBar
-    timerBarAnchor:ClearAllPoints()
-
-    if GetTimerBarStyle() == "minimal" then
-        -- Minimal: full width at very bottom, thin bar, no text
-        local minimalHeight = GetTimerBarMinimalHeight()
-        timerBarAnchor:SetHeight(minimalHeight)
-        timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", borderSize, borderSize)
-        timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -borderSize, borderSize)
-        frame.timerBar.text:Hide()
-    else
-        -- Normal: indented past icon, configurable height, text visible
-        local barHeight = ns.Addon.db.profile.rollFrame.timerBarHeight or 12
-        timerBarAnchor:SetHeight(barHeight)
-        timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT",
-            iconSize + padding + 6 + borderSize, timerBarSpacing + borderSize)
-        timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
-            -(padding + 2 + borderSize), timerBarSpacing + borderSize)
-        frame.timerBar.text:Show()
-    end
+    ApplyTextLayoutOffsets(frame, db, compact, iconSize, padding, borderSize, rowSpacing)
+    ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
 end
 
 -------------------------------------------------------------------------------
@@ -655,7 +666,8 @@ local function RenderRollFrame(frame, data, rollID, isTest)
     -- Timer bar starts full
     frame.timerBar:SetMinMaxValues(0, 1)
     frame.timerBar:SetValue(1)
-    frame.timerBar:SetStatusBarColor(0, 1, 0)
+    local ir, ig, ib = GetTimerBarColor(1, 1)
+    frame.timerBar:SetStatusBarColor(ir, ig, ib)
     if isTest and data.duration then
         frame.timerBar.text:SetText(string.format("%.0f", data.duration))
     else

@@ -177,6 +177,30 @@ local function GetTimerBarMinimalHeight()
     return ns.Addon.db.profile.rollFrame.timerBarMinimalHeight or 3
 end
 
+local function CalculateFrameHeight(iconSize)
+    local db = ns.Addon.db.profile
+    if db.rollFrame.compactTextLayout then
+        local padding = GetContentPadding()
+        local borderSize = db.appearance.borderSize or 1
+        local buttonSize = GetButtonSize()
+        local timerBarSpacing = GetTimerBarSpacing()
+        local timerBarHeight
+        if GetTimerBarStyle() == "minimal" then
+            timerBarHeight = GetTimerBarMinimalHeight()
+        else
+            timerBarHeight = (db.rollFrame.timerBarHeight or 12)
+        end
+        -- Content row must fit buttons or icon, whichever is taller
+        local contentRow = math.max(buttonSize, iconSize)
+        -- Top padding + content + spacing + timer bar + bottom padding
+        local fromContent = (padding + borderSize) + contentRow + timerBarSpacing + timerBarHeight + borderSize
+        -- Icon must also fit (vertically centered)
+        local fromIcon = iconSize + 2 * (padding + borderSize)
+        return math.max(fromContent, fromIcon)
+    end
+    return math.max(GetFrameMinHeight(), iconSize + ROLL_FRAME_EXTRA_HEIGHT)
+end
+
 local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
     -- Item name top-left anchor (shared by both modes)
     frame.itemName:ClearAllPoints()
@@ -187,7 +211,7 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
         -- Compact: buttons sit on the same row as the item name
         frame.passButton:ClearAllPoints()
         frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
-        frame.passButton:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
+        frame.passButton:SetPoint("TOP", frame, "TOP", 0, -(padding + borderSize))
 
         -- Determine leftmost button
         local leftmostButton = frame.needButton
@@ -639,7 +663,7 @@ local function RenderRollFrame(frame, data, rollID, isTest)
     frame.iconFrame:SetSize(iconSize, iconSize)
 
     -- Adjust frame height based on icon size
-    frame:SetHeight(math.max(GetFrameMinHeight(), iconSize + ROLL_FRAME_EXTRA_HEIGHT))
+    frame:SetHeight(CalculateFrameHeight(iconSize))
 
     -- Icon
     frame.iconFrame.icon:SetTexture(data.texture)
@@ -960,8 +984,21 @@ function ns.RollFrame.ApplySettings()
                 frame.transmogButton:SetSize(btnSize, btnSize)
             end
 
+            -- Re-anchor button chain with current spacing
+            local btnSpacing = GetButtonSpacing()
+            frame.disenchantButton:ClearAllPoints()
+            frame.disenchantButton:SetPoint("RIGHT", frame.passButton, "LEFT", -btnSpacing, 0)
+            frame.greedButton:ClearAllPoints()
+            frame.greedButton:SetPoint("RIGHT", frame.disenchantButton, "LEFT", -btnSpacing, 0)
+            frame.needButton:ClearAllPoints()
+            frame.needButton:SetPoint("RIGHT", frame.greedButton, "LEFT", -btnSpacing, 0)
+            if frame.transmogButton then
+                frame.transmogButton:ClearAllPoints()
+                frame.transmogButton:SetPoint("RIGHT", frame.needButton, "LEFT", -btnSpacing, 0)
+            end
+
             -- Adjust frame height based on icon size
-            frame:SetHeight(math.max(GetFrameMinHeight(), iconSize + ROLL_FRAME_EXTRA_HEIGHT))
+            frame:SetHeight(CalculateFrameHeight(iconSize))
 
             -- Update layout offsets for border thickness
             ApplyLayoutOffsets(frame)

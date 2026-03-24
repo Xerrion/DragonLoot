@@ -177,7 +177,7 @@ local function GetTimerBarMinimalHeight()
     return ns.Addon.db.profile.rollFrame.timerBarMinimalHeight or 3
 end
 
-local function ApplyTextLayoutOffsets(frame, db, compact, iconSize, padding, borderSize, rowSpacing)
+local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
     -- Item name top-left anchor (shared by both modes)
     frame.itemName:ClearAllPoints()
     frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT",
@@ -250,7 +250,7 @@ local function ApplyLayoutOffsets(frame)
     frame.iconFrame:ClearAllPoints()
     frame.iconFrame:SetPoint("LEFT", frame, "LEFT", padding + borderSize, 0)
 
-    ApplyTextLayoutOffsets(frame, db, compact, iconSize, padding, borderSize, rowSpacing)
+    ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
     ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
 end
 

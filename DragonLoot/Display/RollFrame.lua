@@ -43,6 +43,17 @@ local function ApplyTimerBarBorder(container)
     end
 end
 
+local function ApplyTimerBarInset(bar, container)
+    local hasBorder = ns.Addon.db.profile.rollFrame.timerBarBorder
+    bar:ClearAllPoints()
+    if hasBorder then
+        bar:SetPoint("TOPLEFT", container, "TOPLEFT", 1, -1)
+        bar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -1, 1)
+    else
+        bar:SetAllPoints(container)
+    end
+end
+
 -------------------------------------------------------------------------------
 -- Roll type constants (values used by RollOnLoot)
 -------------------------------------------------------------------------------
@@ -185,15 +196,19 @@ local function ApplyLayoutOffsets(frame)
         iconSize + padding + 6 + borderSize, -(padding + borderSize))
 
     if compact then
-        -- Compact: item name + bind text + pass button on one line
-        frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize + 80), 0)
-
-        frame.bindText:ClearAllPoints()
-        frame.bindText:SetPoint("LEFT", frame.itemName, "RIGHT", 4, 0)
-
+        -- Compact: position buttons first, then anchor item name to leftmost button
         frame.passButton:ClearAllPoints()
         frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
         frame.passButton:SetPoint("TOP", frame.itemName, "TOP", 0, 0)
+
+        local leftmostButton = frame.needButton
+        if frame.transmogButton and frame.transmogButton:IsShown() then
+            leftmostButton = frame.transmogButton
+        end
+        frame.itemName:SetPoint("RIGHT", leftmostButton, "LEFT", -4, 0)
+
+        frame.bindText:ClearAllPoints()
+        frame.bindText:SetPoint("LEFT", frame.itemName, "RIGHT", 4, 0)
     else
         -- Normal: stacked rows
         frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
@@ -431,10 +446,9 @@ local function CreateTimerBar(parent)
     container:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", iconSize + padding + 6, timerBarSpacing)
     container:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + 2), timerBarSpacing)
 
-    -- StatusBar fills the container with 1px inset for the border
+    -- StatusBar fills the container (inset when border is enabled)
     local bar = CreateFrame("StatusBar", nil, container)
-    bar:SetPoint("TOPLEFT", container, "TOPLEFT", 1, -1)
-    bar:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -1, 1)
+    ApplyTimerBarInset(bar, container)
     bar:SetStatusBarTexture(barTexture)
     bar:SetMinMaxValues(0, 1)
     bar:SetValue(1)
@@ -625,6 +639,8 @@ local function RenderRollFrame(frame, data, rollID, isTest)
     -- Item name
     frame.itemName:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(frame.itemName, ns.Addon.db)
+    DU.ApplyFontShadow(frame.bindText, ns.Addon.db)
+    DU.ApplyFontShadow(frame.timerBar.text, ns.Addon.db)
     frame.itemName:SetText(data.name)
     frame.itemName:SetTextColor(r, g, b)
 
@@ -942,6 +958,7 @@ function ns.RollFrame.ApplySettings()
                     frame.timerBar.container:SetHeight(barHeight)
                 end
                 ApplyTimerBarBorder(frame.timerBar.container)
+                ApplyTimerBarInset(frame.timerBar, frame.timerBar.container)
             end
 
             -- Update timer bar background color

@@ -116,6 +116,12 @@ function LS.OnCancelLootRoll(isRollActive, rollID)
 end
 
 function LS.OnConfirmRoll(rollID, rollType)
+    -- Clear pending hide-after-vote so the frame stays visible for confirmation
+    local roll = ns.RollManager.GetActiveRolls()[rollID]
+    if roll then
+        roll.pendingHideAfterVote = nil
+    end
+
     local _, name, _, quality = GetLootRollItemInfo(rollID)
     local coloredName = name or "Unknown"
     if name and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then

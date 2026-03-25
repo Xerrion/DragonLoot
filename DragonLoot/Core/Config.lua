@@ -52,6 +52,7 @@ local defaults = {
             frameSpacing = 4,
             frameMinHeight = 68,
             compactTextLayout = false,
+            hideOnVote = false,
             timerBarStyle = "normal",
             timerBarMinimalHeight = 3,
         },

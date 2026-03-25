@@ -87,6 +87,7 @@ local notifiedRolls = {}    -- rollID -> true (prevent duplicate winner notifica
 local activeRollCount = 0
 local timerHandle
 local lifecycleState = LifecycleUtil.CreateState()
+local HideAfterVote         -- forward declaration; defined after helpers
 
 -------------------------------------------------------------------------------
 -- StaticPopup for roll confirmations (shared by Retail and Classic listeners)
@@ -99,6 +100,11 @@ StaticPopupDialogs["DRAGONLOOT_CONFIRM_LOOT_ROLL"] = {
     OnAccept = function(self)
         if not self.data then return end
         ConfirmLootRoll(self.data.rollID, self.data.rollType)
+        -- Hide frame after confirming BoP roll if configured
+        local db = ns.Addon.db
+        if db and db.profile.rollFrame.hideOnVote then
+            HideAfterVote(self.data.rollID)
+        end
     end,
     timeout = 0,
     whileDead = 1,
@@ -140,7 +146,9 @@ local function OnTimerTick()
     for _, roll in pairs(activeRolls) do
         local elapsed = now - roll.startTime
         local timeLeft = max(0, roll.rollTime - elapsed)
-        ns.RollFrame.UpdateTimer(roll.frameIndex, timeLeft, roll.rollTime)
+        if roll.frameIndex then
+            ns.RollFrame.UpdateTimer(roll.frameIndex, timeLeft, roll.rollTime)
+        end
         -- Timer expired - Blizzard will send CANCEL_LOOT_ROLL, don't remove here
         if timeLeft <= 0 then -- luacheck: ignore 542
             -- Wait for the event
@@ -436,18 +444,24 @@ function ns.RollManager.CancelRoll(rollID)
 
         activeRolls[rollID] = nil
         notifiedRolls[rollID] = nil
-        activeRollCount = activeRollCount - 1
-        if activeRollCount <= 0 then
-            activeRollCount = 0
-            StopTimer()
-        end
 
-        -- Defer frame release and queue promotion until hide animation completes
-        ns.RollFrame.HideRoll(frameIndex, LifecycleUtil.Guard(lifecycleState, lifecycleToken, function()
-            if activeRolls[rollID] then return end
-            ReleaseFrameIndex(frameIndex)
+        if frameIndex then
+            activeRollCount = activeRollCount - 1
+            if activeRollCount <= 0 then
+                activeRollCount = 0
+                StopTimer()
+            end
+
+            -- Defer frame release and queue promotion until hide animation completes
+            ns.RollFrame.HideRoll(frameIndex, LifecycleUtil.Guard(lifecycleState, lifecycleToken, function()
+                if activeRolls[rollID] then return end
+                ReleaseFrameIndex(frameIndex)
+                PromoteFromQueue()
+            end))
+        else
+            -- votedAndHidden: no frame to hide, just clean up state and promote
             PromoteFromQueue()
-        end))
+        end
 
         return
     end
@@ -459,7 +473,9 @@ end
 function ns.RollManager.CancelAllRolls()
     for rollID, roll in pairs(activeRolls) do
         activeRolls[rollID] = nil
-        ReleaseFrameIndex(roll.frameIndex)
+        if roll.frameIndex then
+            ReleaseFrameIndex(roll.frameIndex)
+        end
     end
     activeRollCount = 0
     wipe(waitingRolls)
@@ -513,6 +529,40 @@ end
 
 function ns.RollManager.IsNotified(rollID)
     return notifiedRolls[rollID] or false
+end
+
+HideAfterVote = function(rollID)
+    local roll = activeRolls[rollID]
+    if not roll or not roll.frameIndex then return end
+
+    local frameIndex = roll.frameIndex
+    roll.frameIndex = nil
+    roll.votedAndHidden = true
+
+    activeRollCount = activeRollCount - 1
+    if activeRollCount <= 0 then
+        activeRollCount = 0
+        StopTimer()
+    end
+
+    local token = LifecycleUtil.CaptureToken(lifecycleState)
+    ns.RollFrame.HideRoll(frameIndex, LifecycleUtil.Guard(lifecycleState, token, function()
+        ReleaseFrameIndex(frameIndex)
+        PromoteFromQueue()
+    end))
+end
+
+function ns.RollManager.MarkPendingHide(rollID)
+    local roll = activeRolls[rollID]
+    if not roll then return end
+    roll.pendingHideAfterVote = true
+end
+
+function ns.RollManager.TryHideAfterVote(rollID)
+    local roll = activeRolls[rollID]
+    if not roll or not roll.pendingHideAfterVote then return end
+    roll.pendingHideAfterVote = nil
+    HideAfterVote(rollID)
 end
 
 function ns.RollManager.OnLootItemRollWon(itemLink, rollType, rollValue)

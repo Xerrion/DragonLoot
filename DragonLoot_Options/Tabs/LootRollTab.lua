@@ -73,6 +73,15 @@ local function CreateRollFrameSection(parent, W, db, yOffset, LC)
     })
     yOffset = LC.AnchorWidget(lockToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
 
+    local hideOnVoteToggle = W.CreateToggle(parent, {
+        label = L["Hide After Voting"],
+        tooltip = L["Hide the roll frame after you cast your vote. The roll continues in the background"
+            .. " and notifications still fire."],
+        get = function() return db.profile.rollFrame.hideOnVote end,
+        set = function(value) db.profile.rollFrame.hideOnVote = value end,
+    })
+    yOffset = LC.AnchorWidget(hideOnVoteToggle, parent, yOffset) - LC.SPACING_BETWEEN_WIDGETS
+
     local testRollBtn = W.CreateButton(parent, {
         text = L["Test Roll"],
         width = 100,

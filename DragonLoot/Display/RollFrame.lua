@@ -347,7 +347,20 @@ local function OnRollButtonClick(self)
         return
     end
     if frame.rollID then
+        -- Mark pending hide BEFORE RollOnLoot; synchronous CONFIRM_LOOT_ROLL
+        -- will clear the flag if a confirmation popup is needed.
+        local db = ns.Addon.db
+        local shouldHide = db and db.profile.rollFrame.hideOnVote
+        if shouldHide then
+            ns.RollManager.MarkPendingHide(frame.rollID)
+        end
+
         RollOnLoot(frame.rollID, self.rollType)
+
+        -- Hide now unless CONFIRM_LOOT_ROLL intercepted (flag cleared)
+        if shouldHide then
+            ns.RollManager.TryHideAfterVote(frame.rollID)
+        end
     end
 end
 

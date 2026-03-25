@@ -178,6 +178,9 @@ L["Show in Dungeons"] = true
 L["Show in Open World"] = true
 L["Show in Raids"] = true
 L["Show individual roll result notifications"] = true
+L["Hide After Voting"] = true
+L["Hide the roll frame after you cast your vote. The roll continues in the background"
+    .. " and notifications still fire."] = true
 L["Show item name and bind type on the same line"] = true
 L["Show notifications for other group members' roll results"] = true
 L["Show notifications for your own roll results"] = true

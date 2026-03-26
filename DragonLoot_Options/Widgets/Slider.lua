@@ -13,7 +13,6 @@ local WC = ns.WidgetConstants
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
-local pcall = pcall
 local math_floor = math.floor
 local math_max = math.max
 local math_min = math.min
@@ -81,7 +80,7 @@ local function CreateFillTexture(slider)
 end
 
 -------------------------------------------------------------------------------
--- Build a custom slider frame (fallback when template is unavailable)
+-- Build a custom slider frame with fill texture
 -------------------------------------------------------------------------------
 
 local function CreateCustomSlider(parent)
@@ -108,23 +107,6 @@ local function CreateCustomSlider(parent)
 end
 
 -------------------------------------------------------------------------------
--- Try the built-in template, fall back to custom
--------------------------------------------------------------------------------
-
-local function CreateSliderFrame(parent)
-    local ok, slider = pcall(CreateFrame, "Slider", nil, parent, "OptionsSliderTemplate")
-    if ok and slider then
-        -- Remove default template text elements that may interfere
-        if slider.Text then slider.Text:Hide() end
-        if slider.Low then slider.Low:Hide() end
-        if slider.High then slider.High:Hide() end
-        CreateFillTexture(slider)
-        return slider
-    end
-    return CreateCustomSlider(parent)
-end
-
--------------------------------------------------------------------------------
 -- Factory: CreateSlider
 -------------------------------------------------------------------------------
 
@@ -146,7 +128,7 @@ function ns.Widgets.CreateSlider(parent, opts)
     label:SetText(opts.label or "")
 
     -- Slider below label
-    local slider = CreateSliderFrame(frame)
+    local slider = CreateCustomSlider(frame)
     slider:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
     slider:SetPoint("RIGHT", frame, "RIGHT", -(EDITBOX_WIDTH + 8), 0)
     slider:SetMinMaxValues(minVal, maxVal)

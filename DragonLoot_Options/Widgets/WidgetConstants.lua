@@ -30,6 +30,7 @@ ns.WidgetConstants = {
     WIDGET_BG_HOVER = { 0.24, 0.24, 0.24, 1 },
     SLIDER_TRACK = { 0.25, 0.25, 0.25, 1 },
     SLIDER_FILL = { 0.45, 0.45, 0.45, 1 },
+    SLIDER_THUMB = { 0.70, 0.70, 0.70, 1 },    -- Thumb handle (light gray)
     HEADER_ACCENT = { 0.80, 0.70, 0.20, 0.15 },
     GOLD_COLOR = { 1, 0.82, 0 },
 }

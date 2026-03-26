@@ -31,7 +31,6 @@ local WHITE_COLOR = WC.WHITE_COLOR
 local GRAY_COLOR = WC.GRAY_COLOR
 local DISABLED_COLOR = WC.DISABLED_COLOR
 local WHITE8x8 = WC.WHITE8x8
-local THUMB_TEXTURE = "Interface\\Buttons\\UI-SliderBar-Button-Horizontal"
 local EDITBOX_WIDTH = 50
 local FRAME_HEIGHT = 55
 local SLIDER_HEIGHT = 17
@@ -97,8 +96,8 @@ local function CreateCustomSlider(parent)
     )
 
     local thumb = slider:CreateTexture(nil, "OVERLAY")
-    thumb:SetTexture(THUMB_TEXTURE)
-    thumb:SetSize(16, 24)
+    thumb:SetColorTexture(WC.SLIDER_THUMB[1], WC.SLIDER_THUMB[2], WC.SLIDER_THUMB[3], WC.SLIDER_THUMB[4])
+    thumb:SetSize(10, SLIDER_HEIGHT)
     slider:SetThumbTexture(thumb)
 
     CreateFillTexture(slider)

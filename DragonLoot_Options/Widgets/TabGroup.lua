@@ -13,6 +13,9 @@ local WC = ns.WidgetConstants
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
+local floor = math.floor
+local sort = table.sort
+local pairs, ipairs = pairs, ipairs
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -138,13 +141,56 @@ function ns.Widgets.CreateTabGroup(parent, tabs)
 
     -- Create tab buttons
     local xOffset = 0
-    for _, tabDef in ipairs(tabs) do
+    for i, tabDef in ipairs(tabs) do
         local btn = CreateTabButton(tabBar, tabDef.label, tabGroup)
         btn._tabId = tabDef.id
+        btn._baseWidth = btn:GetWidth()
+        btn._tabOrder = i
         btn:SetPoint("TOPLEFT", tabBar, "TOPLEFT", xOffset, 0)
-        xOffset = xOffset + btn:GetWidth() + 1
+        xOffset = xOffset + btn._baseWidth + 1
         tabButtons[tabDef.id] = btn
     end
+
+    -- Overflow handling: shrink tabs proportionally if total width exceeds bar
+    local function ResizeTabs()
+        local availableWidth = tabBar:GetWidth()
+        if availableWidth <= 0 then return end
+
+        -- Collect tabs and measure total base width
+        local tabList = {}
+        local totalWidth = 0
+        for _, btn in pairs(tabButtons) do
+            tabList[#tabList + 1] = btn
+            totalWidth = totalWidth + btn._baseWidth
+        end
+        totalWidth = totalWidth + (#tabList - 1) * 1 -- 1px gaps
+
+        sort(tabList, function(a, b) return a._tabOrder < b._tabOrder end)
+
+        -- Scale only tab widths (gaps stay at 1px)
+        local gapWidth = (#tabList - 1) * 1
+        local scale = 1
+        if totalWidth > availableWidth then
+            scale = (availableWidth - gapWidth) / (totalWidth - gapWidth)
+        end
+
+        -- Re-layout with last tab absorbing rounding remainder
+        local xOff = 0
+        for i, btn in ipairs(tabList) do
+            local w
+            if i == #tabList then
+                w = availableWidth - xOff
+            else
+                w = floor(btn._baseWidth * scale)
+            end
+            btn:SetWidth(w)
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", tabBar, "TOPLEFT", xOff, 0)
+            xOff = xOff + w + 1
+        end
+    end
+
+    tabBar:SetScript("OnSizeChanged", ResizeTabs)
 
     -- SelectTab: switch to a tab, lazy-create content on first visit
     function tabGroup:SelectTab(id)

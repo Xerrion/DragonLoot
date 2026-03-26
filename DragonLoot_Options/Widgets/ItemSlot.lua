@@ -87,7 +87,7 @@ end
 local function OnEnterSlot(slot)
     if not slot._itemID then return end
     if slot._opts and slot._opts.showTooltip == false then return end
-    GameTooltip:SetOwner(slot, "ANCHOR_RIGHT")
+    GameTooltip:SetOwner(slot, "ANCHOR_CURSOR")
     GameTooltip:SetItemByID(slot._itemID)
     GameTooltip:Show()
 end

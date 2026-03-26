@@ -41,7 +41,7 @@ ns.WidgetConstants = {
 
 function ns.WidgetConstants.ShowTooltip(frame)
     if not frame._tooltipText then return end
-    GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+    GameTooltip:SetOwner(frame, "ANCHOR_CURSOR")
     GameTooltip:SetText(frame._tooltipText, 1, 1, 1, 1, true)
     GameTooltip:Show()
 end

@@ -26,6 +26,7 @@ ns.WidgetConstants = {
     PANEL_BG = { 0.06, 0.06, 0.06, 0.95 },
     SECTION_BG = { 0.10, 0.10, 0.11, 0.80 },
     SECTION_BORDER = { 0.20, 0.20, 0.22, 0.50 },
+    DROPDOWN_LIST_BG = { 0.10, 0.10, 0.11, 0.90 },  -- Dropdown list background (opaque)
     WIDGET_BG = { 0.18, 0.18, 0.18, 1 },
     WIDGET_BG_HOVER = { 0.24, 0.24, 0.24, 1 },
     SLIDER_TRACK = { 0.25, 0.25, 0.25, 1 },

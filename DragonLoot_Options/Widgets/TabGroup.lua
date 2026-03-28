@@ -6,12 +6,16 @@
 -------------------------------------------------------------------------------
 
 local _, ns = ...
+local WC = ns.WidgetConstants
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
+local floor = math.floor
+local sort = table.sort
+local pairs, ipairs = pairs, ipairs
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -20,26 +24,27 @@ local CreateFrame = CreateFrame
 local TAB_HEIGHT = 28
 local TAB_MIN_WIDTH = 60
 local TAB_PADDING = 16
-local ACTIVE_BG = { 0.12, 0.12, 0.12, 1 }
-local INACTIVE_BG = { 0.06, 0.06, 0.06, 0.9 }
-local ACTIVE_TEXT = { 1, 0.82, 0 }
-local INACTIVE_TEXT = { 0.6, 0.6, 0.6 }
-local SEPARATOR_COLOR = { 0.3, 0.3, 0.3, 1 }
 
 -------------------------------------------------------------------------------
 -- Style a tab button as active or inactive
 -------------------------------------------------------------------------------
 
 local function StyleTabActive(btn)
-    btn._bg:SetColorTexture(ACTIVE_BG[1], ACTIVE_BG[2], ACTIVE_BG[3], ACTIVE_BG[4])
-    btn._text:SetTextColor(ACTIVE_TEXT[1], ACTIVE_TEXT[2], ACTIVE_TEXT[3])
+    btn._bg:SetColorTexture(
+        WC.SECTION_BG[1], WC.SECTION_BG[2], WC.SECTION_BG[3], WC.SECTION_BG[4]
+    )
+    btn._text:SetTextColor(WC.GOLD_COLOR[1], WC.GOLD_COLOR[2], WC.GOLD_COLOR[3])
     btn._bottomBorder:Hide()
+    if btn._activeBar then btn._activeBar:Show() end
 end
 
 local function StyleTabInactive(btn)
-    btn._bg:SetColorTexture(INACTIVE_BG[1], INACTIVE_BG[2], INACTIVE_BG[3], INACTIVE_BG[4])
-    btn._text:SetTextColor(INACTIVE_TEXT[1], INACTIVE_TEXT[2], INACTIVE_TEXT[3])
+    btn._bg:SetColorTexture(
+        WC.PANEL_BG[1], WC.PANEL_BG[2], WC.PANEL_BG[3], WC.PANEL_BG[4]
+    )
+    btn._text:SetTextColor(WC.GRAY_COLOR[1], WC.GRAY_COLOR[2], WC.GRAY_COLOR[3])
     btn._bottomBorder:Show()
+    if btn._activeBar then btn._activeBar:Hide() end
 end
 
 -------------------------------------------------------------------------------
@@ -53,14 +58,14 @@ local function CreateTabButton(parent, label, tabGroup)
     -- Background
     local bg = btn:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(INACTIVE_BG[1], INACTIVE_BG[2], INACTIVE_BG[3], INACTIVE_BG[4])
+    bg:SetColorTexture(WC.PANEL_BG[1], WC.PANEL_BG[2], WC.PANEL_BG[3], WC.PANEL_BG[4])
     btn._bg = bg
 
     -- Text
     local text = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     text:SetPoint("CENTER", btn, "CENTER", 0, 0)
     text:SetText(label)
-    text:SetTextColor(INACTIVE_TEXT[1], INACTIVE_TEXT[2], INACTIVE_TEXT[3])
+    text:SetTextColor(WC.GRAY_COLOR[1], WC.GRAY_COLOR[2], WC.GRAY_COLOR[3])
     btn._text = text
 
     -- Auto-width based on text
@@ -74,9 +79,19 @@ local function CreateTabButton(parent, label, tabGroup)
     bottomBorder:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
     bottomBorder:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
     bottomBorder:SetColorTexture(
-        SEPARATOR_COLOR[1], SEPARATOR_COLOR[2], SEPARATOR_COLOR[3], SEPARATOR_COLOR[4]
+        WC.SECTION_BORDER[1], WC.SECTION_BORDER[2],
+        WC.SECTION_BORDER[3], WC.SECTION_BORDER[4]
     )
     btn._bottomBorder = bottomBorder
+
+    -- Gold underline for active state
+    local activeBar = btn:CreateTexture(nil, "ARTWORK")
+    activeBar:SetHeight(2)
+    activeBar:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    activeBar:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+    activeBar:SetColorTexture(WC.GOLD_COLOR[1], WC.GOLD_COLOR[2], WC.GOLD_COLOR[3], 0.8)
+    activeBar:Hide()
+    btn._activeBar = activeBar
 
     -- Highlight
     local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
@@ -115,7 +130,8 @@ function ns.Widgets.CreateTabGroup(parent, tabs)
     separator:SetPoint("TOPLEFT", contentArea, "TOPLEFT", 0, 0)
     separator:SetPoint("TOPRIGHT", contentArea, "TOPRIGHT", 0, 0)
     separator:SetColorTexture(
-        SEPARATOR_COLOR[1], SEPARATOR_COLOR[2], SEPARATOR_COLOR[3], SEPARATOR_COLOR[4]
+        WC.SECTION_BORDER[1], WC.SECTION_BORDER[2],
+        WC.SECTION_BORDER[3], WC.SECTION_BORDER[4]
     )
 
     -- State
@@ -125,13 +141,56 @@ function ns.Widgets.CreateTabGroup(parent, tabs)
 
     -- Create tab buttons
     local xOffset = 0
-    for _, tabDef in ipairs(tabs) do
+    for i, tabDef in ipairs(tabs) do
         local btn = CreateTabButton(tabBar, tabDef.label, tabGroup)
         btn._tabId = tabDef.id
+        btn._baseWidth = btn:GetWidth()
+        btn._tabOrder = i
         btn:SetPoint("TOPLEFT", tabBar, "TOPLEFT", xOffset, 0)
-        xOffset = xOffset + btn:GetWidth() + 1
+        xOffset = xOffset + btn._baseWidth + 1
         tabButtons[tabDef.id] = btn
     end
+
+    -- Overflow handling: shrink tabs proportionally if total width exceeds bar
+    local function ResizeTabs()
+        local availableWidth = tabBar:GetWidth()
+        if availableWidth <= 0 then return end
+
+        -- Collect tabs and measure total base width
+        local tabList = {}
+        local totalWidth = 0
+        for _, btn in pairs(tabButtons) do
+            tabList[#tabList + 1] = btn
+            totalWidth = totalWidth + btn._baseWidth
+        end
+        totalWidth = totalWidth + (#tabList - 1) * 1 -- 1px gaps
+
+        sort(tabList, function(a, b) return a._tabOrder < b._tabOrder end)
+
+        -- Scale only tab widths (gaps stay at 1px)
+        local gapWidth = (#tabList - 1) * 1
+        local scale = 1
+        if totalWidth > availableWidth then
+            scale = (availableWidth - gapWidth) / (totalWidth - gapWidth)
+        end
+
+        -- Re-layout with last tab absorbing rounding remainder
+        local xOff = 0
+        for i, btn in ipairs(tabList) do
+            local w
+            if i == #tabList then
+                w = availableWidth - xOff
+            else
+                w = floor(btn._baseWidth * scale)
+            end
+            btn:SetWidth(w)
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", tabBar, "TOPLEFT", xOff, 0)
+            xOff = xOff + w + 1
+        end
+    end
+
+    tabBar:SetScript("OnSizeChanged", ResizeTabs)
 
     -- SelectTab: switch to a tab, lazy-create content on first visit
     function tabGroup:SelectTab(id)

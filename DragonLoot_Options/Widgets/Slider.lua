@@ -13,7 +13,6 @@ local WC = ns.WidgetConstants
 -------------------------------------------------------------------------------
 
 local CreateFrame = CreateFrame
-local pcall = pcall
 local math_floor = math.floor
 local math_max = math.max
 local math_min = math.min
@@ -32,12 +31,9 @@ local WHITE_COLOR = WC.WHITE_COLOR
 local GRAY_COLOR = WC.GRAY_COLOR
 local DISABLED_COLOR = WC.DISABLED_COLOR
 local WHITE8x8 = WC.WHITE8x8
-local THUMB_TEXTURE = "Interface\\Buttons\\UI-SliderBar-Button-Horizontal"
 local EDITBOX_WIDTH = 50
 local FRAME_HEIGHT = 55
 local SLIDER_HEIGHT = 17
-local TRACK_BG = { 0.15, 0.15, 0.15, 0.9 }
-local TRACK_BORDER = { 0.3, 0.3, 0.3, 1 }
 
 -------------------------------------------------------------------------------
 -- Utility: round to step
@@ -69,7 +65,21 @@ local function FormatValue(value, opts)
 end
 
 -------------------------------------------------------------------------------
--- Build a custom slider frame (fallback when template is unavailable)
+-- Shared fill texture creation (progress indicator from left edge)
+-------------------------------------------------------------------------------
+
+local function CreateFillTexture(slider)
+    local fill = slider:CreateTexture(nil, "ARTWORK")
+    fill:SetColorTexture(WC.SLIDER_FILL[1], WC.SLIDER_FILL[2], WC.SLIDER_FILL[3], WC.SLIDER_FILL[4])
+    fill:SetPoint("TOPLEFT", slider, "TOPLEFT", 1, -1)
+    fill:SetPoint("BOTTOMLEFT", slider, "BOTTOMLEFT", 1, 1)
+    fill:SetWidth(0.001)
+    fill:Hide()
+    slider._fill = fill
+end
+
+-------------------------------------------------------------------------------
+-- Build a custom slider frame with fill texture
 -------------------------------------------------------------------------------
 
 local function CreateCustomSlider(parent)
@@ -80,31 +90,19 @@ local function CreateCustomSlider(parent)
         edgeFile = WHITE8x8,
         edgeSize = 1,
     })
-    slider:SetBackdropColor(TRACK_BG[1], TRACK_BG[2], TRACK_BG[3], TRACK_BG[4])
-    slider:SetBackdropBorderColor(TRACK_BORDER[1], TRACK_BORDER[2], TRACK_BORDER[3], TRACK_BORDER[4])
+    slider:SetBackdropColor(WC.SLIDER_TRACK[1], WC.SLIDER_TRACK[2], WC.SLIDER_TRACK[3], WC.SLIDER_TRACK[4])
+    slider:SetBackdropBorderColor(
+        WC.SECTION_BORDER[1], WC.SECTION_BORDER[2], WC.SECTION_BORDER[3], WC.SECTION_BORDER[4]
+    )
 
     local thumb = slider:CreateTexture(nil, "OVERLAY")
-    thumb:SetTexture(THUMB_TEXTURE)
-    thumb:SetSize(16, 24)
+    thumb:SetColorTexture(WC.SLIDER_THUMB[1], WC.SLIDER_THUMB[2], WC.SLIDER_THUMB[3], WC.SLIDER_THUMB[4])
+    thumb:SetSize(10, SLIDER_HEIGHT)
     slider:SetThumbTexture(thumb)
 
+    CreateFillTexture(slider)
+
     return slider
-end
-
--------------------------------------------------------------------------------
--- Try the built-in template, fall back to custom
--------------------------------------------------------------------------------
-
-local function CreateSliderFrame(parent)
-    local ok, slider = pcall(CreateFrame, "Slider", nil, parent, "OptionsSliderTemplate")
-    if ok and slider then
-        -- Remove default template text elements that may interfere
-        if slider.Text then slider.Text:Hide() end
-        if slider.Low then slider.Low:Hide() end
-        if slider.High then slider.High:Hide() end
-        return slider
-    end
-    return CreateCustomSlider(parent)
 end
 
 -------------------------------------------------------------------------------
@@ -129,7 +127,7 @@ function ns.Widgets.CreateSlider(parent, opts)
     label:SetText(opts.label or "")
 
     -- Slider below label
-    local slider = CreateSliderFrame(frame)
+    local slider = CreateCustomSlider(frame)
     slider:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -4)
     slider:SetPoint("RIGHT", frame, "RIGHT", -(EDITBOX_WIDTH + 8), 0)
     slider:SetMinMaxValues(minVal, maxVal)
@@ -160,13 +158,26 @@ function ns.Widgets.CreateSlider(parent, opts)
         edgeFile = WHITE8x8,
         edgeSize = 1,
     })
-    editBox:SetBackdropColor(0.1, 0.1, 0.1, 0.9)
-    editBox:SetBackdropBorderColor(0.3, 0.3, 0.3, 1)
+    editBox:SetBackdropColor(WC.WIDGET_BG[1], WC.WIDGET_BG[2], WC.WIDGET_BG[3], WC.WIDGET_BG[4])
+    editBox:SetBackdropBorderColor(
+        WC.SECTION_BORDER[1], WC.SECTION_BORDER[2], WC.SECTION_BORDER[3], WC.SECTION_BORDER[4]
+    )
     editBox:SetFont(FONT_PATH, VALUE_FONT_SIZE, "")
     editBox:SetTextColor(WHITE_COLOR[1], WHITE_COLOR[2], WHITE_COLOR[3])
     editBox:SetJustifyH("CENTER")
     editBox:SetAutoFocus(false)
     editBox:SetMaxLetters(10)
+
+    -- Hover highlight on editBox
+    editBox:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(
+            WC.WIDGET_BG_HOVER[1], WC.WIDGET_BG_HOVER[2],
+            WC.WIDGET_BG_HOVER[3], WC.WIDGET_BG_HOVER[4]
+        )
+    end)
+    editBox:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(WC.WIDGET_BG[1], WC.WIDGET_BG[2], WC.WIDGET_BG[3], WC.WIDGET_BG[4])
+    end)
 
     -- Suppress tab key to avoid focus issues
     editBox:SetScript("OnTabPressed", function(self)
@@ -175,6 +186,25 @@ function ns.Widgets.CreateSlider(parent, opts)
 
     -- Track whether slider update is internal to avoid feedback loops
     local isInternal = false
+
+    -- Update the slider fill texture width based on current value
+    local function UpdateFillWidth(value)
+        local fillTex = slider._fill
+        if not fillTex then return end
+        local sliderWidth = slider:GetWidth()
+        if sliderWidth <= 0 or value <= minVal then
+            fillTex:Hide()
+            return
+        end
+        local fraction = (value - minVal) / (maxVal - minVal)
+        local fillWidth = fraction * (sliderWidth - 2)
+        if fillWidth < 0.001 then
+            fillTex:Hide()
+        else
+            fillTex:SetWidth(fillWidth)
+            fillTex:Show()
+        end
+    end
 
     -- Update the editbox text from a value
     local function UpdateEditBoxText(value)
@@ -185,10 +215,16 @@ function ns.Widgets.CreateSlider(parent, opts)
     slider:SetScript("OnValueChanged", function(_, value)
         local rounded = RoundToStep(value, step)
         currentValue = rounded
+        UpdateFillWidth(rounded)
         if not isInternal then
             UpdateEditBoxText(rounded)
             if opts.set then opts.set(rounded) end
         end
+    end)
+
+    -- Update fill when layout resolves the slider's anchor-based width
+    slider:SetScript("OnSizeChanged", function()
+        UpdateFillWidth(currentValue)
     end)
 
     -- EditBox OnEnterPressed
@@ -226,6 +262,7 @@ function ns.Widgets.CreateSlider(parent, opts)
     slider:SetValue(currentValue)
     isInternal = false
     UpdateEditBoxText(currentValue)
+    UpdateFillWidth(currentValue)
 
     -- Public API
     function frame:GetValue()
@@ -239,6 +276,7 @@ function ns.Widgets.CreateSlider(parent, opts)
         slider:SetValue(clamped)
         isInternal = false
         UpdateEditBoxText(clamped)
+        UpdateFillWidth(clamped)
     end
 
     function frame:SetDisabled(state)
@@ -265,6 +303,7 @@ function ns.Widgets.CreateSlider(parent, opts)
             slider:SetValue(clamped)
             isInternal = false
             UpdateEditBoxText(clamped)
+            UpdateFillWidth(clamped)
         end
     end
 

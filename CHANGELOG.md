@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/Xerrion/DragonLoot/compare/0.8.1...0.9.0) (2026-03-28)
+
+
+### 🚀 Features
+
+* add hide roll frame after voting option ([#88](https://github.com/Xerrion/DragonLoot/issues/88)) ([#100](https://github.com/Xerrion/DragonLoot/issues/100)) ([44ca004](https://github.com/Xerrion/DragonLoot/commit/44ca004960d2af397911fbadb9d4e5f0bdd7e208))
+* overhaul options GUI with visual hierarchy, color palette, and tab split ([#98](https://github.com/Xerrion/DragonLoot/issues/98)) ([#102](https://github.com/Xerrion/DragonLoot/issues/102)) ([7cb7ee4](https://github.com/Xerrion/DragonLoot/commit/7cb7ee4f8130dac8781375c3b872fe6318506b27))
+
+
+### 🐛 Bug Fixes
+
+* roll frame drag, confirm roll crash, and duplicate popup ([#96](https://github.com/Xerrion/DragonLoot/issues/96)) ([#97](https://github.com/Xerrion/DragonLoot/issues/97)) ([bff162f](https://github.com/Xerrion/DragonLoot/commit/bff162f747caabc55140369998272991978276ee))
+* use correct atlas for transmog roll button ([#94](https://github.com/Xerrion/DragonLoot/issues/94)) ([#101](https://github.com/Xerrion/DragonLoot/issues/101)) ([a893d21](https://github.com/Xerrion/DragonLoot/commit/a893d2102a1452a6307288b71ee8fbcfad66d855))
+
 ## [0.8.1](https://github.com/Xerrion/DragonLoot/compare/0.8.0...0.8.1) (2026-03-24)
 
 

@@ -8,6 +8,7 @@
 local ADDON_NAME, ns = ...
 
 local hooksecurefunc = hooksecurefunc
+local C_AddOns = C_AddOns
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -112,7 +113,24 @@ local ROLL_FRAME_EVENTS = {
 
 local lootFrameHooked = false
 
+-- Force-load the LoD addon that provides LootFrame (Retail: Blizzard_LootUI).
+-- Called before any suppression so LootFrame exists and can be hooked at
+-- OnEnable time, closing the race where the LoD addon processes LOOT_OPENED
+-- and shows LootFrame before our ADDON_LOADED watcher fires.
+local function EnsureBlizzardLootFrameLoaded()
+    if LootFrame then return end
+    if C_AddOns and C_AddOns.LoadAddOn then
+        C_AddOns.LoadAddOn("Blizzard_LootUI")
+    elseif LoadAddOn then
+        LoadAddOn("Blizzard_LootUI")
+    end
+    if not LootFrame then
+        ns.DebugPrint("EnsureBlizzardLootFrameLoaded: LootFrame still nil after load attempt")
+    end
+end
+
 local function SuppressBlizzardLootFrame()
+    EnsureBlizzardLootFrameLoaded()
     if not LootFrame then return end
     LootFrame:UnregisterAllEvents()
     LootFrame:Hide()

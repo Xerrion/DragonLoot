@@ -125,6 +125,15 @@ local MAX_VISIBLE_ROLLS = 4
 local DEFAULT_ROLL_ANCHOR_Y = -200
 local ROLL_FRAME_EXTRA_HEIGHT = 18
 local TEST_ROLL_TICK_INTERVAL = 0.1
+local ROLL_TEXT_LEFT_GAP = 6      -- gap between icon right edge and text/timer-bar left
+local ROLL_TIMER_RIGHT_GAP = 2    -- timer bar right inset from frame RIGHT edge
+
+-- Returns the left content inset (icon width + padding + text gap + border thickness).
+-- Used by both ApplyTextLayoutOffsets and ApplyTimerBarOffsets to keep the left
+-- edge of text and the timer bar aligned to the same column.
+local function GetRollContentLeftInset(iconSize, padding, borderSize)
+    return iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize
+end
 
 -------------------------------------------------------------------------------
 -- Roll frame pool
@@ -217,10 +226,11 @@ local function CalculateFrameHeight(iconSize)
 end
 
 local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
+    local contentLeftInset = GetRollContentLeftInset(iconSize, padding, borderSize)
     -- Item name top-left anchor (shared by both modes)
     frame.itemName:ClearAllPoints()
     frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT",
-        iconSize + padding + 6 + borderSize, -(padding + borderSize))
+        contentLeftInset, -(padding + borderSize))
 
     if compact then
         -- Compact: buttons sit on the same row as the item name
@@ -259,6 +269,7 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
 end
 
 local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
+    local contentLeftInset = GetRollContentLeftInset(iconSize, padding, borderSize)
     local timerBarAnchor = frame.timerBar.container or frame.timerBar
     timerBarAnchor:ClearAllPoints()
 
@@ -274,9 +285,9 @@ local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, ti
         local barHeight = db.rollFrame.timerBarHeight or 12
         timerBarAnchor:SetHeight(barHeight)
         timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT",
-            iconSize + padding + 6 + borderSize, timerBarSpacing + borderSize)
+            contentLeftInset, timerBarSpacing + borderSize)
         timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
-            -(padding + 2 + borderSize), timerBarSpacing + borderSize)
+            -(padding + ROLL_TIMER_RIGHT_GAP + borderSize), timerBarSpacing + borderSize)
         frame.timerBar.text:Show()
     end
 end
@@ -504,15 +515,11 @@ local function CreateTimerBar(parent)
     local barTexture = LSM:Fetch("statusbar", db.rollFrame.timerBarTexture)
         or "Interface\\TargetingFrame\\UI-StatusBar"
 
-    local iconSize = GetRollIconSize()
-    local padding = GetContentPadding()
-    local timerBarSpacing = GetTimerBarSpacing()
-
-    -- Container frame owns the optional border
+    -- Container (creation-time stubs; real position set by ApplyTimerBarOffsets)
     local container = CreateFrame("Frame", nil, parent, "BackdropTemplate")
     container:SetHeight(barHeight)
-    container:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", iconSize + padding + 6, timerBarSpacing)
-    container:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + 2), timerBarSpacing)
+    container:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 0, 0)
+    container:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
 
     -- StatusBar fills the container (inset when border is enabled)
     local bar = CreateFrame("StatusBar", nil, container)
@@ -574,10 +581,9 @@ local function CreateRollFrame(index)
     -- Item icon
     frame.iconFrame = CreateRollIcon(frame)
 
-    -- Item name
+    -- Item name (creation-time stub; real position set by ApplyLayoutOffsets)
     frame.itemName = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT", 42, -(5))
-    frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -4, 0)
+    frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     frame.itemName:SetJustifyH("LEFT")
     frame.itemName:SetWordWrap(false)
 

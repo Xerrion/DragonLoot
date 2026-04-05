@@ -494,9 +494,9 @@ local function CreateRollButton(parent, texture, rollType, size)
     btn.icon:SetAllPoints()
     btn.icon:SetTexture(texture)
 
-    btn.highlight = btn:CreateTexture(nil, "HIGHLIGHT")
-    btn.highlight:SetAllPoints()
-    btn.highlight:SetColorTexture(1, 1, 1, 0.2)
+    if texture then
+        btn:SetHighlightTexture(texture, "ADD")
+    end
 
     btn:SetScript("OnClick", OnRollButtonClick)
     btn:SetScript("OnEnter", OnRollButtonEnter)
@@ -614,8 +614,13 @@ local function CreateRollFrame(index)
     -- Use Blizzard's loot roll transmog atlas; fall back to disenchant icon if atlas missing (Classic)
     if C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo("lootroll-toast-icon-transmog-up") then
         frame.transmogButton.icon:SetAtlas("lootroll-toast-icon-transmog-up")
+        frame.transmogButton:SetHighlightAtlas("lootroll-toast-icon-transmog-up", "ADD")
+        local hl = frame.transmogButton:GetHighlightTexture()
+        hl:ClearAllPoints()
+        hl:SetAllPoints(frame.transmogButton.icon)
     else
         frame.transmogButton.icon:SetTexture("Interface\\ICONS\\INV_Enchant_Disenchant")
+        frame.transmogButton:SetHighlightTexture("Interface\\ICONS\\INV_Enchant_Disenchant", "ADD")
     end
     frame.transmogButton:SetPoint("RIGHT", frame.needButton, "LEFT", -GetButtonSpacing(), 0)
     frame.transmogButton:Hide()

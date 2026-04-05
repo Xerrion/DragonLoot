@@ -128,6 +128,13 @@ local TEST_ROLL_TICK_INTERVAL = 0.1
 local ROLL_TEXT_LEFT_GAP = 6      -- gap between icon right edge and text/timer-bar left
 local ROLL_TIMER_RIGHT_GAP = 2    -- timer bar right inset from frame RIGHT edge
 
+-- Returns the left content inset (icon width + padding + text gap + border thickness).
+-- Used by both ApplyTextLayoutOffsets and ApplyTimerBarOffsets to keep the left
+-- edge of text and the timer bar aligned to the same column.
+local function GetRollContentLeftInset(iconSize, padding, borderSize)
+    return iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize
+end
+
 -------------------------------------------------------------------------------
 -- Roll frame pool
 -------------------------------------------------------------------------------
@@ -219,10 +226,11 @@ local function CalculateFrameHeight(iconSize)
 end
 
 local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
+    local contentLeftInset = GetRollContentLeftInset(iconSize, padding, borderSize)
     -- Item name top-left anchor (shared by both modes)
     frame.itemName:ClearAllPoints()
     frame.itemName:SetPoint("TOPLEFT", frame, "TOPLEFT",
-        iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize, -(padding + borderSize))
+        contentLeftInset, -(padding + borderSize))
 
     if compact then
         -- Compact: buttons sit on the same row as the item name
@@ -261,6 +269,7 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
 end
 
 local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
+    local contentLeftInset = GetRollContentLeftInset(iconSize, padding, borderSize)
     local timerBarAnchor = frame.timerBar.container or frame.timerBar
     timerBarAnchor:ClearAllPoints()
 
@@ -276,7 +285,7 @@ local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, ti
         local barHeight = db.rollFrame.timerBarHeight or 12
         timerBarAnchor:SetHeight(barHeight)
         timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT",
-            iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize, timerBarSpacing + borderSize)
+            contentLeftInset, timerBarSpacing + borderSize)
         timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT",
             -(padding + ROLL_TIMER_RIGHT_GAP + borderSize), timerBarSpacing + borderSize)
         frame.timerBar.text:Show()

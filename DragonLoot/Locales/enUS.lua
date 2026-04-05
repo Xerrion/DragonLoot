@@ -212,6 +212,9 @@ L["Show a border around the timer bar"] = true
 L["Vertical spacing between roll rows"] = true
 L["Width of the roll frame"] = true
 
+-- DragonLoot_Options/Tabs/NotificationsTab.lua
+L["Notifications"] = true
+
 -- DragonLoot_Options/Tabs/HistoryTab.lua
 L["Auto Show on Loot"] = true
 L["Enable History"] = true

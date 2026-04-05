@@ -7,6 +7,7 @@
 
 local _, ns = ...
 
+local L = ns.L
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
@@ -47,10 +48,10 @@ end
 -------------------------------------------------------------------------------
 
 local FONT_OUTLINE_VALUES = {
-    { value = "", text = "None" },
-    { value = "OUTLINE", text = "Outline" },
-    { value = "THICKOUTLINE", text = "Thick Outline" },
-    { value = "MONOCHROME", text = "Monochrome" },
+    { value = "", text = L["None"] },
+    { value = "OUTLINE", text = L["Outline"] },
+    { value = "THICKOUTLINE", text = L["Thick Outline"] },
+    { value = "MONOCHROME", text = L["Monochrome"] },
 }
 
 -------------------------------------------------------------------------------
@@ -58,10 +59,10 @@ local FONT_OUTLINE_VALUES = {
 -------------------------------------------------------------------------------
 
 local SLOT_BG_VALUES = {
-    { value = "gradient", text = "Gradient" },
-    { value = "flat", text = "Flat" },
-    { value = "stripe", text = "Stripe" },
-    { value = "none", text = "None" },
+    { value = "gradient", text = L["Gradient"] },
+    { value = "flat", text = L["Flat"] },
+    { value = "stripe", text = L["Stripe"] },
+    { value = "none", text = L["None"] },
 }
 
 -------------------------------------------------------------------------------
@@ -69,12 +70,12 @@ local SLOT_BG_VALUES = {
 -------------------------------------------------------------------------------
 
 local function CreateFontSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Font")
+    local section = W.CreateSection(parent, L["Font"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     local fontDropdown = W.CreateDropdown(content, {
-        label = "Font Family",
+        label = L["Font Family"],
         values = GetFontValues,
         sort = true,
         mediaType = "font",
@@ -87,8 +88,8 @@ local function CreateFontSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(fontDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local fontSizeSlider = W.CreateSlider(content, {
-        label = "Font Size",
-        tooltip = "Base font size for all DragonLoot frames",
+        label = L["Font Size"],
+        tooltip = L["Base font size for all DragonLoot frames"],
         min = 8,
         max = 20,
         step = 1,
@@ -102,7 +103,7 @@ local function CreateFontSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(fontSizeSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local outlineDropdown = W.CreateDropdown(content, {
-        label = "Font Outline",
+        label = L["Font Outline"],
         values = FONT_OUTLINE_VALUES,
         get = function() return db.profile.appearance.fontOutline end,
         set = function(value)
@@ -113,8 +114,8 @@ local function CreateFontSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(outlineDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local fontShadowToggle = W.CreateToggle(content, {
-        label = "Text Shadow",
-        tooltip = "Enable text shadow on all text elements",
+        label = L["Text Shadow"],
+        tooltip = L["Enable text shadow on all text elements"],
         get = function() return db.profile.appearance.fontShadow end,
         set = function(value)
             db.profile.appearance.fontShadow = value
@@ -134,13 +135,13 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateIconSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Icon Sizes")
+    local section = W.CreateSection(parent, L["Icon Sizes"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     local lootIconSlider = W.CreateSlider(content, {
-        label = "Loot Icon Size",
-        tooltip = "Icon size in the loot window",
+        label = L["Loot Icon Size"],
+        tooltip = L["Icon size in the loot window"],
         min = 16,
         max = 64,
         step = 2,
@@ -154,8 +155,8 @@ local function CreateIconSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(lootIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local rollIconSlider = W.CreateSlider(content, {
-        label = "Roll Icon Size",
-        tooltip = "Icon size in the roll frame",
+        label = L["Roll Icon Size"],
+        tooltip = L["Icon size in the roll frame"],
         min = 16,
         max = 64,
         step = 2,
@@ -169,8 +170,8 @@ local function CreateIconSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(rollIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local historyIconSlider = W.CreateSlider(content, {
-        label = "History Icon Size",
-        tooltip = "Icon size in the history frame",
+        label = L["History Icon Size"],
+        tooltip = L["Icon size in the history frame"],
         min = 16,
         max = 48,
         step = 2,
@@ -184,8 +185,8 @@ local function CreateIconSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(historyIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local qualityBorderToggle = W.CreateToggle(content, {
-        label = "Quality Border",
-        tooltip = "Show quality-colored borders on item icons",
+        label = L["Quality Border"],
+        tooltip = L["Show quality-colored borders on item icons"],
         get = function() return db.profile.appearance.qualityBorder end,
         set = function(value)
             db.profile.appearance.qualityBorder = value
@@ -195,7 +196,7 @@ local function CreateIconSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(qualityBorderToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local slotBgDropdown = W.CreateDropdown(content, {
-        label = "Slot Background",
+        label = L["Slot Background"],
         values = SLOT_BG_VALUES,
         get = function() return db.profile.appearance.slotBackground end,
         set = function(value)
@@ -216,12 +217,12 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateBackgroundSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Background")
+    local section = W.CreateSection(parent, L["Background"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     local bgColorPicker = W.CreateColorPicker(content, {
-        label = "Background Color",
+        label = L["Background Color"],
         hasAlpha = false,
         get = function()
             local c = db.profile.appearance.backgroundColor
@@ -237,8 +238,8 @@ local function CreateBackgroundSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(bgColorPicker, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local bgAlphaSlider = W.CreateSlider(content, {
-        label = "Background Opacity",
-        tooltip = "Opacity of the frame background",
+        label = L["Background Opacity"],
+        tooltip = L["Opacity of the frame background"],
         min = 0,
         max = 1,
         step = 0.05,
@@ -252,7 +253,7 @@ local function CreateBackgroundSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(bgAlphaSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local bgTextureDropdown = W.CreateDropdown(content, {
-        label = "Background Texture",
+        label = L["Background Texture"],
         values = GetBackgroundValues,
         sort = true,
         mediaType = "background",
@@ -275,12 +276,12 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateBorderSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Border")
+    local section = W.CreateSection(parent, L["Border"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     local borderColorPicker = W.CreateColorPicker(content, {
-        label = "Border Color",
+        label = L["Border Color"],
         hasAlpha = false,
         get = function()
             local c = db.profile.appearance.borderColor
@@ -296,8 +297,8 @@ local function CreateBorderSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(borderColorPicker, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local borderSizeSlider = W.CreateSlider(content, {
-        label = "Border Size",
-        tooltip = "Thickness of the frame border",
+        label = L["Border Size"],
+        tooltip = L["Thickness of the frame border"],
         min = 0,
         max = 4,
         step = 1,
@@ -311,7 +312,7 @@ local function CreateBorderSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(borderSizeSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local borderTextureDropdown = W.CreateDropdown(content, {
-        label = "Border Texture",
+        label = L["Border Texture"],
         values = GetBorderValues,
         sort = true,
         mediaType = "border",
@@ -352,7 +353,7 @@ end
 
 ns.Tabs[#ns.Tabs + 1] = {
     id = "appearance",
-    label = "Appearance",
+    label = L["Appearance"],
     order = 7,
     createFunc = CreateContent,
 }

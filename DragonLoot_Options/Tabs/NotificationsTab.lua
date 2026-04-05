@@ -7,6 +7,7 @@
 
 local _, ns = ...
 
+local L = ns.L
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
@@ -33,7 +34,7 @@ local dlns
 -------------------------------------------------------------------------------
 
 local function CreateNotificationSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Roll Notifications")
+    local section = W.CreateSection(parent, L["Roll Notifications"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
@@ -41,8 +42,8 @@ local function CreateNotificationSection(parent, db, yOffset)
     local groupWinsToggle, selfRollsToggle, groupRollsToggle
 
     local showRollWon = W.CreateToggle(content, {
-        label = "Show Roll Won",
-        tooltip = "Show a notification when someone wins a roll",
+        label = L["Show Roll Won"],
+        tooltip = L["Show a notification when someone wins a roll"],
         get = function() return db.profile.rollNotifications.showRollWon end,
         set = function(value)
             db.profile.rollNotifications.showRollWon = value
@@ -52,8 +53,8 @@ local function CreateNotificationSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(showRollWon, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     groupWinsToggle = W.CreateToggle(content, {
-        label = "Show Group Wins",
-        tooltip = "Show notifications when other group members win rolls",
+        label = L["Show Group Wins"],
+        tooltip = L["Show notifications when other group members win rolls"],
         get = function() return db.profile.rollNotifications.showGroupWins end,
         set = function(value) db.profile.rollNotifications.showGroupWins = value end,
         disabled = not db.profile.rollNotifications.showRollWon,
@@ -61,8 +62,8 @@ local function CreateNotificationSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(groupWinsToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local showRollResults = W.CreateToggle(content, {
-        label = "Show Roll Results",
-        tooltip = "Show individual roll result notifications",
+        label = L["Show Roll Results"],
+        tooltip = L["Show individual roll result notifications"],
         get = function() return db.profile.rollNotifications.showRollResults end,
         set = function(value)
             db.profile.rollNotifications.showRollResults = value
@@ -73,8 +74,8 @@ local function CreateNotificationSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(showRollResults, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     selfRollsToggle = W.CreateToggle(content, {
-        label = "Show My Rolls",
-        tooltip = "Show notifications for your own roll results",
+        label = L["Show My Rolls"],
+        tooltip = L["Show notifications for your own roll results"],
         get = function() return db.profile.rollNotifications.showSelfRolls end,
         set = function(value) db.profile.rollNotifications.showSelfRolls = value end,
         disabled = not db.profile.rollNotifications.showRollResults,
@@ -82,8 +83,8 @@ local function CreateNotificationSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(selfRollsToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     groupRollsToggle = W.CreateToggle(content, {
-        label = "Show Group Rolls",
-        tooltip = "Show notifications for other group members' roll results",
+        label = L["Show Group Rolls"],
+        tooltip = L["Show notifications for other group members' roll results"],
         get = function() return db.profile.rollNotifications.showGroupRolls end,
         set = function(value) db.profile.rollNotifications.showGroupRolls = value end,
         disabled = not db.profile.rollNotifications.showRollResults,
@@ -91,7 +92,7 @@ local function CreateNotificationSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(groupRollsToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local qualityDropdown = W.CreateDropdown(content, {
-        label = "Minimum Quality",
+        label = L["Minimum Quality"],
         values = ns.QualityValues,
         get = function() return tostring(db.profile.rollNotifications.minQuality) end,
         set = function(value)
@@ -111,29 +112,29 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateInstanceFilterSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, "Instance Filters")
+    local section = W.CreateSection(parent, L["Instance Filters"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     local worldToggle = W.CreateToggle(content, {
-        label = "Show in Open World",
-        tooltip = "Show roll notifications while in the open world",
+        label = L["Show in Open World"],
+        tooltip = L["Show roll notifications while in the open world"],
         get = function() return db.profile.rollNotifications.showInWorld end,
         set = function(value) db.profile.rollNotifications.showInWorld = value end,
     })
     innerY = LC.AnchorWidget(worldToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local dungeonToggle = W.CreateToggle(content, {
-        label = "Show in Dungeons",
-        tooltip = "Show roll notifications while in dungeons",
+        label = L["Show in Dungeons"],
+        tooltip = L["Show roll notifications while in dungeons"],
         get = function() return db.profile.rollNotifications.showInDungeon end,
         set = function(value) db.profile.rollNotifications.showInDungeon = value end,
     })
     innerY = LC.AnchorWidget(dungeonToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local raidToggle = W.CreateToggle(content, {
-        label = "Show in Raids",
-        tooltip = "Show roll notifications while in raids",
+        label = L["Show in Raids"],
+        tooltip = L["Show roll notifications while in raids"],
         get = function() return db.profile.rollNotifications.showInRaid end,
         set = function(value) db.profile.rollNotifications.showInRaid = value end,
     })
@@ -166,7 +167,7 @@ end
 
 ns.Tabs[#ns.Tabs + 1] = {
     id = "notifications",
-    label = "Notifications",
+    label = L["Notifications"],
     order = 5,
     createFunc = CreateContent,
 }

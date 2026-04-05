@@ -7,6 +7,7 @@
 
 local _, ns = ...
 
+local L = ns.L
 -------------------------------------------------------------------------------
 -- Cached globals
 -------------------------------------------------------------------------------
@@ -38,14 +39,14 @@ local function CreateContent(parent)
     ---------------------------------------------------------------------------
     -- Section: General
     ---------------------------------------------------------------------------
-    local section = W.CreateSection(parent, "General")
+    local section = W.CreateSection(parent, L["General"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
     -- Toggle: Enable DragonLoot
     local enableToggle = W.CreateToggle(content, {
-        label = "Enable DragonLoot",
-        tooltip = "Enable or disable the DragonLoot addon",
+        label = L["Enable DragonLoot"],
+        tooltip = L["Enable or disable the DragonLoot addon"],
         get = function() return db.profile.enabled end,
         set = function(value)
             db.profile.enabled = value
@@ -60,8 +61,8 @@ local function CreateContent(parent)
 
     -- Toggle: Show Minimap Icon
     local minimapToggle = W.CreateToggle(content, {
-        label = "Show Minimap Icon",
-        tooltip = "Show or hide the minimap button",
+        label = L["Show Minimap Icon"],
+        tooltip = L["Show or hide the minimap button"],
         get = function() return not db.profile.minimap.hide end,
         set = function(value)
             db.profile.minimap.hide = not value
@@ -74,8 +75,8 @@ local function CreateContent(parent)
 
     -- Toggle: Debug Mode
     local debugToggle = W.CreateToggle(content, {
-        label = "Debug Mode",
-        tooltip = "Enable verbose debug output in chat",
+        label = L["Debug Mode"],
+        tooltip = L["Enable verbose debug output in chat"],
         get = function() return db.profile.debug end,
         set = function(value)
             db.profile.debug = value
@@ -98,7 +99,7 @@ end
 
 ns.Tabs[#ns.Tabs + 1] = {
     id = "general",
-    label = "General",
+    label = L["General"],
     order = 1,
     createFunc = CreateContent,
 }

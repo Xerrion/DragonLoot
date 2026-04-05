@@ -2,10 +2,13 @@
 -- Core.lua
 -- DragonLoot_Options bootstrap - bridges DragonWidgets for DragonLoot config
 --
--- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata
+-- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
 local _, ns = ...
+
+local L = LibStub("AceLocale-3.0"):GetLocale("DragonLoot")
+ns.L = L
 
 -------------------------------------------------------------------------------
 -- Cached WoW API
@@ -35,12 +38,12 @@ ns.Tabs = {}
 -------------------------------------------------------------------------------
 
 ns.QualityValues = {
-    { value = "0", text = "|cff9d9d9dPoor|r" },
-    { value = "1", text = "|cffffffffCommon|r" },
-    { value = "2", text = "|cff1eff00Uncommon|r" },
-    { value = "3", text = "|cff0070ddRare|r" },
-    { value = "4", text = "|cffa335eeEpic|r" },
-    { value = "5", text = "|cffff8000Legendary|r" },
+    { value = "0", text = "|cff9d9d9d" .. L["Poor"] .. "|r" },
+    { value = "1", text = "|cffffffff" .. L["Common"] .. "|r" },
+    { value = "2", text = "|cff1eff00" .. L["Uncommon"] .. "|r" },
+    { value = "3", text = "|cff0070dd" .. L["Rare"] .. "|r" },
+    { value = "4", text = "|cffa335ee" .. L["Epic"] .. "|r" },
+    { value = "5", text = "|cffff8000" .. L["Legendary"] .. "|r" },
 }
 
 -------------------------------------------------------------------------------
@@ -71,7 +74,7 @@ local panelResult
 local function CreateOptionsPanel()
     ns.dlns = _G.DragonLootNS
     if not ns.dlns then
-        print("|cffff6600[DragonLoot_Options]|r DragonLoot namespace not found.")
+        print("|cffff6600[DragonLoot_Options]|r " .. L["DragonLoot namespace not found."])
         return
     end
 
@@ -82,7 +85,7 @@ local function CreateOptionsPanel()
 
     panelResult = DW.CreateOptionsPanel({
         name = "DragonLootOptionsFrame",
-        title = "DragonLoot Options",
+        title = L["DragonLoot Options"],
         width = 800,
         height = 600,
         tabs = tabDefs,

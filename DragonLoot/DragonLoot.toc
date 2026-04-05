@@ -4,7 +4,7 @@
 ## Title: Dragon Loot
 ## Notes: Customizable loot addon that replaces the default Blizzard loot window and loot roll views.
 ## Author: Xerrion
-## Version: 0.5.1
+## Version: @project-version@
 ## SavedVariables: DragonLootDB
 ## X-Category: Loot
 ## IconTexture: Interface\AddOns\DragonLoot\DragonLoot_Icon

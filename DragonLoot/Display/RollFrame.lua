@@ -991,6 +991,14 @@ local function SpawnOneTestRoll()
     StartTestTimer(freeIndex, duration)
 end
 
+-- Returns the vertical component of a WoW anchor point string (strips LEFT/RIGHT).
+-- Used by CenterHorizontally to normalize the saved anchor before zeroing x.
+local function VerticalComponent(p)
+    if p:find("TOP") then return "TOP"
+    elseif p:find("BOTTOM") then return "BOTTOM"
+    else return "CENTER" end
+end
+
 -------------------------------------------------------------------------------
 -- Public Interface: ns.RollFrame
 -------------------------------------------------------------------------------
@@ -1198,6 +1206,34 @@ function ns.RollFrame.ResetAnchor()
     db.y = nil
     anchorFrame:ClearAllPoints()
     anchorFrame:SetPoint("TOP", UIParent, "TOP", 0, DEFAULT_ROLL_ANCHOR_Y)
+end
+
+function ns.RollFrame.CenterHorizontally()
+    if not anchorFrame then return end
+    local db = ns.Addon.db.profile.rollFrame
+    local y = db.y or DEFAULT_ROLL_ANCHOR_Y
+    -- Normalize anchor to strip any LEFT/RIGHT component so x=0 truly centers
+    local newPoint = VerticalComponent(db.point or "TOP")
+    local newRelPoint = VerticalComponent(db.relativePoint or "TOP")
+    db.point = newPoint
+    db.relativePoint = newRelPoint
+    db.x = 0
+    anchorFrame:ClearAllPoints()
+    anchorFrame:SetPoint(newPoint, UIParent, newRelPoint, 0, y)
+    SaveFramePosition()
+end
+
+function ns.RollFrame.CenterVertically()
+    if not anchorFrame then return end
+    local db = ns.Addon.db.profile.rollFrame
+    local x = db.x or 0
+    -- Normalize anchor to CENTER/CENTER so y=0 is truly vertical center
+    db.point = "CENTER"
+    db.relativePoint = "CENTER"
+    db.y = 0
+    anchorFrame:ClearAllPoints()
+    anchorFrame:SetPoint("CENTER", UIParent, "CENTER", x, 0)
+    SaveFramePosition()
 end
 
 function ns.RollFrame.ShowTestRoll()

@@ -85,7 +85,21 @@ L["Center Horizontally"] = true
 L["Center roll frame to horizontal center of screen"] = true
 L["Center Vertically"] = true
 L["Center roll frame to vertical center of screen"] = true
+L["Icon Position"] = true
+L["Icon position: Inside places the icon inside the frame."
+    .. " Outside places the icon outside the frame border."] = true
+L["Icon Horizontal Offset"] = true
+L["Icon Outside Gap"] = true
+L["Icon Side"] = true
+L["Icon Vertical Offset"] = true
+L["Inside"] = true
+L["Left"] = true
 L["Not available for this item"] = true
+L["Nudge the icon horizontally from its anchor position"] = true
+L["Nudge the icon vertically from its anchor position"] = true
+L["Outside"] = true
+L["Place the icon on the left or right side of the frame"] = true
+L["Right"] = true
 L["Roll"] = true
 L["Showing test roll frames."] = true
 L["Start continuous test roll spawning"] = true
@@ -98,6 +112,7 @@ L["Test item: "] = true
 L["Test roll loop started. Type /dl testroll stop to end."] = true
 L["Test roll loop stopped."] = true
 L["Test roll: "] = true
+L["The gap in pixels between the icon and the frame border when the icon is outside"] = true
 
 -- Display/HistoryFrame.lua
 L["%dh ago"] = true

@@ -142,7 +142,25 @@ local ROLL_TIMER_RIGHT_GAP = 2    -- timer bar right inset from frame RIGHT edge
 -- Used by both ApplyTextLayoutOffsets and ApplyTimerBarOffsets to keep the left
 -- edge of text and the timer bar aligned to the same column.
 local function GetRollContentLeftInset(iconSize, padding, borderSize)
+    local db = GetRollFrameDB()
+    local iconPosition = db and db.iconPosition or "inside"
+    local iconSide = db and db.iconSide or "left"
+    if iconPosition == "outside" or iconSide == "right" then
+        return padding + borderSize
+    end
     return iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize
+end
+
+-- Returns the right content inset (reserves space for icon when inside-right).
+-- Used by ApplyTextLayoutOffsets to prevent text/button overlap with the icon.
+local function GetRollContentRightInset(iconSize, padding, borderSize)
+    local db = GetRollFrameDB()
+    local iconPosition = db and db.iconPosition or "inside"
+    local iconSide = db and db.iconSide or "left"
+    if iconPosition == "inside" and iconSide == "right" then
+        return iconSize + padding + ROLL_TEXT_LEFT_GAP + borderSize
+    end
+    return padding + borderSize
 end
 
 -------------------------------------------------------------------------------
@@ -223,7 +241,10 @@ end
 
 local function CalculateFrameHeight(iconSize)
     local db = ns.Addon.db.profile
-    if db.rollFrame.compactTextLayout then
+    local rollFrameDB = GetRollFrameDB()
+    if not rollFrameDB then return GetFrameMinHeight() end
+    local effectiveIconSize = (rollFrameDB.iconPosition == "outside") and 0 or iconSize
+    if rollFrameDB.compactTextLayout then
         local padding = GetContentPadding()
         local borderSize = db.appearance.borderSize or 1
         local buttonSize = GetButtonSize()
@@ -232,17 +253,17 @@ local function CalculateFrameHeight(iconSize)
         if GetTimerBarStyle() == "minimal" then
             timerBarHeight = GetTimerBarMinimalHeight()
         else
-            timerBarHeight = (db.rollFrame.timerBarHeight or 12)
+            timerBarHeight = (rollFrameDB.timerBarHeight or 12)
         end
-        -- Content row must fit buttons or icon, whichever is taller
-        local contentRow = math.max(buttonSize, iconSize)
+        -- Content row must fit buttons or icon (inside only), whichever is taller
+        local contentRow = math.max(buttonSize, effectiveIconSize)
         -- Top padding + content + spacing + timer bar + bottom padding
         local fromContent = (padding + borderSize) + contentRow + timerBarSpacing + timerBarHeight + borderSize
-        -- Icon must also fit (vertically centered)
-        local fromIcon = iconSize + 2 * (padding + borderSize)
+        -- Icon must also fit (vertically centered) -- only relevant when inside
+        local fromIcon = effectiveIconSize + (padding + borderSize) + borderSize
         return math.max(fromContent, fromIcon)
     end
-    return math.max(GetFrameMinHeight(), iconSize + ROLL_FRAME_EXTRA_HEIGHT)
+    return math.max(GetFrameMinHeight(), effectiveIconSize + ROLL_FRAME_EXTRA_HEIGHT)
 end
 
 local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
@@ -255,7 +276,8 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
     if compact then
         -- Compact: buttons sit on the same row as the item name
         frame.passButton:ClearAllPoints()
-        frame.passButton:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
+        frame.passButton:SetPoint("RIGHT", frame, "RIGHT",
+            -(GetRollContentRightInset(iconSize, padding, borderSize)), 0)
         frame.passButton:SetPoint("TOP", frame, "TOP", 0, -(padding + borderSize))
 
         -- Determine leftmost button
@@ -278,7 +300,8 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
         end
     else
         -- Normal: stacked rows
-        frame.itemName:SetPoint("RIGHT", frame, "RIGHT", -(padding + borderSize), 0)
+        frame.itemName:SetPoint("RIGHT", frame, "RIGHT",
+            -(GetRollContentRightInset(iconSize, padding, borderSize)), 0)
 
         frame.bindText:ClearAllPoints()
         frame.bindText:SetPoint("TOPLEFT", frame.itemName, "BOTTOMLEFT", 0, -rowSpacing)
@@ -288,7 +311,7 @@ local function ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderS
     end
 end
 
-local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
+local function ApplyTimerBarOffsets(frame, rollFrameDB, iconSize, padding, borderSize, timerBarSpacing)
     local contentLeftInset = GetRollContentLeftInset(iconSize, padding, borderSize)
     local timerBarAnchor = frame.timerBar.container or frame.timerBar
     timerBarAnchor:ClearAllPoints()
@@ -302,7 +325,7 @@ local function ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, ti
         frame.timerBar.text:Hide()
     else
         -- Normal: indented past icon, configurable height, text visible
-        local barHeight = db.rollFrame.timerBarHeight or 12
+        local barHeight = (rollFrameDB and rollFrameDB.timerBarHeight) or 12
         timerBarAnchor:SetHeight(barHeight)
         timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT",
             contentLeftInset, timerBarSpacing + borderSize)
@@ -314,19 +337,39 @@ end
 
 local function ApplyLayoutOffsets(frame)
     local db = ns.Addon.db.profile
+    local rollFrameDB = GetRollFrameDB()
     local borderSize = db.appearance.borderSize or 1
     local iconSize = db.appearance.rollIconSize or 36
     local padding = GetContentPadding()
     local rowSpacing = GetRowSpacing()
     local timerBarSpacing = GetTimerBarSpacing()
-    local compact = db.rollFrame.compactTextLayout
+    local compact = rollFrameDB and rollFrameDB.compactTextLayout
+    local iconPosition = (rollFrameDB and rollFrameDB.iconPosition) or "inside"
+    local iconSide = (rollFrameDB and rollFrameDB.iconSide) or "left"
+    local offsetX = (rollFrameDB and rollFrameDB.iconOffsetX) or 0
+    local offsetY = (rollFrameDB and rollFrameDB.iconOffsetY) or 0
+    local outsideGap = (rollFrameDB and rollFrameDB.iconOutsideGap) or 4
 
-    -- Icon position (vertically centered on left)
+    -- Icon position (vertically centered by default, adjusted by offsetY).
+    -- inset = padding + borderSize clears the backdrop border on both sides.
+    local inset = padding + borderSize
     frame.iconFrame:ClearAllPoints()
-    frame.iconFrame:SetPoint("LEFT", frame, "LEFT", padding + borderSize, 0)
+    if iconPosition == "outside" then
+        if iconSide == "right" then
+            frame.iconFrame:SetPoint("LEFT", frame, "RIGHT", outsideGap + offsetX, offsetY)
+        else
+            frame.iconFrame:SetPoint("RIGHT", frame, "LEFT", -outsideGap + offsetX, offsetY)
+        end
+    else
+        if iconSide == "right" then
+            frame.iconFrame:SetPoint("RIGHT", frame, "RIGHT", -inset + offsetX, offsetY)
+        else
+            frame.iconFrame:SetPoint("LEFT", frame, "LEFT", inset + offsetX, offsetY)
+        end
+    end
 
     ApplyTextLayoutOffsets(frame, compact, iconSize, padding, borderSize, rowSpacing)
-    ApplyTimerBarOffsets(frame, db, iconSize, padding, borderSize, timerBarSpacing)
+    ApplyTimerBarOffsets(frame, rollFrameDB, iconSize, padding, borderSize, timerBarSpacing)
 end
 
 -------------------------------------------------------------------------------
@@ -532,9 +575,9 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateTimerBar(parent)
-    local db = ns.Addon.db.profile
-    local barHeight = db.rollFrame.timerBarHeight or 12
-    local barTexture = LSM:Fetch("statusbar", db.rollFrame.timerBarTexture)
+    local rollFrameDB = GetRollFrameDB() or {}
+    local barHeight = rollFrameDB.timerBarHeight or 12
+    local barTexture = LSM:Fetch("statusbar", rollFrameDB.timerBarTexture)
         or "Interface\\TargetingFrame\\UI-StatusBar"
 
     -- Container (creation-time stubs; real position set by ApplyTimerBarOffsets)
@@ -553,8 +596,8 @@ local function CreateTimerBar(parent)
 
     bar.bg = bar:CreateTexture(nil, "BACKGROUND")
     bar.bg:SetAllPoints()
-    local bgColor = db.rollFrame.timerBarBackgroundColor
-    bar.bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, db.rollFrame.timerBarBackgroundAlpha)
+    local bgColor = rollFrameDB.timerBarBackgroundColor or { r = 0.1, g = 0.1, b = 0.1 }
+    bar.bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, rollFrameDB.timerBarBackgroundAlpha or 0.5)
 
     bar.text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     bar.text:SetPoint("CENTER", bar, "CENTER", 0, 0)
@@ -1172,9 +1215,9 @@ function ns.RollFrame.ApplySettings()
             end
 
             -- Update timer bar background color
-            local bgColor = db.rollFrame.timerBarBackgroundColor
+            local bgColor = rollFrame.timerBarBackgroundColor or { r = 0.1, g = 0.1, b = 0.1 }
             frame.timerBar.bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b,
-                db.rollFrame.timerBarBackgroundAlpha)
+                rollFrame.timerBarBackgroundAlpha or 0.5)
 
             -- Update fonts
             frame.itemName:SetFont(fontPath, fontSize, fontOutline)

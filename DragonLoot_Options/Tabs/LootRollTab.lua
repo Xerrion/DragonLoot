@@ -51,6 +51,16 @@ local TIMER_BAR_STYLE_VALUES = {
     { value = "minimal", text = L["Minimal"] },
 }
 
+local ICON_POSITION_VALUES = {
+    { value = "inside", text = L["Inside"] },
+    { value = "outside", text = L["Outside"] },
+}
+
+local ICON_SIDE_VALUES = {
+    { value = "left",  text = L["Left"] },
+    { value = "right", text = L["Right"] },
+}
+
 -------------------------------------------------------------------------------
 -- Section: Roll Frame (basic settings)
 -------------------------------------------------------------------------------
@@ -295,6 +305,79 @@ local function CreateLayoutSection(parent, db, yOffset)
         end,
     })
     innerY = LC.AnchorWidget(compactToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local iconOutsideGapSlider  -- forward declared; assigned below
+
+    local iconPositionDropdown = W.CreateDropdown(content, {
+        label = L["Icon Position"],
+        tooltip = L["Icon position: Inside places the icon inside the frame."
+            .. " Outside places the icon outside the frame border."],
+        values = ICON_POSITION_VALUES,
+        get = function() return db.profile.rollFrame.iconPosition end,
+        set = function(value)
+            db.profile.rollFrame.iconPosition = value
+            if iconOutsideGapSlider then
+                iconOutsideGapSlider:SetDisabled(value == "inside")
+            end
+            NotifyRollManager()
+        end,
+    })
+    innerY = LC.AnchorWidget(iconPositionDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local iconSideDropdown = W.CreateDropdown(content, {
+        label = L["Icon Side"],
+        tooltip = L["Place the icon on the left or right side of the frame"],
+        values = ICON_SIDE_VALUES,
+        get = function() return db.profile.rollFrame.iconSide end,
+        set = function(value)
+            db.profile.rollFrame.iconSide = value
+            NotifyRollManager()
+        end,
+    })
+    innerY = LC.AnchorWidget(iconSideDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    iconOutsideGapSlider = W.CreateSlider(content, {
+        label = L["Icon Outside Gap"],
+        tooltip = L["The gap in pixels between the icon and the frame border when the icon is outside"],
+        min = 0,
+        max = 30,
+        step = 1,
+        get = function() return db.profile.rollFrame.iconOutsideGap end,
+        set = function(value)
+            db.profile.rollFrame.iconOutsideGap = value
+            NotifyRollManager()
+        end,
+    })
+    iconOutsideGapSlider:SetDisabled(db.profile.rollFrame.iconPosition == "inside")
+    innerY = LC.AnchorWidget(iconOutsideGapSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local iconOffsetXSlider = W.CreateSlider(content, {
+        label = L["Icon Horizontal Offset"],
+        tooltip = L["Nudge the icon horizontally from its anchor position"],
+        min = -20,
+        max = 20,
+        step = 1,
+        get = function() return db.profile.rollFrame.iconOffsetX end,
+        set = function(value)
+            db.profile.rollFrame.iconOffsetX = value
+            NotifyRollManager()
+        end,
+    })
+    innerY = LC.AnchorWidget(iconOffsetXSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local iconOffsetYSlider = W.CreateSlider(content, {
+        label = L["Icon Vertical Offset"],
+        tooltip = L["Nudge the icon vertically from its anchor position"],
+        min = -20,
+        max = 20,
+        step = 1,
+        get = function() return db.profile.rollFrame.iconOffsetY end,
+        set = function(value)
+            db.profile.rollFrame.iconOffsetY = value
+            NotifyRollManager()
+        end,
+    })
+    innerY = LC.AnchorWidget(iconOffsetYSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local textureDropdown = W.CreateDropdown(content, {
         label = L["Timer Bar Texture"],

@@ -8,7 +8,7 @@ Project-specific guidelines for DragonLoot. See the parent `../AGENTS.md` for ge
 
 DragonLoot is a customizable loot addon that replaces the default Blizzard loot window, loot roll views, and provides a loot history frame.
 
-**Status**: Feature-complete (Phases 1-5, 8, 10-11). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, appearance expansion (font outline, quality borders, background/border customization), and direct loot history tracking (CHAT_MSG_LOOT) are all implemented.
+**Status**: Feature-complete. Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, appearance expansion (font outline, quality borders, background/border customization), and direct loot history tracking (CHAT_MSG_LOOT) are all implemented.
 
 **GitHub**: https://github.com/Xerrion/DragonLoot
 
@@ -146,6 +146,8 @@ All modules attach to `ns`:
 |------------------|--------|-------------|---------------------------------|
 | timerBarTexture  | string | "Blizzard"  | LSM statusbar texture for timer |
 
+> The table above shows a partial list. See `DragonLoot/Config.lua` for the full `rollFrame` schema (~25 keys).
+
 #### History Config (`db.profile.history`)
 
 | Key              | Type    | Default | Description                           |
@@ -190,7 +192,7 @@ DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detec
 | `DRAGONTOAST_SUPPRESS` | `"DragonLoot"` (source string) | Loot window opens |
 | `DRAGONTOAST_UNSUPPRESS` | `"DragonLoot"` (source string) | Loot window closes |
 | `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | A player wins a roll |
-| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result (Phase 8) |
+| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result |
 
 #### Roll Won Toast Data
 
@@ -210,7 +212,7 @@ DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detec
 }
 ```
 
-#### Individual Roll Result Toast Data (Phase 8)
+#### Individual Roll Result Toast Data
 
 ```lua
 {
@@ -324,7 +326,7 @@ New-Item -ItemType Junction -Path "E:\World of Warcraft\_anniversary_\Interface\
 
 ### Testing
 
-No automated test framework. Test manually in-game.
+Busted unit tests are planned (issue #125). No automated tests exist yet - all testing is manual.
 
 #### Slash Commands
 
@@ -341,7 +343,7 @@ No automated test framework. Test manually in-game.
 | `/dl testroll` | Show test roll frames with countdown timers |
 | `/dl history` | Toggle history frame |
 
-#### Phase 1 - Core (Manual Test Steps)
+#### Core
 
 1. Load the addon in any supported game version
 2. `/console scriptErrors 1` to catch Lua errors
@@ -358,7 +360,7 @@ No automated test framework. Test manually in-game.
 13. Shift-left-click minimap icon - verify test loot appears
 14. Hover minimap icon - verify tooltip shows name, status, and shortcuts
 
-#### Phase 2 - Loot Window (Manual Test Steps)
+#### Loot Window
 
 1. `/dl test` - verify custom loot window appears with test items
 2. Verify items show icon, name, quantity, and quality-colored text
@@ -371,7 +373,7 @@ No automated test framework. Test manually in-game.
 9. Verify auto-loot passthrough works when shift-clicking or auto-loot is on
 10. Disable loot window in config - verify Blizzard frame returns
 
-#### Phase 3 - Loot Roll (Manual Test Steps)
+#### Loot Roll
 
 1. Queue for a dungeon or raid where loot rolls occur
 2. Verify roll frame appears with item icon, name, and timer bar
@@ -384,7 +386,7 @@ No automated test framework. Test manually in-game.
 9. Disable roll frame in config - verify Blizzard GroupLootFrame returns
 10. If Transmog button shows (Retail only), verify pcall atlas fallback works
 
-#### Phase 4 - Loot History (Manual Test Steps)
+#### Loot History
 
 1. `/dl history` - verify history frame opens (may be empty)
 2. Complete a dungeon boss with loot - verify entries appear
@@ -397,7 +399,7 @@ No automated test framework. Test manually in-game.
 9. Lock history in config - verify drag is blocked
 10. Set autoShow in config - verify history opens automatically on new loot
 
-#### Phase 5 - Polish and Integration (Manual Test Steps)
+#### Appearance and Animations
 
 1. Change font/fontSize/iconSize in config - verify all frames update immediately
 2. Toggle animation enabled/disabled - verify animations respect the setting
@@ -406,7 +408,7 @@ No automated test framework. Test manually in-game.
 5. With DragonToast installed: win a roll - verify DragonToast shows a celebration toast
 6. Without DragonToast: verify all features work independently
 
-#### Phase 8 - Roll Notifications and Instance Filtering (Manual Test Steps)
+#### DragonToast Integration
 
 1. Open `/dl config` -> Loot Roll tab - verify new sections: Individual Roll Results, Instance Filtering
 2. Enable "Show Individual Roll Results" - verify sub-options (Your Rolls, Group Rolls) become enabled
@@ -423,7 +425,7 @@ No automated test framework. Test manually in-game.
 13. Verify roll won toasts also respect instance filtering and minimum quality
 14. Verify no duplicate toasts for the same player/drop combination
 
-#### Phase 10 - Appearance Expansion (Manual Test Steps)
+#### Notifications and Instance Filtering
 
 1. Open config with `/dl` -> Appearance section
 2. Verify all new options are present:
@@ -448,7 +450,7 @@ No automated test framework. Test manually in-game.
 8. Test Timer Bar Texture: open Loot Roll options, change timer bar texture, verify roll timer bar updates
 9. `/reload` and verify settings persist
 
-#### UI Fixes - Test Roll, Animation Selection, Per-Frame Icon Size (Manual Test Steps)
+#### Animations and Icon Sizes
 
 1. `/dl testroll` - verify roll frames appear with countdown timer bars
 2. Click Need/Greed/DE/Pass buttons on test roll - verify test messages print to chat
@@ -464,7 +466,7 @@ No automated test framework. Test manually in-game.
 12. Change history icon size - `/dl history` - verify history entries use the new icon size
 13. Verify changing one icon size does not affect the others
 
-#### Phase 11 - Direct Loot History Tracking (Manual Test Steps)
+#### Direct Loot History Tracking
 
 1. Open `/dl config` -> History tab - verify new options: "Track Looted Items" toggle, "Minimum Quality" dropdown
 2. Verify "Minimum Quality" dropdown is disabled when "Track Looted Items" is off
@@ -484,7 +486,7 @@ No automated test framework. Test manually in-game.
 
 ## Deferred Features
 
-- **Auto-loot with blacklist/whitelist filtering** - requires custom UI (not AceConfig), planned for future phase
+- **Auto-loot with blacklist/whitelist filtering** - requires custom UI (not AceConfig)
 
 ---
 

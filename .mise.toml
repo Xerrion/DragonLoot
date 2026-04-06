@@ -1,6 +1,10 @@
 [tools]
 lua = "5.1"
 
+[tasks.test]
+run = "busted --verbose"
+description = "Run busted test suite"
+
 [tasks.lint]
 run = "luacheck ."
 description = "Run luacheck linter"

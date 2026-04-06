@@ -8,29 +8,9 @@ Project-specific guidelines for DragonLoot. See the parent `../AGENTS.md` for ge
 
 DragonLoot is a customizable loot addon that replaces the default Blizzard loot window, loot roll views, and provides a loot history frame.
 
-**Status**: Feature-complete (Phases 1-5, 8, 10-11). Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, appearance expansion (font outline, quality borders, background/border customization), and direct loot history tracking (CHAT_MSG_LOOT) are all implemented.
+**Status**: Feature-complete. Loot window, roll frame, loot history, config wiring, edge case fixes, DragonToast integration, individual roll notifications, instance-type filtering, appearance expansion (font outline, quality borders, background/border customization), and direct loot history tracking (CHAT_MSG_LOOT) are all implemented.
 
 **GitHub**: https://github.com/Xerrion/DragonLoot
-
----
-
-## Skills
-
-Every `coder` delegation on this project must specify which skills to load. Use this matrix:
-
-| Skill | When to load |
-|-------|-------------|
-| `code-philosophy` | All code changes (always) |
-| `architecture-philosophy` | New modules, file structure, namespace design, layer boundaries |
-| `wow-lua-patterns` | All WoW addon Lua (always) |
-| `wow-frame-api` | Any UI frame creation, widget layout, anchoring, backdrop, textures |
-| `wow-event-handling` | Any event registration, addon lifecycle, ADDON_LOADED, combat lockdown |
-
-Use the `wow-addon` agent (not `coder`) for WoW API research before implementation when API correctness is uncertain. `wow-addon` is research-only; `coder` does the implementation.
-
-Do **not** tell `coder` to load `wow-addon-dev` - that skill documents research tools only the `wow-addon` agent can use.
-
-Never guess at WoW API signatures. Always verify with the `wow-addon` agent using `wow-api-lookup` first.
 
 ---
 
@@ -48,6 +28,8 @@ Version-specific files are loaded via BigWigsMods packager comment directives (`
 ---
 
 ## Architecture
+
+Never guess at WoW API signatures - verify with the `wow-addon` agent using `wow-api-lookup` first.
 
 | Layer | Directory | Responsibility |
 |-------|-----------|----------------|
@@ -179,18 +161,14 @@ All modules attach to `ns`:
 
 ## DragonToast Integration
 
-DragonLoot integrates with DragonToast (sibling addon) via the generic DragonToast messaging API. Messages are fire-and-forget - no detection needed. Neither addon requires the other.
-
 ### Messages Sent by DragonLoot
-
-DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detection needed):
 
 | Message | Payload | When |
 |---------|---------|------|
 | `DRAGONTOAST_SUPPRESS` | `"DragonLoot"` (source string) | Loot window opens |
 | `DRAGONTOAST_UNSUPPRESS` | `"DragonLoot"` (source string) | Loot window closes |
 | `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | A player wins a roll |
-| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result (Phase 8) |
+| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result |
 
 #### Roll Won Toast Data
 
@@ -210,7 +188,7 @@ DragonLoot uses the generic DragonToast messaging API (fire-and-forget, no detec
 }
 ```
 
-#### Individual Roll Result Toast Data (Phase 8)
+#### Individual Roll Result Toast Data
 
 ```lua
 {
@@ -272,10 +250,6 @@ DragonLoot embeds Ace3 via `Libs/embeds.xml`. The full Ace3 library set is avail
 | LibAnimate | Animation library (user-configurable via Animation config tab) |
 | AceGUI-SharedMediaWidgets | SharedMedia dropdowns in AceGUI |
 
-### Local Dev: Ace3 Submodule
-
-`.pkgmeta` externals only work during CI packaging. For local dev, add Ace3 as a git submodule at `DragonLoot/Libs/Ace3/`.
-
 ---
 
 ## CI/CD
@@ -313,280 +287,6 @@ DragonLoot embeds Ace3 via `Libs/embeds.xml`. The full Ace3 library set is avail
 
 ---
 
-## Local Development
-
-### Install Location
-
-Create a directory junction from the WoW addons folder to the `DragonLoot/` subdirectory in the repo (not the repo root):
-```powershell
-New-Item -ItemType Junction -Path "E:\World of Warcraft\_anniversary_\Interface\AddOns\DragonLoot" -Target "F:\Repos\wow-addons\DragonLoot\DragonLoot"
-```
-
-### Testing
-
-No automated test framework. Test manually in-game.
-
-#### Slash Commands
-
-| Command | Action |
-|---------|--------|
-| `/dl` or `/dragonloot` | Toggle addon enabled/disabled |
-| `/dl help` | Show all commands |
-| `/dl status` | Print current settings |
-| `/dl config` | Toggle config window |
-| `/dl minimap` | Toggle minimap icon |
-| `/dl enable` / `/dl disable` | Explicit enable/disable |
-| `/dl reset` | Reset loot frame position |
-| `/dl test` | Show test loot data |
-| `/dl testroll` | Show test roll frames with countdown timers |
-| `/dl history` | Toggle history frame |
-
-#### Phase 1 - Core (Manual Test Steps)
-
-1. Load the addon in any supported game version
-2. `/console scriptErrors 1` to catch Lua errors
-3. Verify addon loaded message appears in chat on login
-4. `/dl help` - verify help text lists all commands
-5. `/dl status` - verify status output shows current settings
-6. `/dl config` - verify config window opens with all tab groups
-7. `/dl config` again - verify config window toggles closed
-8. `/dl` - verify addon toggles disabled, then `/dl` again to re-enable
-9. `/dl enable` and `/dl disable` - verify explicit enable/disable
-10. `/dl minimap` - verify minimap icon toggles visibility
-11. Left-click minimap icon - verify config window opens
-12. Right-click minimap icon - verify addon toggles enabled/disabled
-13. Shift-left-click minimap icon - verify test loot appears
-14. Hover minimap icon - verify tooltip shows name, status, and shortcuts
-
-#### Phase 2 - Loot Window (Manual Test Steps)
-
-1. `/dl test` - verify custom loot window appears with test items
-2. Verify items show icon, name, quantity, and quality-colored text
-3. Click an item slot - verify it attempts to loot (or shows error for test data)
-4. Drag the loot frame title bar - verify frame moves
-5. Lock the frame via config - verify drag is blocked
-6. `/dl reset` - verify frame returns to default position
-7. Close the loot window - verify fadeOut animation plays
-8. Open real loot (kill a mob) - verify DragonLoot window appears instead of Blizzard
-9. Verify auto-loot passthrough works when shift-clicking or auto-loot is on
-10. Disable loot window in config - verify Blizzard frame returns
-
-#### Phase 3 - Loot Roll (Manual Test Steps)
-
-1. Queue for a dungeon or raid where loot rolls occur
-2. Verify roll frame appears with item icon, name, and timer bar
-3. Verify timer bar color interpolates green -> yellow -> red
-4. Click Need/Greed/DE/Pass buttons - verify roll is submitted
-5. Verify frame slides in from right (animation)
-6. Verify frame fades out on completion
-7. If multiple rolls occur, verify overflow queue handles them (max 4 visible)
-8. `/reload` during a roll - verify roll recovery works
-9. Disable roll frame in config - verify Blizzard GroupLootFrame returns
-10. If Transmog button shows (Retail only), verify pcall atlas fallback works
-
-#### Phase 4 - Loot History (Manual Test Steps)
-
-1. `/dl history` - verify history frame opens (may be empty)
-2. Complete a dungeon boss with loot - verify entries appear
-3. Verify entries show item icon, quality-colored item name, class-colored winner
-4. Verify time-ago text updates every 10 seconds
-5. Hover an entry - verify item tooltip appears
-6. Click an entry - verify item link is inserted into chat
-7. Scroll the history frame - verify scrollbar works
-8. Drag the history frame - verify it moves
-9. Lock history in config - verify drag is blocked
-10. Set autoShow in config - verify history opens automatically on new loot
-
-#### Phase 5 - Polish and Integration (Manual Test Steps)
-
-1. Change font/fontSize/iconSize in config - verify all frames update immediately
-2. Toggle animation enabled/disabled - verify animations respect the setting
-3. With DragonToast installed: open loot window - verify DragonToast suppresses item toasts
-4. With DragonToast installed: close loot window - verify DragonToast resumes normal toasts
-5. With DragonToast installed: win a roll - verify DragonToast shows a celebration toast
-6. Without DragonToast: verify all features work independently
-
-#### Phase 8 - Roll Notifications and Instance Filtering (Manual Test Steps)
-
-1. Open `/dl config` -> Loot Roll tab - verify new sections: Individual Roll Results, Instance Filtering
-2. Enable "Show Individual Roll Results" - verify sub-options (Your Rolls, Group Rolls) become enabled
-3. Disable "Show Individual Roll Results" - verify sub-options become disabled (greyed out)
-4. Enable individual roll results, queue for a dungeon with Need/Greed loot
-5. When rolls resolve, verify a DragonToast notification appears for each player's roll (not just winner)
-6. Verify Pass rolls do NOT generate a toast
-7. Disable "Show Your Rolls" - verify your own rolls no longer produce toasts
-8. Disable "Show Group Rolls" - verify other players' rolls no longer produce toasts
-9. Set "Minimum Quality" to Rare - verify Common/Uncommon items do not produce roll toasts
-10. Disable "Show in Dungeons" - verify no roll notifications appear while in a dungeon
-11. Enable "Show in Dungeons", disable "Show in Raids" - verify no roll notifications in raids
-12. Disable "Show in Open World" - verify no roll notifications in world content
-13. Verify roll won toasts also respect instance filtering and minimum quality
-14. Verify no duplicate toasts for the same player/drop combination
-
-#### Phase 10 - Appearance Expansion (Manual Test Steps)
-
-1. Open config with `/dl` -> Appearance section
-2. Verify all new options are present:
-   - Font Outline (dropdown: None, Outline, Thick Outline, Monochrome)
-   - Quality Border (toggle)
-   - Background Color (color picker)
-   - Background Opacity (slider 0-100%)
-   - Background Texture (LSM statusbar dropdown)
-   - Border Color (color picker)
-   - Border Size (slider 0-4)
-   - Border Texture (LSM statusbar dropdown)
-3. Change each setting and verify all 3 frames update live:
-   - Loot Frame: `/dl test` to spawn test loot, verify backdrop/border/outline changes
-   - Roll Frame: start a group loot roll, verify backdrop/border/outline/timer bar changes
-   - History Frame: open via minimap icon after rolls, verify backdrop/border/outline changes
-4. Test Quality Border toggle:
-   - Enable: item icons show quality-colored borders
-   - Disable: item icons have no colored border
-5. Test Background Opacity: slide to 0% (transparent), 100% (opaque), verify frame backdrop
-6. Test Border Size 0: verify border disappears cleanly (no artifacts)
-7. Test Font Outline None: verify text renders without outline
-8. Test Timer Bar Texture: open Loot Roll options, change timer bar texture, verify roll timer bar updates
-9. `/reload` and verify settings persist
-
-#### UI Fixes - Test Roll, Animation Selection, Per-Frame Icon Size (Manual Test Steps)
-
-1. `/dl testroll` - verify roll frames appear with countdown timer bars
-2. Click Need/Greed/DE/Pass buttons on test roll - verify test messages print to chat
-3. Wait for countdown to expire - verify test roll frame hides automatically
-4. Open config -> Animation tab - change loot open animation type (e.g. slideInLeft)
-5. `/dl test` - verify the new animation plays when loot window opens
-6. Close loot window - verify the configured close animation plays
-7. Change roll show animation type in config (e.g. fadeIn instead of slideInRight)
-8. `/dl testroll` - verify new entrance animation plays on roll frames
-9. Open config -> Appearance tab - verify separate icon size sliders for Loot, Roll, History
-10. Change loot icon size - `/dl test` - verify loot window uses the new icon size
-11. Change roll icon size - `/dl testroll` - verify roll frames use the new icon size
-12. Change history icon size - `/dl history` - verify history entries use the new icon size
-13. Verify changing one icon size does not affect the others
-
-#### Phase 11 - Direct Loot History Tracking (Manual Test Steps)
-
-1. Open `/dl config` -> History tab - verify new options: "Track Looted Items" toggle, "Minimum Quality" dropdown
-2. Verify "Minimum Quality" dropdown is disabled when "Track Looted Items" is off
-3. Enable "Track Looted Items", set minimum quality to Uncommon (default)
-4. Kill a mob and loot items - verify directly looted Uncommon+ items appear in history
-5. Verify directly looted items show "Looted" in gray text instead of roll type
-6. Verify winner name is class-colored correctly for looted items
-7. Verify Common/Poor items do NOT appear in history (below minimum quality)
-8. Change minimum quality to Rare - verify only Rare+ looted items are tracked
-9. Disable "Track Looted Items" - verify no more direct loot entries are added
-10. Verify rolled items continue to appear in history regardless of minimum quality setting
-11. Verify no duplicate entries for the same item looted by the same player within 2 seconds
-12. `/reload` and verify history entries persist (they should via existing history persistence)
-13. In a group: verify other players' loot is also tracked when visible via CHAT_MSG_LOOT
-
----
-
-## Deferred Features
-
-- **Auto-loot with blacklist/whitelist filtering** - requires custom UI (not AceConfig), planned for future phase
-
----
-
-## Code Style
-
-### Formatting
-- Indent with **4 spaces**, no tabs
-- Max line length **120** unless the addon `.luacheckrc` disables it
-- Spaces around operators: `local x = 1 + 2`
-- No trailing whitespace
-- Use plain hyphens (`-`), **never** em or en dashes
-
-### File Header
-Every Lua file starts with:
-
-```lua
--------------------------------------------------------------------------------
--- FileName.lua
--- Brief description
---
--- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
--------------------------------------------------------------------------------
-```
-
-### Imports and Scoping
-- Use the shared namespace: `local ADDON_NAME, ns = ...`
-- Cache WoW API and Lua globals used more than once as locals at the top of the file
-- Keep addon logic in locals; only SavedVariables and `SLASH_*` are global
-- Use `LibStub` for Ace3 or other embedded libs; never global `require`
-
-```lua
-local ADDON_NAME, ns = ...
-local CreateFrame = CreateFrame
-local GetTime = GetTime
-local LSM = LibStub("LibSharedMedia-3.0")
-```
-
-### Naming
-
-| Element | Convention | Example |
-|---------|------------|---------|
-| Files | PascalCase | `MyAddon_Core.lua` |
-| SavedVariables | PascalCase | `MyAddonDB` |
-| Local variables | camelCase | `local currentState` |
-| Functions (public or local) | PascalCase | `local function UpdateState()` |
-| Constants | UPPER_SNAKE | `local MAX_RETRIES = 5` |
-| Slash commands | UPPER_SNAKE | `SLASH_MYADDON1` |
-| Color codes | UPPER_SNAKE | `local COLOR_RED = "\|cffff0000"` |
-| Unused args | underscore prefix | `local _unused` |
-
-### Types
-- Default to plain Lua 5.1 with no annotations
-- Only add LuaLS annotations when the file already uses them or for public library APIs
-- Keep annotations minimal and accurate; do not introduce new tooling
-- LuaLS annotations for WoW APIs are available via the `wow-addon-dev` skill for reference, but do not add them to addon source files unless already present
-
-### Functions and Structure
-- Keep functions under 50 lines; extract helpers when longer
-- Prefer early returns over deep nesting
-- Prefer composition over inheritance
-- Keep logic separated by layer when possible: Core (WoW API), Engine (pure Lua),
-  Data (tables), Presentation (UI)
-
-### Error Handling
-- Use defensive nil checks for optional APIs
-- For version differences, prefer `or` fallbacks over runtime version checks
-- Use `pcall` for user callbacks or APIs that may be missing in some versions
-- Use `error(msg, 2)` for public library input validation (reports at caller site)
-- Always verify API signatures with `wow-api-lookup` before adding defensive checks - know what the API actually returns
-
----
-
-## GitHub Workflow
-
-### Issues
-- Title format: `[Bug]: description` / `[Feature]: description`
-- Always apply: one `C-*` (category), one `A-*` (area), one `D-*` (difficulty), one `P-*` (platform) label
-- Use the repo's GitHub issue templates (bug-report or feature-request)
-- Add new issues to the appropriate project and set status to **"To triage"**
-
-### GitHub Projects
-- **DragonLoot - Bugs**: project #5 (`C-Bug` issues)
-- **DragonLoot - Feature Requests**: project #4 (`C-Feature` issues)
-- Status columns: **To triage → Backlog → Ready → In progress → In review → Done**
-- Move status as work progresses: filed (To triage) → scoped (Backlog) → branch created (In progress) → PR open (In review) → merged (Done)
-
-### Branching and PRs
-- Branch from `master`: `feat/<number>-short-desc`, `fix/<number>-short-desc`, `refactor/<number>-short-desc`
-- One PR per issue; reference `Closes #N` in the PR body
-- Fill the PR template fully (type of change, testing, checklist)
-- CI must pass (`gh pr checks <N> --repo Xerrion/DragonLoot`) before merging
-- Wait for CodeRabbit AI review to complete and address any findings before merging
-- When replying to CodeRabbit review comments, always use `@coderabbitai` and always reply to the **specific comment thread** (not as a top-level PR comment)
-- Squash merge only: `gh pr merge <N> --squash --delete-branch`
-- **Never merge release-please PRs** (`chore(master): release X.Y.Z`) - the repo owner merges these manually
-
-### Commits
-- Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
-- Reference issue numbers: `feat: add roll frame scaling (#92)`
-
----
-
 ## Known Gotchas
 
 1. **GetItemInfo may return nil** on first call if item not cached - handle with retry timers
@@ -605,30 +305,3 @@ local LSM = LibStub("LibSharedMedia-3.0")
 14. **CHAT_MSG_LOOT GlobalStrings differ by version** - TBC self-loot patterns have trailing periods, Retail does not. Build patterns from actual GlobalString values at runtime, never hardcode
 15. **GetItemInfo nil on first call** - LootHistoryChat uses C_Timer.After(0.5) retry to update quality when GetItemInfo returns nil for uncached items
 
----
-
-## Working Agreement for Agents
-- Addon-level AGENTS.md overrides root rules when present
-- Do not add new dependencies without discussing trade-offs
-- Run luacheck before and after changes
-- If only manual tests exist, document what you verified in-game
-- Verify changes in the game client when possible
-- Keep changes small and focused; prefer composition over inheritance
-- Use the `wow-addon` agent to verify WoW API signatures before implementation - never guess at parameter counts or return types
-- See `## Skills` above for the full skill-loading matrix for `coder` delegations
-
----
-
-## Communication Style
-
-When responding to or commenting on issues, always write in **first-person singular** ("I")
-as the repo owner -- never use "we" or "our team". Speak as if you are the developer personally.
-
-**Writing style:**
-- Direct, structured, solution-driven. Get to the point fast. Text is a tool, not decoration.
-- Think in systems. Break things into flows, roles, rules, and frameworks.
-- Bias toward precision. Concrete output, copy-paste-ready solutions, clear constraints. Low
-  tolerance for fluff.
-- Tone is calm and rational with small flashes of humor and self-awareness.
-- When confident in a topic, become more informal and creative.
-- When something matters, become sharp and focused.

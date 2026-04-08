@@ -58,6 +58,10 @@ end
 function ns.LootAnimations.PlayOpen(frame)
     local db = ns.Addon.db and ns.Addon.db.profile
     if not db then
+        ns.LootAnimations.isClosing = false
+        ns.LootAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
         frame:Show()
         return
     end
@@ -104,7 +108,11 @@ end
 function ns.LootAnimations.PlayClose(frame, onFinished)
     local db = ns.Addon.db and ns.Addon.db.profile
     if not db then
+        ns.LootAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
         frame:Hide()
+        ns.LootAnimations.isClosing = false
         if onFinished then
             onFinished()
         end

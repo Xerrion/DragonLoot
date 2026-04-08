@@ -34,6 +34,10 @@ ns.RollAnimations.isClosing = false
 function ns.RollAnimations.PlayShow(frame)
     local db = ns.Addon.db and ns.Addon.db.profile
     if not db then
+        ns.RollAnimations.isClosing = false
+        ns.RollAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
         frame:Show()
         return
     end
@@ -80,7 +84,11 @@ end
 function ns.RollAnimations.PlayHide(frame, onFinished)
     local db = ns.Addon.db and ns.Addon.db.profile
     if not db then
+        ns.RollAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
         frame:Hide()
+        ns.RollAnimations.isClosing = false
         if onFinished then
             onFinished()
         end

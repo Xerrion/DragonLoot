@@ -37,11 +37,13 @@ function ns.RollAnimations.PlayShow(frame)
         frame:Show()
         return
     end
-    local scale = db.rollFrame.scale or 1.0
+    local rollFrame = db.rollFrame or {}
+    local animation = db.animation or {}
+    local scale = rollFrame.scale or 1.0
 
     ns.RollAnimations.isClosing = false
 
-    if not db.animation.enabled then
+    if not animation.enabled then
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Show()
@@ -53,13 +55,13 @@ function ns.RollAnimations.PlayShow(frame)
     -- StopAll first, then overwrite with our desired initial state.
     ns.RollAnimations.StopAll(frame)
 
-    local duration = db.animation.openDuration or 0.3
+    local duration = animation.openDuration or 0.3
 
     frame:SetAlpha(0)
     frame:SetScale(scale)
     frame:Show()
 
-    local animName = db.animation.rollShowAnim or "slideInRight"
+    local animName = animation.rollShowAnim or "slideInRight"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,
@@ -84,10 +86,11 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
         end
         return
     end
+    local animation = db.animation or {}
 
     ns.RollAnimations.isClosing = true
 
-    if not db.animation.enabled then
+    if not animation.enabled then
         ns.RollAnimations.isClosing = false
         frame:Hide()
         if onFinished then
@@ -96,7 +99,7 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
         return
     end
 
-    local duration = db.animation.closeDuration or 0.5
+    local duration = animation.closeDuration or 0.5
 
     -- Snapshot where the frame visually is RIGHT NOW (mid-show-animation or idle).
     local curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY = DU.CaptureVisualState(frame)
@@ -107,7 +110,7 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
     ns.RollAnimations.StopAll(frame)
     DU.RestoreVisualState(frame, curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY)
 
-    local animName = db.animation.rollHideAnim or "fadeOut"
+    local animName = animation.rollHideAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,

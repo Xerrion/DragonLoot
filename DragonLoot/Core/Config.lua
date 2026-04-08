@@ -161,7 +161,7 @@ local function FillMissingDefaults(profile)
     -- Fill section (table) defaults
     for section, sectionDefaults in pairs(defaults.profile) do
         if type(sectionDefaults) == "table" then
-            if not profile[section] then
+            if type(profile[section]) ~= "table" then
                 profile[section] = {}
             end
             for key, defaultValue in pairs(sectionDefaults) do

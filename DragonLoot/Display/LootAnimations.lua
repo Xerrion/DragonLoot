@@ -61,11 +61,13 @@ function ns.LootAnimations.PlayOpen(frame)
         frame:Show()
         return
     end
-    local scale = db.lootWindow.scale or 1.0
+    local lootWindow = db.lootWindow or {}
+    local animation = db.animation or {}
+    local scale = lootWindow.scale or 1.0
 
     ns.LootAnimations.isClosing = false
 
-    if not db.animation.enabled then
+    if not animation.enabled then
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Show()
@@ -77,13 +79,13 @@ function ns.LootAnimations.PlayOpen(frame)
     -- StopAll first, then overwrite with our desired initial state.
     ns.LootAnimations.StopAll(frame)
 
-    local duration = db.animation.openDuration or 0.3
+    local duration = animation.openDuration or 0.3
 
     frame:SetAlpha(0)
     frame:SetScale(scale)
     frame:Show()
 
-    local animName = db.animation.lootOpenAnim or "fadeIn"
+    local animName = animation.lootOpenAnim or "fadeIn"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = LOOT_ANIMATION_DISTANCE,
@@ -108,10 +110,11 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
         end
         return
     end
+    local animation = db.animation or {}
 
     ns.LootAnimations.isClosing = true
 
-    if not db.animation.enabled then
+    if not animation.enabled then
         ns.LootAnimations.isClosing = false
         frame:Hide()
         if onFinished then
@@ -120,7 +123,7 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
         return
     end
 
-    local duration = db.animation.closeDuration or 0.5
+    local duration = animation.closeDuration or 0.5
 
     -- Snapshot where the frame visually is RIGHT NOW (mid-open-animation or idle).
     local curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY = DU.CaptureVisualState(frame)
@@ -131,7 +134,7 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
     ns.LootAnimations.StopAll(frame)
     DU.RestoreVisualState(frame, curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY)
 
-    local animName = db.animation.lootCloseAnim or "fadeOut"
+    local animName = animation.lootCloseAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = LOOT_ANIMATION_DISTANCE,

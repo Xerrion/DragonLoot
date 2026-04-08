@@ -21,4 +21,4 @@ fmt-check:
     stylua --check DragonLoot/ DragonLoot_Options/ spec/
 
 # Run lint and tests
-check: lint test
+check: fmt-check lint test

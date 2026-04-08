@@ -48,8 +48,8 @@ local function OnLootReady()
         return
     end
 
-    local db = ns.Addon.db.profile
-    if not db.lootWindow.enabled then
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db or not db.lootWindow or not db.lootWindow.enabled then
         return
     end
 

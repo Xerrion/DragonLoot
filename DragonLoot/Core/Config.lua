@@ -141,7 +141,24 @@ local function DeepCopyValue(value)
     return copy
 end
 
+--- Apply all top-level scalar defaults from defaults.profile to a profile.
+--- Currently covers: enabled, debug (any non-table key in defaults.profile).
+--- @param profile table The profile to update
+--- @param overwrite boolean If true, always overwrite; if false, only fill missing/mismatched
+local function ApplyScalarDefaults(profile, overwrite)
+    for key, defaultValue in pairs(defaults.profile) do
+        if type(defaultValue) ~= "table" then
+            if overwrite or profile[key] == nil or type(profile[key]) ~= type(defaultValue) then
+                profile[key] = defaultValue
+            end
+        end
+    end
+end
+
 local function FillMissingDefaults(profile)
+    ApplyScalarDefaults(profile, false)
+
+    -- Fill section (table) defaults
     for section, sectionDefaults in pairs(defaults.profile) do
         if type(sectionDefaults) == "table" then
             if not profile[section] then
@@ -174,6 +191,7 @@ local function FillMissingDefaults(profile)
 end
 
 local function ResetToDefaults(profile)
+    ApplyScalarDefaults(profile, true)
     for section, sectionDefaults in pairs(defaults.profile) do
         if type(sectionDefaults) == "table" then
             profile[section] = DeepCopyValue(sectionDefaults)

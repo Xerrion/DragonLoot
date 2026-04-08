@@ -39,7 +39,7 @@ ns.LootAnimations.isClosing = false
 
 --- Restore the frame's anchor to the saved DB position so the next open starts correctly.
 local function RestoreDbAnchor(frame)
-    local db = ns.Addon.db and ns.Addon.db.profile.lootWindow
+    local db = ns.Addon.db and ns.Addon.db.profile and ns.Addon.db.profile.lootWindow
     if not db then
         return
     end
@@ -56,7 +56,11 @@ end
 -------------------------------------------------------------------------------
 
 function ns.LootAnimations.PlayOpen(frame)
-    local db = ns.Addon.db.profile
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        frame:Show()
+        return
+    end
     local scale = db.lootWindow.scale or 1.0
 
     ns.LootAnimations.isClosing = false
@@ -84,7 +88,8 @@ function ns.LootAnimations.PlayOpen(frame)
         duration = duration,
         distance = LOOT_ANIMATION_DISTANCE,
         onFinished = function()
-            local s = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local s = profile and profile.lootWindow and profile.lootWindow.scale or 1.0
             frame:SetScale(s)
         end,
     })
@@ -95,12 +100,20 @@ function ns.LootAnimations.PlayOpen(frame)
 end
 
 function ns.LootAnimations.PlayClose(frame, onFinished)
-    local db = ns.Addon.db.profile
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        frame:Hide()
+        if onFinished then
+            onFinished()
+        end
+        return
+    end
 
     ns.LootAnimations.isClosing = true
 
     if not db.animation.enabled then
         ns.LootAnimations.isClosing = false
+        frame:Hide()
         if onFinished then
             onFinished()
         end
@@ -123,7 +136,8 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
         duration = duration,
         distance = LOOT_ANIMATION_DISTANCE,
         onFinished = function()
-            local scale = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local scale = profile and profile.lootWindow and profile.lootWindow.scale or 1.0
             frame:SetAlpha(1)
             frame:SetScale(scale)
             frame:Hide()
@@ -138,7 +152,8 @@ function ns.LootAnimations.PlayClose(frame, onFinished)
         end,
     })
     if not ok then
-        local scale = ns.Addon.db and ns.Addon.db.profile.lootWindow.scale or 1.0
+        local profile = ns.Addon.db and ns.Addon.db.profile
+        local scale = profile and profile.lootWindow and profile.lootWindow.scale or 1.0
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Hide()

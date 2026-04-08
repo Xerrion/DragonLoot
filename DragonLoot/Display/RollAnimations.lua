@@ -32,7 +32,11 @@ ns.RollAnimations.isClosing = false
 -------------------------------------------------------------------------------
 
 function ns.RollAnimations.PlayShow(frame)
-    local db = ns.Addon.db.profile
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        frame:Show()
+        return
+    end
     local scale = db.rollFrame.scale or 1.0
 
     ns.RollAnimations.isClosing = false
@@ -60,7 +64,8 @@ function ns.RollAnimations.PlayShow(frame)
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
-            local s = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local s = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
             frame:SetScale(s)
         end,
     })
@@ -71,12 +76,20 @@ function ns.RollAnimations.PlayShow(frame)
 end
 
 function ns.RollAnimations.PlayHide(frame, onFinished)
-    local db = ns.Addon.db.profile
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        frame:Hide()
+        if onFinished then
+            onFinished()
+        end
+        return
+    end
 
     ns.RollAnimations.isClosing = true
 
     if not db.animation.enabled then
         ns.RollAnimations.isClosing = false
+        frame:Hide()
         if onFinished then
             onFinished()
         end
@@ -99,7 +112,8 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
-            local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local scale = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
             frame:SetAlpha(1)
             frame:SetScale(scale)
             frame:Hide()
@@ -111,7 +125,8 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
         end,
     })
     if not ok then
-        local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+        local profile = ns.Addon.db and ns.Addon.db.profile
+        local scale = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Hide()

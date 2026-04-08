@@ -32,12 +32,22 @@ ns.RollAnimations.isClosing = false
 -------------------------------------------------------------------------------
 
 function ns.RollAnimations.PlayShow(frame)
-    local db = ns.Addon.db.profile
-    local scale = db.rollFrame.scale or 1.0
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        ns.RollAnimations.isClosing = false
+        ns.RollAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
+        frame:Show()
+        return
+    end
+    local rollFrame = db.rollFrame or {}
+    local animation = db.animation or {}
+    local scale = rollFrame.scale or 1.0
 
     ns.RollAnimations.isClosing = false
 
-    if not db.animation.enabled then
+    if not animation.enabled then
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Show()
@@ -49,18 +59,19 @@ function ns.RollAnimations.PlayShow(frame)
     -- StopAll first, then overwrite with our desired initial state.
     ns.RollAnimations.StopAll(frame)
 
-    local duration = db.animation.openDuration or 0.3
+    local duration = animation.openDuration or 0.3
 
     frame:SetAlpha(0)
     frame:SetScale(scale)
     frame:Show()
 
-    local animName = db.animation.rollShowAnim or "slideInRight"
+    local animName = animation.rollShowAnim or "slideInRight"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
-            local s = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local s = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
             frame:SetScale(s)
         end,
     })
@@ -71,19 +82,32 @@ function ns.RollAnimations.PlayShow(frame)
 end
 
 function ns.RollAnimations.PlayHide(frame, onFinished)
-    local db = ns.Addon.db.profile
-
-    ns.RollAnimations.isClosing = true
-
-    if not db.animation.enabled then
+    local db = ns.Addon.db and ns.Addon.db.profile
+    if not db then
+        ns.RollAnimations.StopAll(frame)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
+        frame:Hide()
         ns.RollAnimations.isClosing = false
         if onFinished then
             onFinished()
         end
         return
     end
+    local animation = db.animation or {}
 
-    local duration = db.animation.closeDuration or 0.5
+    ns.RollAnimations.isClosing = true
+
+    if not animation.enabled then
+        ns.RollAnimations.isClosing = false
+        frame:Hide()
+        if onFinished then
+            onFinished()
+        end
+        return
+    end
+
+    local duration = animation.closeDuration or 0.5
 
     -- Snapshot where the frame visually is RIGHT NOW (mid-show-animation or idle).
     local curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY = DU.CaptureVisualState(frame)
@@ -94,12 +118,13 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
     ns.RollAnimations.StopAll(frame)
     DU.RestoreVisualState(frame, curAlpha, curScale, curPoint, curRelTo, curRelPoint, curX, curY)
 
-    local animName = db.animation.rollHideAnim or "fadeOut"
+    local animName = animation.rollHideAnim or "fadeOut"
     local ok = pcall(lib.Animate, lib, frame, animName, {
         duration = duration,
         distance = ROLL_ANIMATION_DISTANCE,
         onFinished = function()
-            local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+            local profile = ns.Addon.db and ns.Addon.db.profile
+            local scale = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
             frame:SetAlpha(1)
             frame:SetScale(scale)
             frame:Hide()
@@ -111,7 +136,8 @@ function ns.RollAnimations.PlayHide(frame, onFinished)
         end,
     })
     if not ok then
-        local scale = ns.Addon.db and ns.Addon.db.profile.rollFrame.scale or 1.0
+        local profile = ns.Addon.db and ns.Addon.db.profile
+        local scale = profile and profile.rollFrame and profile.rollFrame.scale or 1.0
         frame:SetAlpha(1)
         frame:SetScale(scale)
         frame:Hide()

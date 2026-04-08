@@ -41,12 +41,18 @@ local TIME_REFRESH_INTERVAL = 10
 local DETAIL_ROW_HEIGHT = 16
 local DETAIL_PADDING = 4
 
+local function GetHistoryDB()
+    return ns.Addon.db and ns.Addon.db.profile and ns.Addon.db.profile.history
+end
+
 local function GetEntrySpacing()
-    return ns.Addon.db.profile.history.entrySpacing or 2
+    local historyDB = GetHistoryDB()
+    return historyDB and historyDB.entrySpacing or 2
 end
 
 local function GetContentPadding()
-    return ns.Addon.db.profile.history.contentPadding or 6
+    local historyDB = GetHistoryDB()
+    return historyDB and historyDB.contentPadding or 6
 end
 
 -------------------------------------------------------------------------------

@@ -99,6 +99,9 @@ end
 -------------------------------------------------------------------------------
 
 function DisplayUtils.ApplyBackdrop(frame, db)
+    if not db or not db.profile then
+        return
+    end
     local appearance = db.profile.appearance
     if not appearance then
         return

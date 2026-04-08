@@ -97,7 +97,9 @@ local function CreateRollFrameSection(parent, db, yOffset)
 
     local hideOnVoteToggle = W.CreateToggle(content, {
         label = L["Hide After Voting"],
-        tooltip = L["Hide the roll frame after you cast your vote. The roll continues in the background" .. " and notifications still fire."],
+        -- stylua: ignore
+        tooltip = L["Hide the roll frame after you cast your vote. The roll continues in the background"
+            .. " and notifications still fire."],
         get = function()
             return db.profile.rollFrame.hideOnVote
         end,
@@ -395,7 +397,9 @@ local function CreateLayoutSection(parent, db, yOffset)
 
     local iconPositionDropdown = W.CreateDropdown(content, {
         label = L["Icon Position"],
-        tooltip = L["Icon position: Inside places the icon inside the frame." .. " Outside places the icon outside the frame border."],
+        -- stylua: ignore
+        tooltip = L["Icon position: Inside places the icon inside the frame."
+            .. " Outside places the icon outside the frame border."],
         values = ICON_POSITION_VALUES,
         get = function()
             return db.profile.rollFrame.iconPosition

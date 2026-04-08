@@ -754,7 +754,9 @@ end
 -------------------------------------------------------------------------------
 
 local function BuildRollData(rollID)
-    local texture, name, count, quality, bindOnPickUp, canNeed, canGreed, canDisenchant, reasonNeed, reasonGreed, reasonDisenchant, _, canTransmog =
+    -- stylua: ignore
+    local texture, name, count, quality, bindOnPickUp, canNeed, canGreed, canDisenchant,
+        reasonNeed, reasonGreed, reasonDisenchant, _, canTransmog =
         GetLootRollItemInfo(rollID)
 
     if not texture then

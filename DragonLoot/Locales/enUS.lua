@@ -202,8 +202,9 @@ L["Show in Open World"] = true
 L["Show in Raids"] = true
 L["Show individual roll result notifications"] = true
 L["Hide After Voting"] = true
-L["Hide the roll frame after you cast your vote. The roll continues in the background" .. " and notifications still fire."] =
-    true
+-- stylua: ignore
+L["Hide the roll frame after you cast your vote. The roll continues in the background"
+    .. " and notifications still fire."] = true
 L["Show item name and bind type on the same line"] = true
 L["Show notifications for other group members' roll results"] = true
 L["Show notifications for your own roll results"] = true
@@ -252,14 +253,19 @@ L["Click history entries to expand and see all player rolls"] = true
 
 -- DragonLoot_Options/Tabs/AutoLootTab.lua
 L["Auto-Loot"] = true
-L["Automatically loot items that meet your criteria. Items on the whitelist are always" .. " picked up. Items on the blacklist are never auto-looted. Everything else is evaluated" .. " against the minimum quality threshold."] =
-    true
+-- stylua: ignore
+L["Automatically loot items that meet your criteria."
+    .. " Items on the whitelist are always picked up."
+    .. " Items on the blacklist are never auto-looted."
+    .. " Everything else is evaluated against the minimum quality threshold."] = true
 L["Blacklist"] = true
 L["Enable Smart Auto-Loot"] = true
-L["Items on this list are always looted automatically, regardless of quality." .. " Drag an item from your bags onto an empty slot to add it."] =
-    true
-L["Items on this list are never auto-looted, even if they meet the quality threshold." .. " They will remain in the loot window for manual pickup."] =
-    true
+-- stylua: ignore
+L["Items on this list are always looted automatically, regardless of quality."
+    .. " Drag an item from your bags onto an empty slot to add it."] = true
+-- stylua: ignore
+L["Items on this list are never auto-looted, even if they meet the quality threshold."
+    .. " They will remain in the loot window for manual pickup."] = true
 L["No items - drag items here to add"] = true
 L["Smart Auto-Loot"] = true
 L["When enabled, qualifying items are automatically looted based on your filter rules"] = true
@@ -328,7 +334,9 @@ L["Delete Profile"] = true
 L["New Profile"] = true
 L["Profile Actions"] = true
 L["Profiles"] = true
-L["Profiles allow you to save different settings configurations. You can switch between" .. " profiles, copy settings from another profile, or reset to defaults."] =
-    true
+-- stylua: ignore
+L["Profiles allow you to save different settings configurations."
+    .. " You can switch between profiles, copy settings from another profile,"
+    .. " or reset to defaults."] = true
 L["Reset Current Profile"] = true
 L["Reset all settings in the current profile to their default values"] = true

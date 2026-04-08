@@ -265,9 +265,12 @@ local function CreateContent(parent)
     local profilesContent = profilesSection.content
     local profilesY = -LC.SECTION_PADDING_TOP
 
+    -- stylua: ignore
     local desc = W.CreateDescription(
         profilesContent,
-        L["Profiles allow you to save different settings configurations. You can switch between" .. " profiles, copy settings from another profile, or reset to defaults."]
+        L["Profiles allow you to save different settings configurations."
+            .. " You can switch between profiles, copy settings from another profile,"
+            .. " or reset to defaults."]
     )
     profilesY = LC.AnchorWidget(desc, profilesContent, profilesY) - LC.SPACING_BETWEEN_WIDGETS
 

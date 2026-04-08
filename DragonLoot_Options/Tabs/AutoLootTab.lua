@@ -44,9 +44,13 @@ local function CreateSettingsSection(parent, db, yOffset)
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
+    -- stylua: ignore
     local desc = W.CreateDescription(
         content,
-        L["Automatically loot items that meet your criteria. Items on the whitelist are always" .. " picked up. Items on the blacklist are never auto-looted. Everything else is evaluated" .. " against the minimum quality threshold."]
+        L["Automatically loot items that meet your criteria."
+            .. " Items on the whitelist are always picked up."
+            .. " Items on the blacklist are never auto-looted."
+            .. " Everything else is evaluated against the minimum quality threshold."]
     )
     innerY = LC.AnchorWidget(desc, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
@@ -89,9 +93,11 @@ local function CreateWhitelistSection(parent, db, yOffset)
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
+    -- stylua: ignore
     local desc = W.CreateDescription(
         content,
-        L["Items on this list are always looted automatically, regardless of quality." .. " Drag an item from your bags onto an empty slot to add it."]
+        L["Items on this list are always looted automatically, regardless of quality."
+            .. " Drag an item from your bags onto an empty slot to add it."]
     )
     innerY = LC.AnchorWidget(desc, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
@@ -123,9 +129,11 @@ local function CreateBlacklistSection(parent, db, yOffset)
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
 
+    -- stylua: ignore
     local desc = W.CreateDescription(
         content,
-        L["Items on this list are never auto-looted, even if they meet the quality threshold." .. " They will remain in the loot window for manual pickup."]
+        L["Items on this list are never auto-looted, even if they meet the quality threshold."
+            .. " They will remain in the loot window for manual pickup."]
     )
     innerY = LC.AnchorWidget(desc, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 

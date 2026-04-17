@@ -193,7 +193,7 @@ local function SuppressBlizzardRollFrames()
     -- after event unregistration; the boolean toggle controls whether it acts.
     if not rollFrameHooksInstalled then
         -- Post-hook GroupLootContainer_AddRoll (taint-safe, Classic nil guard)
-        if GroupLootContainer_AddRoll then
+        if _G.GroupLootContainer_AddRoll then
             hooksecurefunc("GroupLootContainer_AddRoll", function()
                 if suppressRollContainer then
                     if GroupLootContainer then GroupLootContainer:Hide() end
@@ -210,8 +210,7 @@ local function SuppressBlizzardRollFrames()
             local frame = _G["GroupLootFrame" .. i]
             if frame then
                 hooksecurefunc(frame, "Show", function(self)
-                    local db = ns.Addon.db and ns.Addon.db.profile
-                    if db and db.rollFrame and db.rollFrame.enabled then
+                    if suppressRollContainer then
                         self:Hide()
                     end
                 end)

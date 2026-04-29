@@ -7,95 +7,136 @@
 *A customizable loot window and roll frame replacement for World of Warcraft*
 
 [![Latest Release](https://img.shields.io/github/v/release/Xerrion/DragonLoot?style=for-the-badge)](https://github.com/Xerrion/DragonLoot/releases/latest)
-[![License](https://img.shields.io/github/license/Xerrion/DragonLoot?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/github/license/Xerrion/DragonLoot?style=for-the-badge)](https://github.com/Xerrion/DragonLoot/blob/master/LICENSE)
+[![CurseForge](https://img.shields.io/badge/CurseForge-1472582-f16436?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/wow/addons/dragonloot)
+[![Wago](https://img.shields.io/badge/Wago-qKQmADKx-c0392b?style=for-the-badge&logo=wago)](https://addons.wago.io/addons/dragonloot)
 [![WoW Versions](https://img.shields.io/badge/WoW-Retail%20%7C%20MoP%20Classic%20%7C%20TBC%20Anniversary-blue?style=for-the-badge&logo=battledotnet)](https://worldofwarcraft.blizzard.com/)
 [![Lint](https://img.shields.io/github/actions/workflow/status/Xerrion/DragonLoot/lint.yml?style=for-the-badge&label=luacheck)](https://github.com/Xerrion/DragonLoot/actions)
 
 </div>
 
+DragonLoot replaces the default Blizzard loot window and roll frame with cleaner, more configurable replacements, and
+adds a dedicated loot history panel for tracking drops and winners.
+
 ## 🐉 Features
 
-- Replaces the default Blizzard loot window with a clean, modern design
-- Custom loot roll frames with animated timer bars and overflow queue
-- Loot roll history panel tracking recent rolls and winners
-- Roll won notifications via DragonToast integration
-- Individual roll result notifications (Need/Greed/Disenchant/Transmog)
-- Instance-type filtering for roll notifications (world/dungeon/raid)
-- Configurable minimum quality threshold for notifications
-- Full appearance customization (fonts, icon size)
-- Smooth open/close animations (powered by LibAnimate)
-- Minimap button with LibDBIcon
-- Profile support via AceDB
+- **Modernized UI**: Replaces the Blizzard loot window, roll frames, and introduces a loot history panel.
+- **Advanced Roll Frames**: Custom frames featuring timer bars, an overflow FIFO queue, item-level overlays, and
+  configurable layouts (including 3-row mode and hide-after-voting).
+- **Loot History**: Track drops with class-colored winners, time-ago refresh intervals, and direct loot tracking via
+  `CHAT_MSG_LOOT` for items picked up without a roll.
+- **Smart Notifications**: Filter Need, Greed, Disenchant, and Transmog notifications by instance type and item quality.
+- **DragonToast Integration**: Suppresses duplicate toasts during loot and queues celebration or result toasts.
+- **ElvUI Compatibility**: Detects conflicting ElvUI loot modules and provides a one-time prompt to disable them.
+- **Complete Customization**: Control fonts (including outlines), per-frame icon sizes, quality-colored borders, LSM
+  textures, and frame colors/transparency.
+- **Animated Transitions**: Powered by LibAnimate with 4 selectable open/close styles and configurable durations.
+- **Modern Addon Stack**: Minimap button support (LibDBIcon), AceDB profile management, and support for 11 locales.
+- **Performance Optimized**: Companion `DragonLoot_Options` addon is LoadOnDemand to keep memory usage low during play.
 
 ## 🎮 Supported Versions
 
-| Version          | Interface              |
-|:-----------------|:-----------------------|
-| Retail           | 110207, 120001, 120000 |
-| MoP Classic      | 50503                  |
-| TBC Anniversary  | 20505                  |
+| Client | Interface Versions |
+|---|---|
+| Retail | 120005, 120001, 120000, 110207 |
+| TBC Anniversary | 20505 |
+| MoP Classic | 50503 |
 
 ## 📦 Installation
 
 ### Download
 
-[![GitHub](https://img.shields.io/badge/GitHub-Releases-181717?style=for-the-badge&logo=github)](https://github.com/Xerrion/DragonLoot/releases/latest) 
+Available on major platforms:
+
+- [**CurseForge**](https://www.curseforge.com/wow/addons/dragonloot)
+- [**Wago.io**](https://addons.wago.io/addons/dragonloot)
+- [**GitHub Releases**](https://github.com/Xerrion/DragonLoot/releases/latest)
 
 ### Manual Install
 
-1. Download the latest release from GitHub Releases
-2. Extract the `DragonLoot` folder into your AddOns directory:
+1. Download the latest release.
+2. Extract the `DragonLoot` and `DragonLoot_Options` folders into your AddOns directory:
+   - `World of Warcraft/_retail_/Interface/AddOns/`
+3. Restart World of Warcraft or type `/reload` in-game.
 
-   ```text
-   World of Warcraft/_retail_/Interface/AddOns/DragonLoot/
-   ```
+## 🧩 Sub-addons
 
-   For Classic variants, use `_classic_` instead of `_retail_`.
+DragonLoot is split into two modules to optimize performance:
+- **DragonLoot**: The core engine that handles loot, rolls, and history. Always loaded.
+- **DragonLoot_Options**: The configuration interface. It only loads when you open the settings panel and embeds the
+  DragonWidgets shared library.
 
-3. Restart WoW or type `/reload`
+## ⌨️ Slash Commands
 
-## ⌨️ Commands
+Use `/dl` or the alias `/dragonloot`.
 
-Use `/dl` or `/dragonloot`.
-
-Typing `/dl` by itself shows the help list. `/dl toggle` is the only slash command that turns DragonLoot on or off.
-
-| Command | What it does |
-|:--------|:-------------|
-| `/dl` | Show the help list |
-| `/dl help` | Show the help list |
-| `/dl toggle` | Turn DragonLoot on or off |
-| `/dl config` | Open the settings panel |
-| `/dl minimap` | Show or hide the minimap button |
-| `/dl reset` | Reset the loot window position |
-| `/dl test` | Show test loot |
-| `/dl testroll` | Show test roll frames |
-| `/dl history` | Open or close the loot history window |
-| `/dl status` | Show your current DragonLoot settings |
+| Command | Description |
+|---|---|
+| `/dl` | Toggle the addon on or off |
+| `/dl toggle` | Explicitly toggle the addon on or off |
+| `/dl enable` | Enable the addon |
+| `/dl disable` | Disable the addon |
+| `/dl config` | Open the options panel (aliases: `options`, `settings`) |
+| `/dl history` | Open the loot history panel |
+| `/dl test` | Spawn a single test roll |
+| `/dl testroll loop` | Start continuous test roll spawning |
+| `/dl testroll stop` | Stop continuous test roll spawning |
+| `/dl reset` | Reset frame positions to defaults |
+| `/dl version` | Print current version information |
+| `/dl help` | Show the command list (alias: `?`) |
 
 ## ⚙️ Configuration
 
-- **Loot Window**: Enable/disable, scale, lock position, dimensions
-- **Roll Frame**: Enable/disable, scale, lock position, timer bar height
-- **History Panel**: Enable/disable, max entries, auto-show, lock position
-- **Roll Notifications**: Roll won, group wins, individual results, instance filtering, quality threshold
-- **Appearance**: Font, font size, icon size
-- **Animation**: Enable/disable, durations
+Settings are stored in `DragonLootDB` using AceDB profiles.
 
-Access settings with `/dl config` or click the minimap icon.
+| Tab | Settings |
+|---|---|
+| **General** | Addon toggle, UI lock, minimap icon, DragonToast suppression |
+| **Loot Window** | Open at mouse, scale, lock, slot count, icon size |
+| **Loot Roll** | 3-row layout, hide after voting, item-level overlay, timer texture, stack direction |
+| **Notifications** | Roll type filters (Need/Greed/etc), instance filters, quality threshold, group wins |
+| **History** | Auto-open on loot, max entries, direct loot tracking, minimum quality threshold |
+| **AutoLoot** | Enable, quality threshold, exclusion list |
+| **Appearance** | Fonts, outlines, per-frame icon sizes, quality borders, background/border styling |
+| **Animation** | Toggle, selectable open/close styles (4 types), duration sliders |
+| **Profiles** | Standard AceDB profile management (Save/Copy/Reset) |
 
 ## 🔗 DragonToast Integration
 
-When [DragonToast](https://github.com/Xerrion/DragonToast) is installed, DragonLoot automatically suppresses duplicate item toasts while the loot window is open, preventing double notifications. Roll wins and individual roll results are sent as toast notifications through DragonToast's feed.
+DragonLoot features built-in integration with [DragonToast](https://github.com/Xerrion/DragonToast). It uses a
+fire-and-forget communication system (AceComm) to:
+- **Suppress**: Sends `DRAGONTOAST_SUPPRESS` when loot opens so DragonToast doesn't show duplicate loot alerts.
+- **Unsuppress**: Sends `DRAGONTOAST_UNSUPPRESS` when the loot window closes.
+- **Celebrate**: Sends `DRAGONTOAST_QUEUE_TOAST` to trigger celebratory notifications for roll wins.
 
-Integration uses the generic DragonToast messaging API - fire-and-forget with no configuration needed. Neither addon requires the other; all features work independently when only one is installed.
+This integration has no hard dependency; DragonLoot works perfectly fine without DragonToast.
+
+## 🛡️ ElvUI Compatibility
+
+DragonLoot automatically detects if ElvUI's built-in loot module is active. To prevent visual conflicts, it will prompt
+you once to disable the ElvUI loot module. Your choice is remembered, and you can change it at any time in the ElvUI
+settings.
+
+## 🌐 Localization
+
+DragonLoot is localized for the following regions:
+`enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW`.
+
+Translation contributions are welcome! Please submit a pull request or open an issue on GitHub if you would like to
+improve a specific locale.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please open an issue or pull request on [GitHub](https://github.com/Xerrion/DragonLoot). Run `luacheck .` before submitting to ensure all linting passes.
+Contributions are welcome! Please refer to [AGENTS.md](AGENTS.md) for full coding conventions.
+
+- **Linting**: Run `luacheck .` or `just lint`
+- **Testing**: Run `busted --verbose` or `just test`
+- **Formatting**: Uses `stylua` (`just fmt`)
+- **Toolchain**: Managed via `mise` (Lua 5.1) and `just` recipes.
 
 ## 📄 License
 
-This project is licensed under the **MIT License**. See the [LICENSE](https://github.com/Xerrion/DragonLoot/blob/main/LICENSE) file for details.
+This project is licensed under the **MIT License**. See the [LICENSE](https://github.com/Xerrion/DragonLoot/blob/master/LICENSE)
+file for details.
 
 Made with ❤️ by [Xerrion](https://github.com/Xerrion)

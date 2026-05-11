@@ -876,22 +876,28 @@ end
 
 function ns.LootFrame.Show(autoLoot)
     if not containerFrame then
-        return
+        return false
     end
 
     ReleaseAllSlots()
 
     local numItems = GetNumLootItems()
     if numItems == 0 then
-        return
+        return false
     end
 
-    -- Auto-loot: skip UI entirely
+    -- Engine auto-loot: loot every slot in reverse (preserves lower indices),
+    -- then re-read the loot session. Items the client cannot auto-loot
+    -- (group rolls, BoP confirms, dungeon chests) remain and need the UI.
     if autoLoot then
-        for i = 1, numItems do
+        for i = numItems, 1, -1 do
             LootSlot(i)
         end
-        return
+        numItems = GetNumLootItems()
+        if numItems == 0 then
+            return false
+        end
+        -- Fall through to populate / layout / show UI for remaining items
     end
 
     -- Smart auto-loot: evaluate each slot and auto-pick qualifying items
@@ -912,7 +918,7 @@ function ns.LootFrame.Show(autoLoot)
             for i = 1, numItems do
                 LootSlot(i)
             end
-            return
+            return false
         end
 
         -- Some qualify: loot them in reverse order (preserves lower indices)
@@ -924,12 +930,12 @@ function ns.LootFrame.Show(autoLoot)
             -- Re-read numItems since some were looted
             numItems = GetNumLootItems()
             if numItems == 0 then
-                return
+                return false
             end
         end
     end
 
-    -- Only acquire and populate slots when NOT auto-looting
+    -- Populate UI for items that remain in the loot session
     for i = 1, numItems do
         local icon = GetNormalizedSlotInfo(i)
         if icon then
@@ -957,6 +963,7 @@ function ns.LootFrame.Show(autoLoot)
 
     -- Animate or just show
     ShowWithAnimation()
+    return true
 end
 
 function ns.LootFrame.Hide()

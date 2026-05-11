@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.14.0](https://github.com/Xerrion/DragonLoot/compare/0.13.0...0.14.0) (2026-05-11)
+
+
+### 🚀 Features
+
+* pending highest roller and hover tooltips for loot history ([#90](https://github.com/Xerrion/DragonLoot/issues/90)) ([#154](https://github.com/Xerrion/DragonLoot/issues/154)) ([a071d11](https://github.com/Xerrion/DragonLoot/commit/a071d112272efbe1e46e34a2f975e167def252de))
+* persist loot history across sessions ([#104](https://github.com/Xerrion/DragonLoot/issues/104)) ([#152](https://github.com/Xerrion/DragonLoot/issues/152)) ([c337e94](https://github.com/Xerrion/DragonLoot/commit/c337e94fb3ad34e4717a38a68754ce6da10a6178))
+
+
+### 🐛 Bug Fixes
+
+* show loot window for unlootable items during auto-loot ([#158](https://github.com/Xerrion/DragonLoot/issues/158)) ([#159](https://github.com/Xerrion/DragonLoot/issues/159)) ([8e33044](https://github.com/Xerrion/DragonLoot/commit/8e330448a0b97b7a53986a7d73f2fd002f996397))
+
 ## [0.13.0](https://github.com/Xerrion/DragonLoot/compare/0.12.0...0.13.0) (2026-04-22)
 
 

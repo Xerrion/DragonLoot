@@ -821,8 +821,22 @@ function ns.LootFrame.Shutdown()
 end
 
 -------------------------------------------------------------------------------
--- Smart Auto-Loot Evaluation
+-- Auto-Loot Helpers
 -------------------------------------------------------------------------------
+
+-- Loots each slot in `indices` in reverse order, then returns the post-loot
+-- count from GetNumLootItems(). Reverse iteration preserves the meaning of
+-- lower indices: LootSlot shifts the loot session after each successful pick,
+-- so consuming from the high end keeps the unprocessed indices stable. Both
+-- call sites in ns.LootFrame.Show build `indices` in ascending order by
+-- construction (sequential `for` loops), which is the precondition this
+-- helper relies on.
+local function LootSlotsAndRecount(indices)
+    for i = #indices, 1, -1 do
+        LootSlot(indices[i])
+    end
+    return GetNumLootItems()
+end
 
 local function EvaluateSlot(slotIndex)
     local db = ns.Addon.db
@@ -886,49 +900,44 @@ function ns.LootFrame.Show(autoLoot)
         return false
     end
 
-    -- Engine auto-loot: loot every slot in reverse (preserves lower indices),
-    -- then re-read the loot session. Items the client cannot auto-loot
-    -- (group rolls, BoP confirms, dungeon chests) remain and need the UI.
+    -- Engine auto-loot: Blizzard's flag asked us to grab everything. Build the
+    -- full index set, hand it to the shared helper, and fall through with
+    -- whatever the client refused to auto-loot (group rolls, BoP confirms,
+    -- dungeon chests).
     if autoLoot then
-        for i = numItems, 1, -1 do
-            LootSlot(i)
+        local indices = {}
+        for i = 1, numItems do
+            indices[i] = i
         end
-        numItems = GetNumLootItems()
+        numItems = LootSlotsAndRecount(indices)
         if numItems == 0 then
             return false
         end
         -- Fall through to populate / layout / show UI for remaining items
     end
 
-    -- Smart auto-loot: evaluate each slot and auto-pick qualifying items
+    -- Smart auto-loot: evaluate each remaining slot against the user's filter,
+    -- collect the qualifying indices, and hand them to the same helper. If
+    -- every slot qualified, loot them all and skip the UI; otherwise fall
+    -- through with the rest.
     local db = ns.Addon.db
     if db and db.profile.autoLoot and db.profile.autoLoot.enabled then
         local qualifying = {}
-        local allQualify = true
         for i = 1, numItems do
             if EvaluateSlot(i) then
                 qualifying[#qualifying + 1] = i
-            else
-                allQualify = false
             end
         end
 
         -- All qualify: loot everything, skip UI entirely
-        if allQualify and #qualifying > 0 then
-            for i = 1, numItems do
-                LootSlot(i)
-            end
+        if #qualifying == numItems then
+            LootSlotsAndRecount(qualifying)
             return false
         end
 
-        -- Some qualify: loot them in reverse order (preserves lower indices)
+        -- Some qualify: loot them and fall through with the remainder
         if #qualifying > 0 then
-            for i = #qualifying, 1, -1 do
-                LootSlot(qualifying[i])
-            end
-            -- Fall through to show UI for remaining items
-            -- Re-read numItems since some were looted
-            numItems = GetNumLootItems()
+            numItems = LootSlotsAndRecount(qualifying)
             if numItems == 0 then
                 return false
             end

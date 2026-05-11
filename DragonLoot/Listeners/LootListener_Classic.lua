@@ -38,11 +38,12 @@ local function OnLootOpened(_, autoLoot)
 
     isLootOpen = true
     ns.SuppressBlizzardLootFrame()
-    ns.LootFrame.Show(autoLoot)
+    local shown = ns.LootFrame.Show(autoLoot)
 
-    -- Only suppress DragonToast when the loot frame is actually visible.
-    -- Auto-loot returns early from Show() without displaying UI.
-    if not autoLoot then
+    -- Only suppress DragonToast when the loot window is actually visible.
+    -- With auto-loot enabled, Show() may still display the window for items
+    -- the engine cannot auto-loot (rolls, BoP confirms, dungeon chests).
+    if shown then
         ns.Addon:SendMessage("DRAGONTOAST_SUPPRESS", "DragonLoot")
     end
     ns.DebugPrint("LOOT_OPENED fired (Classic)")

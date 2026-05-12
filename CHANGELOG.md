@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/Xerrion/DragonLoot/compare/0.14.0...0.14.1) (2026-05-12)
+
+
+### ⚙️ Miscellaneous Tasks
+
+* ignore .deliverables/ orchestration scratchpad ([5a4ff23](https://github.com/Xerrion/DragonLoot/commit/5a4ff23365eefb45cfc97040f3f336811c84fb00))
+
 ## [0.14.0](https://github.com/Xerrion/DragonLoot/compare/0.13.0...0.14.0) (2026-05-11)
 
 

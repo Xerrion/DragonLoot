@@ -10,3 +10,6 @@ DragonLoot/Libs/
 
 # Release.sh
 release.sh
+
+# Orchestration scratchpad
+.deliverables/

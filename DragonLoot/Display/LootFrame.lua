@@ -13,6 +13,11 @@ local _, ns = ...
 
 local CreateFrame = CreateFrame
 local GameTooltip = GameTooltip
+local GameTooltip_ShowCompareItem = GameTooltip_ShowCompareItem
+local GetCVarBool = GetCVarBool
+local IsModifiedClick = IsModifiedClick
+local ShoppingTooltip1 = ShoppingTooltip1
+local ShoppingTooltip2 = ShoppingTooltip2
 local UIParent = UIParent
 local GetNumLootItems = GetNumLootItems
 local GetLootSlotInfo = GetLootSlotInfo
@@ -262,6 +267,45 @@ local function PositionAtCursor()
 end
 
 -------------------------------------------------------------------------------
+-- Item comparison tooltip helpers
+-------------------------------------------------------------------------------
+
+local function ShowCompareItem(self)
+    if not self._comparing then
+        self._comparing = true
+        GameTooltip_ShowCompareItem()
+    end
+end
+
+local function HideCompareItem(self)
+    if self._comparing then
+        self._comparing = false
+        if ShoppingTooltip1 then
+            ShoppingTooltip1:Hide()
+        end
+        if ShoppingTooltip2 then
+            ShoppingTooltip2:Hide()
+        end
+    end
+end
+
+local function ShouldShowCompareItem()
+    return IsModifiedClick("COMPAREITEMS") or GetCVarBool("alwaysCompareItems")
+end
+
+local function OnSlotCompareUpdate(self)
+    if ShouldShowCompareItem() then
+        -- Re-show if shopping tooltips were hidden externally (e.g. modifier state change)
+        if self._comparing and ShoppingTooltip1 and not ShoppingTooltip1:IsShown() then
+            self._comparing = false
+        end
+        ShowCompareItem(self)
+    else
+        HideCompareItem(self)
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Named slot interaction scripts (reusable / restorable after test mode)
 -------------------------------------------------------------------------------
 
@@ -277,6 +321,11 @@ local function OnSlotEnter(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetLootItem(self.slotIndex)
         GameTooltip:Show()
+
+        if ShouldShowCompareItem() then
+            ShowCompareItem(self)
+        end
+        self:SetScript("OnUpdate", OnSlotCompareUpdate)
     end
 
     -- Visual hover effects
@@ -299,6 +348,8 @@ local function OnSlotEnter(self)
 end
 
 local function OnSlotLeave(self)
+    self:SetScript("OnUpdate", nil)
+    HideCompareItem(self)
     GameTooltip:Hide()
 
     -- Restore visual state
@@ -443,6 +494,8 @@ local function ReleaseSlot(slot)
     slot.highlight:SetColorTexture(1, 1, 1, 0.15)
     slot._qr, slot._qg, slot._qb = nil, nil, nil
     slot._quality = nil
+    slot._comparing = nil
+    slot:SetScript("OnUpdate", nil)
 
     -- Restore real interaction scripts (test mode may have overridden them)
     slot:SetScript("OnClick", OnSlotClick)

@@ -55,6 +55,8 @@ files["DragonLoot/"] = {
         "InCombatLockdown", "hooksecurefunc",
         "InterfaceOptionsFrame_OpenToCategory", "Settings",
         "ShowUIPanel",
+        "IsModifiedClick", "GameTooltip_ShowCompareItem",
+        "GetCVarBool",
 
         -- WoW API - Loot
         "GetNumLootItems", "GetLootSlotInfo", "GetLootSlotLink", "GetLootSlotType",
@@ -73,6 +75,7 @@ files["DragonLoot/"] = {
         "LootFrame",
         "GroupLootFrame1", "GroupLootFrame2", "GroupLootFrame3", "GroupLootFrame4",
         "GroupLootContainer",
+        "ShoppingTooltip1", "ShoppingTooltip2",
 
         -- WoW Globals - Version detection
         "WOW_PROJECT_ID", "WOW_PROJECT_MAINLINE",

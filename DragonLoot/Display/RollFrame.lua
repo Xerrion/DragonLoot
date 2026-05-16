@@ -14,6 +14,11 @@ local _, ns = ...
 local CreateFrame = CreateFrame
 local C_Timer = C_Timer
 local GameTooltip = GameTooltip
+local GameTooltip_ShowCompareItem = GameTooltip_ShowCompareItem
+local GetCVarBool = GetCVarBool
+local IsModifiedClick = IsModifiedClick
+local ShoppingTooltip1 = ShoppingTooltip1
+local ShoppingTooltip2 = ShoppingTooltip2
 local UIParent = UIParent
 local GetLootRollItemInfo = GetLootRollItemInfo
 local GetLootRollItemLink = GetLootRollItemLink
@@ -498,6 +503,45 @@ local function OnRollButtonLeave()
 end
 
 -------------------------------------------------------------------------------
+-- Item comparison tooltip helpers
+-------------------------------------------------------------------------------
+
+local function ShowCompareItem(self)
+    if not self._comparing then
+        self._comparing = true
+        GameTooltip_ShowCompareItem()
+    end
+end
+
+local function HideCompareItem(self)
+    if self._comparing then
+        self._comparing = false
+        if ShoppingTooltip1 then
+            ShoppingTooltip1:Hide()
+        end
+        if ShoppingTooltip2 then
+            ShoppingTooltip2:Hide()
+        end
+    end
+end
+
+local function ShouldShowCompareItem()
+    return IsModifiedClick("COMPAREITEMS") or GetCVarBool("alwaysCompareItems")
+end
+
+local function OnIconCompareUpdate(self)
+    if ShouldShowCompareItem() then
+        -- Re-show if shopping tooltips were hidden externally (e.g. modifier state change)
+        if self._comparing and ShoppingTooltip1 and not ShoppingTooltip1:IsShown() then
+            self._comparing = false
+        end
+        ShowCompareItem(self)
+    else
+        HideCompareItem(self)
+    end
+end
+
+-------------------------------------------------------------------------------
 -- Icon tooltip handlers
 -------------------------------------------------------------------------------
 
@@ -513,10 +557,17 @@ local function OnIconEnter(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetLootRollItem(frame.rollID)
         GameTooltip:Show()
+
+        if ShouldShowCompareItem() then
+            ShowCompareItem(self)
+        end
+        self:SetScript("OnUpdate", OnIconCompareUpdate)
     end
 end
 
-local function OnIconLeave()
+local function OnIconLeave(self)
+    self:SetScript("OnUpdate", nil)
+    HideCompareItem(self)
     GameTooltip:Hide()
 end
 

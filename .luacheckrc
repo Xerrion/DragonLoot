@@ -56,6 +56,7 @@ files["DragonLoot/"] = {
         "InterfaceOptionsFrame_OpenToCategory", "Settings",
         "ShowUIPanel",
         "IsModifiedClick", "GameTooltip_ShowCompareItem",
+        "GetCVarBool",
 
         -- WoW API - Loot
         "GetNumLootItems", "GetLootSlotInfo", "GetLootSlotLink", "GetLootSlotType",

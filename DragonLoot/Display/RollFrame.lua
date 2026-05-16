@@ -1074,6 +1074,8 @@ local function ReleaseRollFrame(index)
     frame.testItemName = nil
     frame.testQuality = nil
     frame.rollID = nil
+    frame.iconFrame._comparing = nil
+    frame.iconFrame:SetScript("OnUpdate", nil)
     frame:Hide()
 end
 

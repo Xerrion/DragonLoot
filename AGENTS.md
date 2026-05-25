@@ -24,7 +24,7 @@ The repository is structured as a multi-addon project separating core logic, con
   - A separate companion addon loaded on-demand when the user opens the options interface.
   - Contains individual tabs for configuring appearance, animations, roll frame, and history settings, and embeds the custom `DragonWidgets` library.
 - **`spec/`** (Testing Suite)
-  - Contains the busted unit test suite (`Config_spec.lua`, `Lifecycle_spec.lua`) and a comprehensive WoW API mock harness (`wow_mock.lua`).
+  - Contains the busted unit test suite (`Config_spec.lua`, `Lifecycle_spec.lua`, `MasterLoot_spec.lua`) and a comprehensive WoW API mock harness (`wow_mock.lua`).
 
 ## Config Schema Reference
 

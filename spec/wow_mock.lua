@@ -482,6 +482,12 @@ function M.Reset()
             frame._scripts.OnEvent = nil
         end
     end
+
+    if type(UISpecialFrames) == "table" then
+        wipe(UISpecialFrames)
+    else
+        UISpecialFrames = {}
+    end
 end
 
 return M

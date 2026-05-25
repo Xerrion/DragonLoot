@@ -2,88 +2,103 @@
 
 ## Target Versions
 
-| Version | Interface | TOC Directive |
-|---------|-----------|---------------|
-| Retail | 110207, 120001, 120000 | `## Interface: 110207, 120001, 120000` |
-| TBC Anniversary | 20505 | `## Interface-BCC: 20505` |
-| Cata Classic | 40402 | `## Interface-Cata: 40402` |
-| MoP Classic | 50503 | `## Interface-Mists: 50503` |
+| Version         | Interface              | TOC Directive                          |
+| --------------- | ---------------------- | -------------------------------------- |
+| Retail          | 120005, 110207, 120000 | `## Interface: 120005, 110207, 120000` |
+| TBC Anniversary | 20505                  | `## Interface-BCC: 20505`              |
+| MoP Classic     | 50503                  | `## Interface-Mists: 50503`            |
 
-Version-specific files load via BigWigsMods packager comment directives (`#@retail@` / `#@tbc-anniversary@` / `#@version-mists@` / `#@version-cata@`) in the TOC.
+Version-specific files load via BigWigsMods packager comment directives (`#@retail@` / `#@non-retail@`) in the TOC.
+
+## Project Structure
+
+The repository is structured as a multi-addon project separating core logic, configuration companion, and testing/tooling:
+
+- **`DragonLoot/`** (Core Addon)
+  - `Core/`: Core bootstrap (`Init.lua`), addon lifecycle (`Lifecycle.lua`), AceDB database configurations, slash commands, and the minimap icon.
+  - `Display/`: Custom loot frames (`LootFrame.lua`), roll frames (`RollFrame.lua`), history window (`HistoryFrame.lua`), and associated UI/layout animations.
+  - `Listeners/`: Event listeners handling version-specific API differences (e.g., `LootListener_Retail.lua` vs. `LootListener_Classic.lua`). Uses packager directives (`#@retail@` / `#@non-retail@`) to load correct listeners.
+  - `Locales/`: Localized strings for translation support.
+  - `Libs/`: Embedded external libraries (Ace3, LibSharedMedia-3.0, LibAnimate, etc.).
+- **`DragonLoot_Options/`** (Load-on-Demand Configuration)
+  - A separate companion addon loaded on-demand when the user opens the options interface.
+  - Contains individual tabs for configuring appearance, animations, roll frame, and history settings, and embeds the custom `DragonWidgets` library.
+- **`spec/`** (Testing Suite)
+  - Contains the busted unit test suite (`Config_spec.lua`, `Lifecycle_spec.lua`, `MasterLoot_spec.lua`) and a comprehensive WoW API mock harness (`wow_mock.lua`).
 
 ## Config Schema Reference
 
 ### Appearance (`db.profile.appearance`)
 
-| Key | Type | Default |
-|-----|------|---------|
-| font | string | "Friz Quadrata TT" |
-| fontSize | number | 12 |
-| fontOutline | string | "OUTLINE" |
-| lootIconSize | number | 36 |
-| rollIconSize | number | 36 |
-| historyIconSize | number | 24 |
-| qualityBorder | boolean | true |
-| backgroundColor | table | {r=0.05,g=0.05,b=0.05} |
-| backgroundAlpha | number | 0.9 |
-| backgroundTexture | string | "Solid" |
-| borderColor | table | {r=0.3,g=0.3,b=0.3} |
-| borderSize | number | 1 |
-| borderTexture | string | "None" |
+| Key               | Type    | Default                |
+| ----------------- | ------- | ---------------------- |
+| font              | string  | "Friz Quadrata TT"     |
+| fontSize          | number  | 12                     |
+| fontOutline       | string  | "OUTLINE"              |
+| lootIconSize      | number  | 36                     |
+| rollIconSize      | number  | 36                     |
+| historyIconSize   | number  | 24                     |
+| qualityBorder     | boolean | true                   |
+| backgroundColor   | table   | {r=0.05,g=0.05,b=0.05} |
+| backgroundAlpha   | number  | 0.9                    |
+| backgroundTexture | string  | "Solid"                |
+| borderColor       | table   | {r=0.3,g=0.3,b=0.3}    |
+| borderSize        | number  | 1                      |
+| borderTexture     | string  | "None"                 |
 
 ### Animation (`db.profile.animation`)
 
-| Key | Type | Default |
-|-----|------|---------|
-| enabled | boolean | true |
-| openDuration | number | 0.3 |
-| closeDuration | number | 0.5 |
-| lootOpenAnim | string | "fadeIn" |
-| lootCloseAnim | string | "fadeOut" |
-| rollShowAnim | string | "slideInRight" |
-| rollHideAnim | string | "fadeOut" |
+| Key           | Type    | Default        |
+| ------------- | ------- | -------------- |
+| enabled       | boolean | true           |
+| openDuration  | number  | 0.3            |
+| closeDuration | number  | 0.5            |
+| lootOpenAnim  | string  | "fadeIn"       |
+| lootCloseAnim | string  | "fadeOut"      |
+| rollShowAnim  | string  | "slideInRight" |
+| rollHideAnim  | string  | "fadeOut"      |
 
 ### Roll Frame (`db.profile.rollFrame`)
 
-| Key | Type | Default |
-|-----|------|---------|
+| Key             | Type   | Default    |
+| --------------- | ------ | ---------- |
 | timerBarTexture | string | "Blizzard" |
 
 ### History (`db.profile.history`)
 
-| Key | Type | Default |
-|-----|------|---------|
-| enabled | boolean | true |
-| maxEntries | number | 50 |
-| autoShow | boolean | false |
-| lock | boolean | false |
-| trackDirectLoot | boolean | true |
-| minQuality | number | 2 |
+| Key             | Type    | Default |
+| --------------- | ------- | ------- |
+| enabled         | boolean | true    |
+| maxEntries      | number  | 50      |
+| autoShow        | boolean | false   |
+| lock            | boolean | false   |
+| trackDirectLoot | boolean | true    |
+| minQuality      | number  | 2       |
 
 ## Version-Specific API Differences
 
-| Aspect | Retail | Classic (TBC/Cata/MoP) |
-|--------|--------|------------------------|
-| GetLootSlotInfo returns | 10 | 6 |
-| GetLootRollItemInfo returns | 13 (incl canTransmog) | 12 |
-| C_LootHistory | Encounter-based | Roll-item indexed |
-| CANCEL_ALL_LOOT_ROLLS | Yes | No |
-| LOOT_READY event | Yes (fires after LOOT_OPENED) | No |
-| C_Loot.GetLootRollDuration | Yes | No |
-| Loot listener | LootListener_Retail | LootListener_Classic |
-| Roll listener | RollListener_Retail | RollListener_Classic |
-| History listener | HistoryListener_Retail | HistoryListener_Classic |
+| Aspect                      | Retail                        | Classic (TBC/MoP)       |
+| --------------------------- | ----------------------------- | ----------------------- |
+| GetLootSlotInfo returns     | 10                            | 6                       |
+| GetLootRollItemInfo returns | 13 (incl canTransmog)         | 12                      |
+| C_LootHistory               | Encounter-based               | Roll-item indexed       |
+| CANCEL_ALL_LOOT_ROLLS       | Yes                           | No                      |
+| LOOT_READY event            | Yes (fires after LOOT_OPENED) | No                      |
+| C_Loot.GetLootRollDuration  | Yes                           | No                      |
+| Loot listener               | LootListener_Retail           | LootListener_Classic    |
+| Roll listener               | RollListener_Retail           | RollListener_Classic    |
+| History listener            | HistoryListener_Retail        | HistoryListener_Classic |
 
 ## DragonToast Integration
 
 ### Messages Sent by DragonLoot
 
-| Message | Payload | When |
-|---------|---------|------|
-| `DRAGONTOAST_SUPPRESS` | `"DragonLoot"` (source string) | Loot window opens |
-| `DRAGONTOAST_UNSUPPRESS` | `"DragonLoot"` (source string) | Loot window closes |
-| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | A player wins a roll |
-| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below) | Individual roll result |
+| Message                   | Payload                        | When                   |
+| ------------------------- | ------------------------------ | ---------------------- |
+| `DRAGONTOAST_SUPPRESS`    | `"DragonLoot"` (source string) | Loot window opens      |
+| `DRAGONTOAST_UNSUPPRESS`  | `"DragonLoot"` (source string) | Loot window closes     |
+| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below)   | A player wins a roll   |
+| `DRAGONTOAST_QUEUE_TOAST` | toast data table (see below)   | Individual roll result |
 
 #### Roll Won Toast Data
 
@@ -134,17 +149,17 @@ Version-specific files load via BigWigsMods packager comment directives (`#@reta
 
 DragonLoot ships a `justfile` in addition to `.mise.toml`.
 
-| Command | Description |
-|---------|-------------|
-| `just` | List all recipes |
-| `just test` | Run busted test suite |
-| `just lint` | Run luacheck |
-| `just fmt` | Format Lua with StyLua |
+| Command          | Description                              |
+| ---------------- | ---------------------------------------- |
+| `just`           | List all recipes                         |
+| `just test`      | Run busted test suite                    |
+| `just lint`      | Run luacheck                             |
+| `just fmt`       | Format Lua with StyLua                   |
 | `just fmt-check` | Check formatting without modifying files |
-| `just check` | Run lint + test |
+| `just check`     | Run fmt-check + lint + test              |
 
 StyLua config (`.stylua.toml`): 120-char width, 4-space indent, double quotes, Unix line endings, always parenthesized calls.
-
+ 
 ## Known Gotchas
 
 1. **CHAT_MSG_LOOT patterns are localized** - parsing requires Lua pattern matching on localized strings
@@ -153,46 +168,47 @@ StyLua config (`.stylua.toml`): 120-char width, 4-space indent, double quotes, U
 4. **Retail API field names** - `winner.playerClass` not `winner.className` in C_LootHistory
 5. **Classic double-open** - LOOT_OPENED can fire twice; guard with `if isLootOpen then return end`
 6. **Roll data availability** - Fetch item info via GetLootRollItemInfo BEFORE calling CancelRoll, as data is lost after cancel
-7. **Local dev listener loading** - All packager directives are comments locally; both Retail and Classic listeners load. Version guards (`WOW_PROJECT_ID` checks) in each file handle this correctly
+7. **Local dev listener loading** - Packager directives (`#@retail@`, `#@non-retail@`) are plain comments locally, so both Retail and Classic listeners are loaded in dev. `IsRetail` / `IsClassic` version guards inside each file ensure only the correct one activates
 8. **NOTIFICATION_STATE_MAP vs ROLL_STATE_MAP** - `ROLL_STATE_MAP` in HistoryListener_Retail maps Transmog->Greed (lossy) for history display. `ns.NOTIFICATION_STATE_MAP` in RollManager preserves Transmog as a distinct roll type for notifications
 9. **Classic LOOT_HISTORY_ROLL_CHANGED timing** - May fire before roll value is assigned; ProcessClassicRollResult skips non-Pass rolls with nil roll values and relies on a later re-fire with the value
 10. **Roll result dedup** - Both Retail and Classic listeners use `notifiedRollResults` tables to prevent duplicate notifications per player per drop; tables are wiped on history clear and shutdown
 11. **CHAT_MSG_LOOT GlobalStrings differ by version** - TBC self-loot patterns have trailing periods, Retail does not. Build patterns from actual GlobalString values at runtime, never hardcode
+12. **Classic Master Loot No-Payload Constraint** - The OPEN_MASTER_LOOT_LIST event has no payload. To handle this, LootFrame.lua:OnSlotClick stashes the slot index in s.pendingMasterLootSlot immediately before calling LootSlot(slotIndex). MasterLootListener_Classic consumes this value during the event. This state is carefully cleaned up on list consumption, window close, or addon disable to prevent dangling/leaking references.
 
 ## Labels
 
-| Label | Description |
-| --- | --- |
-| **Category** | |
-| `C-Bug` | Unexpected or incorrect behavior |
-| `C-Feature` | New feature or enhancement |
-| `C-Performance` | Speed, memory, or efficiency improvement |
-| `C-Usability` | UX improvement, better defaults, polish |
-| `C-Code-Quality` | Refactor, cleanup, technical debt |
-| `C-Documentation` | Docs, README, AGENTS.md, comments |
-| `C-Localization` | Translation and locale support |
-| **Area** | |
-| `A-Core` | Addon lifecycle, slash commands, minimap icon |
-| `A-LootWindow` | Custom loot frame and loot animations |
-| `A-History` | Loot history frame and history listeners |
-| `A-RollFrame` | Roll frames, timer bars, roll manager |
-| `A-Config` | Options table, config window, AceDB |
-| `A-Listeners` | Event listeners and version-specific loot parsing |
-| `A-Integration` | DragonToast messaging and cross-addon APIs |
-| `A-Appearance` | Fonts, textures, borders, backdrops, animations |
-| `A-CI` | Workflows, packaging, release pipeline |
-| **Difficulty** | |
-| `D-Good-First-Issue` | Good for newcomers or contributors |
-| `D-Straightforward` | Clear scope, low risk |
-| `D-Complex` | Multiple files or systems involved |
-| `D-Expert` | Deep WoW API knowledge or tricky edge cases |
-| **Platform** | |
-| `P-Retail` | Retail-specific (11.x / 12.x) |
-| `P-TBC-Anniversary` | TBC Anniversary Classic |
-| `P-MoP-Classic` | Mists of Pandaria Classic |
-| `P-All-Versions` | Affects all supported WoW versions |
-| **Status** | |
-| `S-Needs-Triage` | New issue awaiting review |
+| Label                | Description                                       |
+| -------------------- | ------------------------------------------------- |
+| **Category**         |                                                   |
+| `C-Bug`              | Unexpected or incorrect behavior                  |
+| `C-Feature`          | New feature or enhancement                        |
+| `C-Performance`      | Speed, memory, or efficiency improvement          |
+| `C-Usability`        | UX improvement, better defaults, polish           |
+| `C-Code-Quality`     | Refactor, cleanup, technical debt                 |
+| `C-Documentation`    | Docs, README, AGENTS.md, comments                 |
+| `C-Localization`     | Translation and locale support                    |
+| **Area**             |                                                   |
+| `A-Core`             | Addon lifecycle, slash commands, minimap icon     |
+| `A-LootWindow`       | Custom loot frame and loot animations             |
+| `A-History`          | Loot history frame and history listeners          |
+| `A-RollFrame`        | Roll frames, timer bars, roll manager             |
+| `A-Config`           | Options table, config window, AceDB               |
+| `A-Listeners`        | Event listeners and version-specific loot parsing |
+| `A-Integration`      | DragonToast messaging and cross-addon APIs        |
+| `A-Appearance`       | Fonts, textures, borders, backdrops, animations   |
+| `A-CI`               | Workflows, packaging, release pipeline            |
+| **Difficulty**       |                                                   |
+| `D-Good-First-Issue` | Good for newcomers or contributors                |
+| `D-Straightforward`  | Clear scope, low risk                             |
+| `D-Complex`          | Multiple files or systems involved                |
+| `D-Expert`           | Deep WoW API knowledge or tricky edge cases       |
+| **Platform**         |                                                   |
+| `P-Retail`           | Retail-specific (11.x / 12.x)                     |
+| `P-TBC-Anniversary`  | TBC Anniversary Classic                           |
+| `P-MoP-Classic`      | Mists of Pandaria Classic                         |
+| `P-All-Versions`     | Affects all supported WoW versions                |
+| **Status**           |                                                   |
+| `S-Needs-Triage`     | New issue awaiting review                         |
 
 ## GitHub Projects
 

@@ -61,6 +61,7 @@ files["DragonLoot/"] = {
         -- WoW API - Loot
         "GetNumLootItems", "GetLootSlotInfo", "GetLootSlotLink", "GetLootSlotType",
         "LootSlot", "CloseLoot", "IsFishingLoot", "C_Loot",
+        "GetMasterLootCandidate", "GiveMasterLoot", "IsMasterLooter",
 
         -- WoW API - Loot Roll
         "GetLootRollItemInfo", "GetLootRollItemLink", "RollOnLoot", "GetLootRollTimeLeft",
@@ -76,6 +77,7 @@ files["DragonLoot/"] = {
         "GroupLootFrame1", "GroupLootFrame2", "GroupLootFrame3", "GroupLootFrame4",
         "GroupLootContainer",
         "ShoppingTooltip1", "ShoppingTooltip2",
+        "UISpecialFrames",
 
         -- WoW Globals - Version detection
         "WOW_PROJECT_ID", "WOW_PROJECT_MAINLINE",
@@ -98,6 +100,15 @@ files["DragonLoot/"] = {
 
         -- Companion addons
         "DragonLoot_Options",
+    },
+}
+
+-----------------------------------------------------------------------
+-- spec (busted test suite + WoW API mock harness)
+-----------------------------------------------------------------------
+files["spec/"] = {
+    globals = {
+        "UISpecialFrames",
     },
 }
 

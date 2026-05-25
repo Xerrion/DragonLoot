@@ -70,6 +70,7 @@ local defaults = {
             minQuality = 2, -- Uncommon
             entrySpacing = 2,
             contentPadding = 6,
+            rowHeightPadding = 6,
             showRollDetails = true,
         },
 

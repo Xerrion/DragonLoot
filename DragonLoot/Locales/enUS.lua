@@ -260,6 +260,7 @@ L["Recording"] = true
 L["Auto Show on Loot"] = true
 L["Enable History"] = true
 L["Entry Spacing"] = true
+L["Row Height Padding"] = true
 L["History"] = true
 L["Max Entries"] = true
 L["Prevent the history frame from being moved"] = true

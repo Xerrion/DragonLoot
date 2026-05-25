@@ -102,11 +102,8 @@ StaticPopupDialogs["DRAGONLOOT_CONFIRM_LOOT_ROLL"] = {
             return
         end
         ConfirmLootRoll(self.data.rollID, self.data.rollType)
-        -- Hide frame after confirming BoP roll if configured
-        local db = ns.Addon.db
-        if db and db.profile and db.profile.rollFrame and db.profile.rollFrame.hideOnVote then
-            HideAfterVote(self.data.rollID)
-        end
+        -- Hide frame after confirming BoP roll
+        HideAfterVote(self.data.rollID)
     end,
     timeout = 0,
     whileDead = 1,

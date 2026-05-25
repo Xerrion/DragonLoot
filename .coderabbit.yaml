@@ -6,11 +6,11 @@ language: en-US
 inheritance: true
 
 tone_instructions: >-
-  Review WoW addon Lua code. Focus on nil safety, global leaks,
+  Review WoW addon Lua code. Focus on nil safety, global leaks, best practices,
   event hygiene, and taint risks. Skip style - luacheck handles it.
 
 reviews:
-  profile: chill
+  profile: assertive
   high_level_summary: true
   poem: false
   sequence_diagrams: false

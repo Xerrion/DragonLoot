@@ -133,21 +133,6 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
     layoutWidgets[#layoutWidgets + 1] = lockToggle
     innerY = LC.AnchorWidget(lockToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
-    local hideOnVoteToggle = W.CreateToggle(content, {
-        label = L["Hide After Voting"],
-        -- stylua: ignore
-        tooltip = L["Hide the roll frame after you cast your vote. The roll continues in the background"
-            .. " and notifications still fire."],
-        get = function()
-            return db.profile.rollFrame.hideOnVote
-        end,
-        set = function(value)
-            db.profile.rollFrame.hideOnVote = value
-        end,
-    })
-    layoutWidgets[#layoutWidgets + 1] = hideOnVoteToggle
-    innerY = LC.AnchorWidget(hideOnVoteToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
-
     local centerHBtn = W.CreateButton(content, {
         text = L["Center Horizontally"],
         width = 130,

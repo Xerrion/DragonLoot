@@ -158,15 +158,13 @@ local function CreateContent(parent)
     local lootY = -LC.SECTION_PADDING_TOP
 
     local lootOpenDropdown
-    lootY, lootOpenDropdown = CreateAnimDropdown(
-        lootContent, db, lootY, L["Open Animation"], "lootOpenAnim", GetEntranceValues
-    )
+    lootY, lootOpenDropdown =
+        CreateAnimDropdown(lootContent, db, lootY, L["Open Animation"], "lootOpenAnim", GetEntranceValues)
     animWidgets[#animWidgets + 1] = lootOpenDropdown
 
     local lootCloseDropdown
-    lootY, lootCloseDropdown = CreateAnimDropdown(
-        lootContent, db, lootY, L["Close Animation"], "lootCloseAnim", GetExitValues
-    )
+    lootY, lootCloseDropdown =
+        CreateAnimDropdown(lootContent, db, lootY, L["Close Animation"], "lootCloseAnim", GetExitValues)
     animWidgets[#animWidgets + 1] = lootCloseDropdown
 
     lootSection:SetContentHeight(math_abs(lootY) + LC.SECTION_PADDING_BOTTOM)
@@ -180,15 +178,13 @@ local function CreateContent(parent)
     local rollY = -LC.SECTION_PADDING_TOP
 
     local rollShowDropdown
-    rollY, rollShowDropdown = CreateAnimDropdown(
-        rollContent, db, rollY, L["Show Animation"], "rollShowAnim", GetEntranceValues
-    )
+    rollY, rollShowDropdown =
+        CreateAnimDropdown(rollContent, db, rollY, L["Show Animation"], "rollShowAnim", GetEntranceValues)
     animWidgets[#animWidgets + 1] = rollShowDropdown
 
     local rollHideDropdown
-    rollY, rollHideDropdown = CreateAnimDropdown(
-        rollContent, db, rollY, L["Hide Animation"], "rollHideAnim", GetExitValues
-    )
+    rollY, rollHideDropdown =
+        CreateAnimDropdown(rollContent, db, rollY, L["Hide Animation"], "rollHideAnim", GetExitValues)
     animWidgets[#animWidgets + 1] = rollHideDropdown
 
     rollSection:SetContentHeight(math_abs(rollY) + LC.SECTION_PADDING_BOTTOM)

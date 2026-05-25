@@ -164,7 +164,17 @@ local function GetHistoryIconSize()
 end
 
 local function GetEntryHeight()
-    return GetHistoryIconSize() + 6
+    local historyDB = GetHistoryDB()
+    local padding = historyDB and historyDB.rowHeightPadding or 6
+    return GetHistoryIconSize() + padding
+end
+
+local function AlignEntryHeader(entry)
+    local entryHeight = GetEntryHeight()
+    local iconSize = GetHistoryIconSize()
+    local iconOffset = (entryHeight - iconSize) / 2
+    entry.icon:ClearAllPoints()
+    entry.icon:SetPoint("TOPLEFT", entry, "TOPLEFT", 2, -iconOffset)
 end
 
 local function ApplyLayoutOffsets(frame)
@@ -288,7 +298,7 @@ local function CreateEntryFrame()
     entry.icon = entry:CreateTexture(nil, "ARTWORK")
     local iconSize = GetHistoryIconSize()
     entry.icon:SetSize(iconSize, iconSize)
-    entry.icon:SetPoint("LEFT", entry, "LEFT", 2, 0)
+    AlignEntryHeader(entry)
     entry.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
     -- Icon border
@@ -476,7 +486,9 @@ end
 -------------------------------------------------------------------------------
 
 local function OnEntryEnter(self)
-    if not self.itemLink then return end
+    if not self.itemLink then
+        return
+    end
 
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetHyperlink(self.itemLink)
@@ -492,7 +504,7 @@ local function OnEntryEnter(self)
             local aPass = (a.rollType == 0) or not a.roll
             local bPass = (b.rollType == 0) or not b.roll
             if aPass ~= bPass then
-                return not aPass  -- non-pass first
+                return not aPass -- non-pass first
             end
             return (a.roll or 0) > (b.roll or 0)
         end)
@@ -608,6 +620,14 @@ end
 -------------------------------------------------------------------------------
 
 local function PopulateEntry(entry, data)
+    if not entry or not data then
+        return
+    end
+
+    local iconSize = GetHistoryIconSize()
+    entry.icon:SetSize(iconSize, iconSize)
+    AlignEntryHeader(entry)
+
     entry.itemLink = data.itemLink
     entry.timestamp = data.timestamp
     entry.wallTime = data.wallTime
@@ -1118,6 +1138,7 @@ function ns.HistoryFrame.ApplySettings()
         if entry:IsShown() then
             entry:SetHeight(entryHeight)
             entry.icon:SetSize(iconSize, iconSize)
+            AlignEntryHeader(entry)
             entry.itemName:SetFont(fontPath, fontSize - 1, fontOutline)
             DU.ApplyFontShadow(entry.itemName, ns.Addon.db)
             entry.winnerName:SetFont(fontPath, fontSize - 2, fontOutline)

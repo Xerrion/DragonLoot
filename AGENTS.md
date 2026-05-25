@@ -66,14 +66,15 @@ The repository is structured as a multi-addon project separating core logic, con
 
 ### History (`db.profile.history`)
 
-| Key             | Type    | Default |
-| --------------- | ------- | ------- |
-| enabled         | boolean | true    |
-| maxEntries      | number  | 50      |
-| autoShow        | boolean | false   |
-| lock            | boolean | false   |
-| trackDirectLoot | boolean | true    |
-| minQuality      | number  | 2       |
+| Key              | Type    | Default |
+| ---------------- | ------- | ------- |
+| enabled          | boolean | true    |
+| maxEntries       | number  | 50      |
+| autoShow         | boolean | false   |
+| lock             | boolean | false   |
+| trackDirectLoot  | boolean | true    |
+| minQuality       | number  | 2       |
+| rowHeightPadding | number  | 6       |
 
 ## Version-Specific API Differences
 

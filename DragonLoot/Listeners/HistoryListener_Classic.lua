@@ -152,11 +152,13 @@ local function RefreshFromAPI()
             return at > bt
         end)
 
-        local maxEntries = (ns.Addon
+        local maxEntries = (
+            ns.Addon
             and ns.Addon.db
             and ns.Addon.db.profile
             and ns.Addon.db.profile.history
-            and ns.Addon.db.profile.history.maxEntries) or 100
+            and ns.Addon.db.profile.history.maxEntries
+        ) or 100
         while #entries > maxEntries do
             entries[#entries] = nil
         end

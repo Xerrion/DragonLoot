@@ -60,12 +60,12 @@ L["Toggle on/off"] = true
 L["DragonLoot_Options addon not found. Please ensure it is installed."] = true
 
 -- Core/ElvUICompat.lua
-L["ElvUI's loot window is enabled and conflicts with DragonLoot."
-    .. " Disable ElvUI's loot modules and reload now?"] = true
-L["ElvUI's group-loot roll frames are enabled and conflict with DragonLoot."
-    .. " Disable ElvUI's roll frames and reload now?"] = true
-L["ElvUI's loot window and group-loot roll frames are enabled and conflict with DragonLoot."
-    .. " Disable both ElvUI modules and reload now?"] = true
+L["ElvUI's loot window is enabled and conflicts with DragonLoot." .. " Disable ElvUI's loot modules and reload now?"] =
+    true
+L["ElvUI's group-loot roll frames are enabled and conflict with DragonLoot." .. " Disable ElvUI's roll frames and reload now?"] =
+    true
+L["ElvUI's loot window and group-loot roll frames are enabled and conflict with DragonLoot." .. " Disable both ElvUI modules and reload now?"] =
+    true
 
 -- Display/LootFrame.lua
 L["BoE"] = true
@@ -260,6 +260,7 @@ L["Recording"] = true
 L["Auto Show on Loot"] = true
 L["Enable History"] = true
 L["Entry Spacing"] = true
+L["Row Height Padding"] = true
 L["History"] = true
 L["Max Entries"] = true
 L["Prevent the history frame from being moved"] = true

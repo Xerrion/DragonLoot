@@ -70,6 +70,7 @@ local defaults = {
             minQuality = 2, -- Uncommon
             entrySpacing = 2,
             contentPadding = 6,
+            rowHeightPadding = 6,
             showRollDetails = true,
         },
 
@@ -129,7 +130,7 @@ local defaults = {
 
     char = {
         history = {
-            entries = {},   -- persisted loot history entries; populated at runtime
+            entries = {}, -- persisted loot history entries; populated at runtime
             schemaVersion = 4,
         },
     },

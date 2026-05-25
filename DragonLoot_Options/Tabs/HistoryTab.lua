@@ -241,6 +241,23 @@ local function CreateDisplaySection(parent, db, yOffset)
     })
     innerY = LC.AnchorWidget(contentPaddingSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
+    -- Slider: Row Height Padding
+    local rowHeightPaddingSlider = W.CreateSlider(content, {
+        label = L["Row Height Padding"],
+        min = 2,
+        max = 20,
+        step = 1,
+        format = "%d",
+        get = function()
+            return db.profile.history.rowHeightPadding or 6
+        end,
+        set = function(value)
+            db.profile.history.rowHeightPadding = value
+            ApplyHistorySettings()
+        end,
+    })
+    innerY = LC.AnchorWidget(rowHeightPaddingSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
     -- Clear History button (destructive action)
     local clearBtn = W.CreateButton(content, {
         text = L["Clear History"],

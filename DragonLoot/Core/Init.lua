@@ -208,10 +208,14 @@ local function SuppressBlizzardRollFrames()
         if _G.GroupLootContainer_AddRoll then
             hooksecurefunc("GroupLootContainer_AddRoll", function()
                 if suppressRollContainer then
-                    if GroupLootContainer then GroupLootContainer:Hide() end
+                    if GroupLootContainer then
+                        GroupLootContainer:Hide()
+                    end
                     for i = 1, 4 do
                         local f = _G["GroupLootFrame" .. i]
-                        if f then f:Hide() end
+                        if f then
+                            f:Hide()
+                        end
                     end
                 end
             end)

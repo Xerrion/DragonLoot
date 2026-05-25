@@ -486,7 +486,9 @@ end
 -------------------------------------------------------------------------------
 
 local function OnEntryEnter(self)
-    if not self.itemLink then return end
+    if not self.itemLink then
+        return
+    end
 
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetHyperlink(self.itemLink)
@@ -502,7 +504,7 @@ local function OnEntryEnter(self)
             local aPass = (a.rollType == 0) or not a.roll
             local bPass = (b.rollType == 0) or not b.roll
             if aPass ~= bPass then
-                return not aPass  -- non-pass first
+                return not aPass -- non-pass first
             end
             return (a.roll or 0) > (b.roll or 0)
         end)

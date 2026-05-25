@@ -224,10 +224,29 @@ local function CreateFrameSection(parent, db, yOffset, layoutWidgets, reapplySub
     innerY = LC.AnchorWidget(frameMinHeightSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Scale"], L["Roll frame scale"], "scale", 0.5, 2, 0.05, "%.2f", layoutWidgets
+        content,
+        db,
+        innerY,
+        L["Scale"],
+        L["Roll frame scale"],
+        "scale",
+        0.5,
+        2,
+        0.05,
+        "%.2f",
+        layoutWidgets
     )
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Frame Width"], L["Width of the roll frame"], "frameWidth", 200, 500, 10, "%d",
+        content,
+        db,
+        innerY,
+        L["Frame Width"],
+        L["Width of the roll frame"],
+        "frameWidth",
+        200,
+        500,
+        10,
+        "%d",
         layoutWidgets
     )
 
@@ -353,8 +372,17 @@ local function CreateTimerBarSection(parent, db, yOffset, layoutWidgets, reapply
     innerY = LC.AnchorWidget(minimalHeightSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Timer Bar Spacing"], L["Space between item row and timer bar"], "timerBarSpacing",
-        0, 16, 1, "%d", layoutWidgets
+        content,
+        db,
+        innerY,
+        L["Timer Bar Spacing"],
+        L["Space between item row and timer bar"],
+        "timerBarSpacing",
+        0,
+        16,
+        1,
+        "%d",
+        layoutWidgets
     )
 
     local textureDropdown = W.CreateDropdown(content, {
@@ -508,20 +536,56 @@ local function CreateButtonsSection(parent, db, yOffset, layoutWidgets)
     local innerY = -LC.SECTION_PADDING_TOP
 
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Button Size"], L["Size of Need/Greed/Pass buttons"], "buttonSize", 16, 36, 1, "%d",
+        content,
+        db,
+        innerY,
+        L["Button Size"],
+        L["Size of Need/Greed/Pass buttons"],
+        "buttonSize",
+        16,
+        36,
+        1,
+        "%d",
         layoutWidgets
     )
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Button Spacing"], L["Spacing between roll buttons"], "buttonSpacing", 0, 12, 1, "%d",
+        content,
+        db,
+        innerY,
+        L["Button Spacing"],
+        L["Spacing between roll buttons"],
+        "buttonSpacing",
+        0,
+        12,
+        1,
+        "%d",
         layoutWidgets
     )
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Frame Spacing"], L["Spacing between multiple roll frames"], "frameSpacing", 0, 16, 1,
-        "%d", layoutWidgets
+        content,
+        db,
+        innerY,
+        L["Frame Spacing"],
+        L["Spacing between multiple roll frames"],
+        "frameSpacing",
+        0,
+        16,
+        1,
+        "%d",
+        layoutWidgets
     )
     innerY = CreateLayoutSlider(
-        content, db, innerY, L["Content Padding"], L["Inner padding of the roll frame"], "contentPadding", 0, 12, 1,
-        "%d", layoutWidgets
+        content,
+        db,
+        innerY,
+        L["Content Padding"],
+        L["Inner padding of the roll frame"],
+        "contentPadding",
+        0,
+        12,
+        1,
+        "%d",
+        layoutWidgets
     )
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)

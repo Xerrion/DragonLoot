@@ -130,7 +130,7 @@ local defaults = {
 
     char = {
         history = {
-            entries = {},   -- persisted loot history entries; populated at runtime
+            entries = {}, -- persisted loot history entries; populated at runtime
             schemaVersion = 4,
         },
     },

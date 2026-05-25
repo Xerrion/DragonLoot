@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.15.0](https://github.com/Xerrion/DragonLoot/compare/0.14.0...0.15.0) (2026-05-25)
+
+
+### 🚀 Features
+
+* add custom Master Loot candidate picker for Classic flavors ([#166](https://github.com/Xerrion/DragonLoot/issues/166)) ([aa427b0](https://github.com/Xerrion/DragonLoot/commit/aa427b00f4024f311a72dd82fd8acb24ca390dda))
+* add item comparison tooltips to loot and roll frames ([#162](https://github.com/Xerrion/DragonLoot/issues/162)) ([#163](https://github.com/Xerrion/DragonLoot/issues/163)) ([7c4cd46](https://github.com/Xerrion/DragonLoot/commit/7c4cd46e090c3d635cff1cfec008b8628c15bffb))
+
+
+### 🐛 Bug Fixes
+
+* **history:** resolve overlapping rows with adjustable padding ([#165](https://github.com/Xerrion/DragonLoot/issues/165)) ([#168](https://github.com/Xerrion/DragonLoot/issues/168)) ([65e00af](https://github.com/Xerrion/DragonLoot/commit/65e00afb78b26b4247a16116425b226ad693c986))
+* **roll:** always hide roll frame on vote to prevent queuing lock ([#161](https://github.com/Xerrion/DragonLoot/issues/161)) ([#167](https://github.com/Xerrion/DragonLoot/issues/167)) ([7cb8783](https://github.com/Xerrion/DragonLoot/commit/7cb878310953b26ea9e84d79d01c20f0930a8ef0))
+
+
+### ⚙️ Miscellaneous Tasks
+
+* ignore .deliverables/ orchestration scratchpad ([5a4ff23](https://github.com/Xerrion/DragonLoot/commit/5a4ff23365eefb45cfc97040f3f336811c84fb00))
+
 ## [0.14.0](https://github.com/Xerrion/DragonLoot/compare/0.13.0...0.14.0) (2026-05-11)
 
 

@@ -18,6 +18,12 @@ ns.ADDON_NAME = ADDON_NAME
 ns.ADDON_TITLE = "DragonLoot"
 ns.VERSION = "@project-version@"
 
+-- Centralized version helpers. WOW_PROJECT_MAINLINE identifies Retail;
+-- everything else (TBC Anniversary, Cata Classic, MoP Classic, Classic Era)
+-- is treated as Classic for API-shape purposes.
+ns.IsRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
+ns.IsClassic = not ns.IsRetail
+
 -- Color constants
 ns.COLOR_GOLD = "|cffffd700"
 ns.COLOR_GREEN = "|cff00ff00"
@@ -50,6 +56,8 @@ ns.RollManager = {}
 ns.RollListener = {}
 ns.HistoryFrame = {}
 ns.HistoryListener = {}
+ns.MasterLootFrame = {}
+ns.MasterLootListener = {}
 ns.LootHistoryChat = {}
 ns.ConfigWindow = {}
 ns.MinimapIcon = {}
@@ -147,6 +155,10 @@ local function SuppressBlizzardLootFrame()
     if not LootFrame then
         return
     end
+    -- UnregisterAllEvents covers the stock master loot flow on Classic too:
+    -- LootFrame owns OPEN_MASTER_LOOT_LIST and is the only frame that shows
+    -- MasterLooterFrame, so silencing LootFrame's events prevents the default
+    -- master loot popup from appearing without touching MasterLooterFrame.
     LootFrame:UnregisterAllEvents()
     LootFrame:Hide()
 
@@ -232,6 +244,11 @@ local function RestoreBlizzardLootFrame()
     -- by Blizzard's own OnShow handler when the frame next shows.
     LootFrame:RegisterEvent("LOOT_OPENED")
     LootFrame:RegisterEvent("LOOT_CLOSED")
+    -- OPEN_MASTER_LOOT_LIST is a base-load event on Classic only; on Retail
+    -- the master loot UI is owned by a different frame.
+    if ns.IsClassic then
+        LootFrame:RegisterEvent("OPEN_MASTER_LOOT_LIST")
+    end
 end
 
 local function RestoreBlizzardRollFrames()
@@ -284,6 +301,8 @@ local MODULES = {
     { name = "HistoryListener", passAddon = true },
     { name = "LootHistoryChat", passAddon = true },
     { name = "Listeners", passAddon = true },
+    { name = "MasterLootFrame" },
+    { name = "MasterLootListener" },
 }
 
 function Addon:OnInitialize()

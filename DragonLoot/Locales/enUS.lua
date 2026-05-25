@@ -82,6 +82,10 @@ L["iLvl"] = true
 L["Show Item Level"] = true
 L["Show item level overlay on roll frame icon"] = true
 
+-- Display/MasterLootFrame.lua
+L["Cancel"] = true
+L["Master Loot"] = true
+
 -- Display/RollManager.lua (shared roll-type labels via ns.RollTypeNames)
 L["Disenchant"] = true
 L["Greed"] = true

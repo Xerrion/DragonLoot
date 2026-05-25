@@ -46,6 +46,59 @@ function PlaySoundFile() end
 function hooksecurefunc() end
 
 -------------------------------------------------------------------------------
+-- Master loot / group composition mocks
+--
+-- Tests configure these by mutating the M._masterLoot table (candidates by
+-- [slot][index] -> name) and the M._group table (counts, master-looter flag,
+-- per-unit class info). Defaults assume a solo player who is the master
+-- looter, mirroring the simplest test scenario.
+-------------------------------------------------------------------------------
+
+M._masterLoot = {
+    candidates = {}, -- candidates[slot][index] = "PlayerName"
+    given = {}, -- recorded GiveMasterLoot(slot, index) calls
+}
+
+M._group = {
+    numRaid = 0,
+    numParty = 0,
+    isMasterLooter = true,
+    units = {}, -- units[unitName] = { className = "WARRIOR", classFile = "WARRIOR", classID = 1 }
+}
+
+function GetMasterLootCandidate(slot, index)
+    local slotTable = M._masterLoot.candidates[slot]
+    if not slotTable then
+        return nil
+    end
+    return slotTable[index]
+end
+
+function GiveMasterLoot(slot, index)
+    M._masterLoot.given[#M._masterLoot.given + 1] = { slot = slot, index = index }
+end
+
+function GetNumRaidMembers()
+    return M._group.numRaid
+end
+
+function GetNumPartyMembers()
+    return M._group.numParty
+end
+
+function IsMasterLooter()
+    return M._group.isMasterLooter and true or false
+end
+
+function UnitClass(unit)
+    local info = M._group.units[unit]
+    if not info then
+        return nil, nil, nil
+    end
+    return info.className, info.classFile, info.classID
+end
+
+-------------------------------------------------------------------------------
 -- WoW version constants
 -------------------------------------------------------------------------------
 
@@ -111,6 +164,10 @@ format = string.format
 -- Frame mock (minimal)
 -------------------------------------------------------------------------------
 
+-- Registry of every mock frame created, so M.FireEvent can dispatch to all
+-- frames that registered a given event.
+local mockFrames = {}
+
 local function CreateMockFrame()
     local frame = {
         _shown = false,
@@ -135,12 +192,56 @@ local function CreateMockFrame()
     function frame.SetMovable() end
     function frame.EnableMouse() end
     function frame.SetFrameStrata() end
-    function frame.SetScript() end
+    function frame:SetScript(script, handler)
+        self._scripts[script] = handler
+    end
+    function frame:GetScript(script)
+        return self._scripts[script]
+    end
     function frame.CreateTexture()
-        return {}
+        return {
+            SetAllPoints = function() end,
+            SetPoint = function() end,
+            ClearAllPoints = function() end,
+            SetColorTexture = function() end,
+            SetTexture = function() end,
+            SetVertexColor = function() end,
+            SetTexCoord = function() end,
+            Hide = function() end,
+            Show = function() end,
+        }
     end
     function frame.CreateFontString()
-        return { SetFont = function() end, SetText = function() end }
+        return {
+            SetFont = function() end,
+            SetText = function() end,
+            SetPoint = function() end,
+            ClearAllPoints = function() end,
+            SetJustifyH = function() end,
+            SetJustifyV = function() end,
+            SetWordWrap = function() end,
+            SetTextColor = function() end,
+            SetShadowOffset = function() end,
+            SetShadowColor = function() end,
+        }
+    end
+    function frame.RegisterForClicks() end
+    function frame.SetBackdrop() end
+    function frame.SetBackdropColor() end
+    function frame.SetBackdropBorderColor() end
+    function frame.SetClampedToScreen() end
+    function frame.SetFrameLevel() end
+    function frame.SetText(self, text)
+        self._text = text
+    end
+    function frame.GetFontString()
+        return {
+            SetFont = function() end,
+            SetText = function() end,
+            SetTextColor = function() end,
+            SetShadowOffset = function() end,
+            SetShadowColor = function() end,
+        }
     end
 
     function frame:RegisterEvent(event)
@@ -156,6 +257,7 @@ local function CreateMockFrame()
         return self._events[event] or false
     end
 
+    mockFrames[#mockFrames + 1] = frame
     return frame
 end
 
@@ -164,6 +266,13 @@ function CreateFrame()
 end
 
 UIParent = CreateMockFrame()
+
+RAID_CLASS_COLORS = {
+    WARRIOR = { r = 0.78, g = 0.61, b = 0.43 },
+    MAGE = { r = 0.41, g = 0.80, b = 0.94 },
+}
+
+UISpecialFrames = {}
 
 _G = _G or {}
 
@@ -308,14 +417,71 @@ function M.LoadConfig(ns)
     chunk("DragonLoot", ns)
 end
 
+-- Generic loader: load an addon source file with ("DragonLoot", ns) varargs.
+function M.LoadFile(ns, relativePath)
+    local chunk, err = loadfile(relativePath)
+    if not chunk then
+        error("Failed to load " .. relativePath .. ": " .. tostring(err))
+    end
+    chunk("DragonLoot", ns)
+end
+
+-- Returns the current count of mock frames; used as a snapshot anchor so
+-- tests can iterate only the frames created after a given setup step.
+function M.FrameCount()
+    return #mockFrames
+end
+
+-- Returns all mock frames created after the given snapshot index.
+function M.FramesSince(snapshot)
+    local out = {}
+    for i = snapshot + 1, #mockFrames do
+        out[#out + 1] = mockFrames[i]
+    end
+    return out
+end
+
 -------------------------------------------------------------------------------
 -- Reset helpers
 -------------------------------------------------------------------------------
+
+-- Dispatch a WoW event to every mock frame that has registered for it and
+-- has an OnEvent script. Useful for simulating OPEN_MASTER_LOOT_LIST,
+-- LOOT_OPENED, etc. in unit tests.
+function M.FireEvent(event, ...)
+    for _, frame in ipairs(mockFrames) do
+        if frame._events[event] then
+            local handler = frame._scripts and frame._scripts.OnEvent
+            if handler then
+                handler(frame, event, ...)
+            end
+        end
+    end
+end
 
 function M.Reset()
     mockTime = 0
     M._inCombat = false
     M._profileSeed = nil
+
+    M._masterLoot.candidates = {}
+    M._masterLoot.given = {}
+
+    M._group.numRaid = 0
+    M._group.numParty = 0
+    M._group.isMasterLooter = true
+    M._group.units = {}
+
+    -- Detach event handlers on any frames left over from a prior test. We
+    -- keep the frames themselves around (UIParent and similar singletons
+    -- are created once at module load) but make sure FireEvent cannot
+    -- dispatch into the previous test's closures.
+    for _, frame in ipairs(mockFrames) do
+        wipe(frame._events)
+        if frame._scripts then
+            frame._scripts.OnEvent = nil
+        end
+    end
 end
 
 return M

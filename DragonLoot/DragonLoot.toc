@@ -45,6 +45,7 @@ Display\RollFrame.lua
 Display\RollAnimations.lua
 Display\RollManager.lua
 Display\HistoryFrame.lua
+Display\MasterLootFrame.lua
 
 # Listeners (shared utilities)
 Listeners\ListenerShared.lua
@@ -59,6 +60,7 @@ Listeners\HistoryListener_Retail.lua
 Listeners\LootListener_Classic.lua
 Listeners\RollListener_Classic.lua
 Listeners\HistoryListener_Classic.lua
+Listeners\MasterLootListener_Classic.lua
 #@end-non-retail@
 
 # Listeners (shared)

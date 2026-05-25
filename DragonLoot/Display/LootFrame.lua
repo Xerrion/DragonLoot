@@ -311,6 +311,11 @@ end
 
 local function OnSlotClick(self)
     if self.slotIndex then
+        -- Record the slot for the master-loot listener. LootSlot() may fire
+        -- OPEN_MASTER_LOOT_LIST synchronously, and that event carries no
+        -- slot payload; the listener consumes ns.pendingMasterLootSlot to
+        -- recover which slot was clicked.
+        ns.pendingMasterLootSlot = self.slotIndex
         LootSlot(self.slotIndex)
     end
 end

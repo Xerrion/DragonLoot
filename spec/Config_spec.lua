@@ -14,8 +14,9 @@ describe("Config", function()
     end)
 
     -- Helper: load Config.lua and run InitializeDB on a mock addon
-    local function initWithSeed(currentNs, profileSeed)
+    local function initWithSeed(currentNs, profileSeed, charSeed)
         mock._profileSeed = profileSeed
+        mock._charSeed = charSeed
         mock.LoadConfig(currentNs)
         local addon = { db = nil }
         currentNs.InitializeDB(addon)
@@ -41,7 +42,7 @@ describe("Config", function()
             local db = initWithSeed(ns, nil)
 
             -- Keep in sync with CURRENT_SCHEMA in DragonLoot/Core/Config.lua
-            assert.are.equal(4, db.profile.schemaVersion)
+            assert.are.equal(5, db.profile.schemaVersion)
         end)
 
         it("has lootIconSize in a fresh profile", function()
@@ -148,7 +149,7 @@ describe("Config", function()
                     -- Seed at current schema so FillMissingDefaults is skipped and the
                     -- (unconditional) iconSize-split migration can propagate iconSize=48.
                     -- Keep in sync with CURRENT_SCHEMA in DragonLoot/Core/Config.lua.
-                    schemaVersion = 4,
+                    schemaVersion = 5,
                     appearance = {
                         iconSize = 48,
                         -- lootIconSize intentionally absent to test migration propagation
@@ -172,7 +173,91 @@ describe("Config", function()
             })
 
             -- Keep in sync with CURRENT_SCHEMA in DragonLoot/Core/Config.lua
-            assert.are.equal(4, db.profile.schemaVersion)
+            assert.are.equal(5, db.profile.schemaVersion)
+        end)
+    end)
+
+    ---------------------------------------------------------------------------
+    -- history.filter schema migration v4 -> v5
+    ---------------------------------------------------------------------------
+
+    describe("history.filter schema migration v4 -> v5", function()
+        it("adds default filter sub-table when migrating from v4", function()
+            local db = initWithSeed(ns, {
+                schemaVersion = 4,
+                history = {
+                    enabled = true,
+                    maxEntries = 100,
+                    autoShow = false,
+                    -- filter intentionally absent (v4 shape)
+                },
+            }, {
+                history = {
+                    schemaVersion = 4,
+                    entries = {},
+                },
+            })
+
+            assert.is_table(db.profile.history.filter)
+            assert.are.equal("", db.profile.history.filter.search)
+            assert.is_true(db.profile.history.filter.barVisible)
+            assert.is_nil(db.profile.history.filter.encounterID)
+        end)
+
+        it("preserves existing history entries during migration", function()
+            local seededEntries = {
+                { itemLink = "|cffa335ee|Hitem:123::::::::1::::::|h[Item One]|h|r", winner = "Alice", wallTime = 100 },
+                { itemLink = "|cffa335ee|Hitem:456::::::::1::::::|h[Item Two]|h|r", winner = "Bob", wallTime = 200 },
+                {
+                    itemLink = "|cffa335ee|Hitem:789::::::::1::::::|h[Item Three]|h|r",
+                    winner = "Carol",
+                    wallTime = 300,
+                },
+            }
+
+            local db = initWithSeed(ns, {
+                schemaVersion = 4,
+                history = {
+                    enabled = true,
+                    maxEntries = 100,
+                },
+            }, {
+                history = {
+                    schemaVersion = 4,
+                    entries = seededEntries,
+                },
+            })
+
+            assert.is_table(db.char)
+            assert.is_table(db.char.history)
+            assert.is_table(db.char.history.entries)
+            assert.are.equal(3, #db.char.history.entries)
+            assert.are.equal("Alice", db.char.history.entries[1].winner)
+            assert.are.equal(100, db.char.history.entries[1].wallTime)
+            assert.are.equal("Bob", db.char.history.entries[2].winner)
+            assert.are.equal("Carol", db.char.history.entries[3].winner)
+            assert.are.equal("|cffa335ee|Hitem:123::::::::1::::::|h[Item One]|h|r", db.char.history.entries[1].itemLink)
+        end)
+
+        it("sets schemaVersion to 5 after migration", function()
+            local db = initWithSeed(ns, {
+                schemaVersion = 4,
+                history = {
+                    enabled = true,
+                    maxEntries = 100,
+                },
+            })
+
+            assert.are.equal(5, db.profile.schemaVersion)
+        end)
+
+        it("is a no-op for fresh installs at v5", function()
+            local db = initWithSeed(ns, nil)
+
+            assert.is_table(db.profile.history.filter)
+            assert.is_true(db.profile.history.filter.barVisible)
+            assert.are.equal("", db.profile.history.filter.search)
+            assert.are.equal(5, db.profile.schemaVersion)
         end)
     end)
 end)

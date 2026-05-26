@@ -301,8 +301,15 @@ local aceDBMock = {
         else
             profile = DeepCopyTable(defaultsArg and defaultsArg.profile or {})
         end
+        local char
+        if M._charSeed then
+            char = DeepCopyTable(M._charSeed)
+        else
+            char = DeepCopyTable(defaultsArg and defaultsArg.char or {})
+        end
         local db = {
             profile = profile,
+            char = char,
             RegisterCallback = function() end,
             CancelCallback = function() end,
         }
@@ -463,6 +470,7 @@ function M.Reset()
     mockTime = 0
     M._inCombat = false
     M._profileSeed = nil
+    M._charSeed = nil
 
     M._masterLoot.candidates = {}
     M._masterLoot.given = {}

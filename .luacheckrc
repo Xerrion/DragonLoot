@@ -104,6 +104,13 @@ files["DragonLoot/"] = {
 }
 
 -----------------------------------------------------------------------
+-- Locales (string-literal message keys can exceed line length)
+-----------------------------------------------------------------------
+files["DragonLoot/Locales/*.lua"] = {
+    max_line_length = false,
+}
+
+-----------------------------------------------------------------------
 -- spec (busted test suite + WoW API mock harness)
 -----------------------------------------------------------------------
 files["spec/"] = {

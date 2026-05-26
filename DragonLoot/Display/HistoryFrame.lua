@@ -19,6 +19,11 @@ local time = time
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local HandleModifiedItemClick = HandleModifiedItemClick
 local IsShiftKeyDown = IsShiftKeyDown
+local UIDropDownMenu_Initialize = UIDropDownMenu_Initialize
+local UIDropDownMenu_CreateInfo = UIDropDownMenu_CreateInfo
+local UIDropDownMenu_AddButton = UIDropDownMenu_AddButton
+local UIDropDownMenu_SetWidth = UIDropDownMenu_SetWidth
+local UIDropDownMenu_SetText = UIDropDownMenu_SetText
 local math_floor = math.floor
 local math_abs = math.abs
 local string_format = string.format
@@ -35,6 +40,7 @@ local DU = ns.DisplayUtils
 local FRAME_WIDTH = 350
 local FRAME_HEIGHT = 400
 local TITLE_BAR_HEIGHT = 24
+local FILTER_BAR_HEIGHT = 26
 local SCROLL_STEP = 3
 local SCROLLBAR_WIDTH = 14
 local SCROLLBAR_GAP = 2
@@ -82,6 +88,28 @@ local detailRowPool = {}
 -------------------------------------------------------------------------------
 
 ns.historyData = {}
+
+-------------------------------------------------------------------------------
+-- Filter state (Phase 3: widgets only; Phase 4 will read this in the filter
+-- pipeline; Phase 6 will sync with db.profile.history.filter)
+-------------------------------------------------------------------------------
+
+local filterState = {
+    encounterID = nil, -- nil means "All Encounters"
+    search = "",
+}
+
+local function ShouldShowFilterBar()
+    local db = ns.Addon and ns.Addon.db and ns.Addon.db.profile
+    if not db or not db.history or not db.history.filter then
+        return true
+    end
+    return db.history.filter.barVisible ~= false
+end
+
+local function GetTopBarOffset()
+    return TITLE_BAR_HEIGHT + (ShouldShowFilterBar() and FILTER_BAR_HEIGHT or 0)
+end
 
 -- Forward declaration for RefreshHistory (used by OnEntryClick)
 local RefreshHistory
@@ -927,6 +955,73 @@ local function CreateTitleBar(parent)
 end
 
 -------------------------------------------------------------------------------
+-- Filter bar creation (encounter dropdown + search box)
+-------------------------------------------------------------------------------
+
+local function InitEncounterDropdown(self, level, _menuList)
+    if level ~= 1 then
+        return
+    end
+    local info = UIDropDownMenu_CreateInfo()
+    info.text = L["All Encounters"]
+    info.checked = (filterState.encounterID == nil)
+    info.func = function()
+        filterState.encounterID = nil
+        UIDropDownMenu_SetText(self, L["All Encounters"])
+        -- Phase 4 will trigger refresh here
+    end
+    UIDropDownMenu_AddButton(info, level)
+    -- Phase 5 will append per-encounter options here.
+end
+
+local function CreateFilterBar(parent)
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetHeight(FILTER_BAR_HEIGHT)
+    bar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -TITLE_BAR_HEIGHT)
+    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, -TITLE_BAR_HEIGHT)
+
+    -- Encounter dropdown (legacy UIDropDownMenu API).
+    -- Parented to the main container so popup anchor math works correctly.
+    local encounterDropdown =
+        CreateFrame("Frame", "DragonLootHistoryEncounterDropdown", parent, "UIDropDownMenuTemplate")
+    encounterDropdown:SetPoint("LEFT", bar, "LEFT", 4, 0)
+    encounterDropdown.displayMode = "MENU"
+    UIDropDownMenu_Initialize(encounterDropdown, InitEncounterDropdown)
+    UIDropDownMenu_SetWidth(encounterDropdown, 150)
+    UIDropDownMenu_SetText(encounterDropdown, L["All Encounters"])
+
+    -- Search box (SearchBoxTemplate gives clear-X + placeholder for free).
+    local searchBox = CreateFrame("EditBox", "DragonLootHistorySearchBox", bar, "SearchBoxTemplate")
+    searchBox:SetSize(150, 20)
+    searchBox:SetPoint("LEFT", encounterDropdown, "RIGHT", 6, 2)
+    searchBox:SetAutoFocus(false)
+    searchBox:SetScript("OnTextChanged", function(eb, userInput)
+        if not userInput then
+            return
+        end
+        filterState.search = eb:GetText() or ""
+        -- Phase 4 will trigger refresh here
+    end)
+
+    -- Visible-count placeholder (wired in Phase 4).
+    local countText = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    countText:SetPoint("RIGHT", bar, "RIGHT", -8, 0)
+    countText:SetText("")
+
+    bar.encounterDropdown = encounterDropdown
+    bar.searchBox = searchBox
+    bar.countText = countText
+
+    if ShouldShowFilterBar() then
+        bar:Show()
+    else
+        bar:Hide()
+    end
+
+    return bar
+end
+
+-------------------------------------------------------------------------------
 -- Scroll frame creation
 -------------------------------------------------------------------------------
 
@@ -938,10 +1033,11 @@ end
 
 local function CreateScrollComponents(parent)
     local padding = GetContentPadding()
+    local topBarOffset = GetTopBarOffset()
 
     -- Scroll frame (clip region)
     local sf = CreateFrame("ScrollFrame", "DragonLootHistoryScroll", parent)
-    sf:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -(TITLE_BAR_HEIGHT + padding))
+    sf:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -(topBarOffset + padding))
     sf:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + SCROLLBAR_WIDTH + SCROLLBAR_GAP), padding)
 
     -- Scroll child
@@ -953,7 +1049,7 @@ local function CreateScrollComponents(parent)
     -- Scroll bar
     local bar = CreateFrame("Slider", "DragonLootHistoryScrollBar", parent, "BackdropTemplate")
     bar:SetWidth(SCROLLBAR_WIDTH)
-    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -padding, -(TITLE_BAR_HEIGHT + padding))
+    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -padding, -(topBarOffset + padding))
     bar:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -padding, padding)
     bar:SetOrientation("VERTICAL")
     bar:SetMinMaxValues(0, 0)
@@ -1006,6 +1102,9 @@ local function CreateContainerFrame()
 
     -- Title bar
     frame.titleBar = CreateTitleBar(frame)
+
+    -- Filter bar (encounter dropdown + search)
+    frame.filterBar = CreateFilterBar(frame)
 
     -- Dragging
     frame:EnableMouse(true)

@@ -58,6 +58,11 @@ files["DragonLoot/"] = {
         "IsModifiedClick", "GameTooltip_ShowCompareItem",
         "GetCVarBool",
 
+        -- WoW API - UIDropDownMenu (legacy)
+        "UIDropDownMenu_Initialize", "UIDropDownMenu_CreateInfo",
+        "UIDropDownMenu_AddButton", "UIDropDownMenu_SetWidth",
+        "UIDropDownMenu_SetText",
+
         -- WoW API - Loot
         "GetNumLootItems", "GetLootSlotInfo", "GetLootSlotLink", "GetLootSlotType",
         "LootSlot", "CloseLoot", "IsFishingLoot", "C_Loot",

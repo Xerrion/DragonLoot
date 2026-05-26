@@ -133,12 +133,16 @@ L["%dh ago"] = true
 L["%dm ago"] = true
 L["%ds ago"] = true
 L["(waiting on rolls)"] = true
+L["All Encounters"] = true
 L["Clear History"] = true
 L["DragonLoot - Loot History"] = true
+L["Encounter"] = true
 L["Highest: %s (%d)"] = true
 L["Looted"] = true
 L["Rolls:"] = true
+L["Search history"] = true
 L["Unknown Item"] = true
+L["Unknown encounter"] = true
 
 -------------------------------------------------------------------------------
 -- DragonLoot_Options

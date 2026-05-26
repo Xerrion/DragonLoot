@@ -29,6 +29,14 @@ function GetTime()
     return mockTime
 end
 
+function time()
+    return mockTime
+end
+
+function GetItemInfo(link)
+    return link or "Item", link, 4
+end
+
 function InCombatLockdown()
     return M._inCombat or false
 end
@@ -39,6 +47,46 @@ end
 
 function IsInInstance()
     return false, "none"
+end
+
+-------------------------------------------------------------------------------
+-- Instance info (settable per test). Tests call M.SetInstance(id) or
+-- M.SetInstanceInfo({...}) to override; GetInstanceInfo returns the standard
+-- 8-tuple (name, instanceType, difficultyID, difficultyName, maxPlayers,
+-- dynamicDifficulty, isDynamic, instanceID).
+-------------------------------------------------------------------------------
+
+M._instanceInfo = {
+    name = "",
+    instanceType = "none",
+    difficultyID = 0,
+    difficultyName = "",
+    maxPlayers = 0,
+    dynamicDifficulty = 0,
+    isDynamic = false,
+    instanceID = 0,
+}
+
+function M.SetInstance(id)
+    M._instanceInfo.instanceID = id or 0
+end
+
+function M.SetInstanceInfo(info)
+    for k, v in pairs(info) do
+        M._instanceInfo[k] = v
+    end
+end
+
+function GetInstanceInfo()
+    local i = M._instanceInfo
+    return i.name,
+        i.instanceType,
+        i.difficultyID,
+        i.difficultyName,
+        i.maxPlayers,
+        i.dynamicDifficulty,
+        i.isDynamic,
+        i.instanceID
 end
 
 function PlaySound() end
@@ -479,6 +527,15 @@ function M.Reset()
     M._group.numParty = 0
     M._group.isMasterLooter = true
     M._group.units = {}
+
+    M._instanceInfo.name = ""
+    M._instanceInfo.instanceType = "none"
+    M._instanceInfo.difficultyID = 0
+    M._instanceInfo.difficultyName = ""
+    M._instanceInfo.maxPlayers = 0
+    M._instanceInfo.dynamicDifficulty = 0
+    M._instanceInfo.isDynamic = false
+    M._instanceInfo.instanceID = 0
 
     -- Detach event handlers on any frames left over from a prior test. We
     -- keep the frames themselves around (UIParent and similar singletons

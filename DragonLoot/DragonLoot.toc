@@ -59,6 +59,7 @@ Listeners\HistoryListener_Retail.lua
 #@non-retail@
 Listeners\LootListener_Classic.lua
 Listeners\RollListener_Classic.lua
+Listeners\EncounterListener_Classic.lua
 Listeners\HistoryListener_Classic.lua
 Listeners\MasterLootListener_Classic.lua
 #@end-non-retail@

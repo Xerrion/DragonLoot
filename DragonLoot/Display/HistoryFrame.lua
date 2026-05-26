@@ -995,10 +995,7 @@ local function CreateFilterBar(parent)
     searchBox:SetSize(150, 20)
     searchBox:SetPoint("LEFT", encounterDropdown, "RIGHT", 6, 2)
     searchBox:SetAutoFocus(false)
-    searchBox:SetScript("OnTextChanged", function(eb, userInput)
-        if not userInput then
-            return
-        end
+    searchBox:HookScript("OnTextChanged", function(eb)
         filterState.search = eb:GetText() or ""
         -- Phase 4 will trigger refresh here
     end)

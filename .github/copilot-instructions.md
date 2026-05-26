@@ -3,23 +3,23 @@
 ## About this project
 
 - DragonLoot is a World of Warcraft addon written for Lua 5.1.
-- It targets three flavors: Retail (Midnight, interface 120005), MoP Classic (Mists, 50503), and TBC Anniversary (BCC, 20505). Use `WOW_PROJECT_ID` and explicit interface checks for version-specific code.
+- It targets three flavors: Retail (Midnight, 120005), MoP Classic (Mists, 50503), and TBC Anniversary (BCC, 20505). Use `WOW_PROJECT_ID` and interface checks for version-specific code.
 
 ## Lua conventions
 
 - Do not use `require`. Load libraries with `LibStub("LibName-X.Y")`.
 - Flag Lua 5.2+ syntax or APIs, including `_ENV`, `goto`, `table.pack`, `table.unpack`, `bit32`, and `//`.
-- Each Lua file starts with the standard header: 80 hyphens, filename, one-line description, blank line, `-- Supported versions: ...`, then `local ADDON_NAME, ns = ...`.
+- Each file starts with the standard header: 80 hyphens, filename, one-line description, blank line, `-- Supported versions: ...`, then `local ADDON_NAME, ns = ...`.
 - Keep addon state in `ns`; only `DragonLootDB` and `SLASH_DRAGONLOOT1/2` should be real globals.
 - Naming: PascalCase files and functions, camelCase locals, UPPER_SNAKE_CASE module constants.
 - Use 4 spaces, no tabs, double quotes, Unix line endings, and 120-character lines. `Locales/*.lua` is exempt from the line-length rule.
 
 ## WoW API patterns
 
-- Cache WoW API globals and Lua globals as locals at file top, for example `local GetTime = GetTime`.
+- Cache WoW API and Lua globals as locals at file top, e.g. `local GetTime = GetTime`.
 - Do not rely on TOC packager directives for runtime safety. Locally, all version-specific files load because directives are comments.
-- Use BigWigsMods packager directives in TOC files for flavor-specific loading, for example `#@retail@` ... `#@end-retail@`. Never add `## Interface:` mid-TOC to gate files.
-- Guard version-specific logic with `WOW_PROJECT_ID` checks and explicit API availability checks where needed.
+- Use BigWigsMods packager directives in TOC files for flavor-specific loading, e.g. `#@retail@` ... `#@end-retail@`. Never add `## Interface:` mid-TOC to gate files.
+- Guard version-specific logic with `WOW_PROJECT_ID` checks and API availability checks.
 
 ## AceLocale pattern
 

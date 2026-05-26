@@ -259,5 +259,39 @@ describe("Config", function()
             assert.are.equal("", db.profile.history.filter.search)
             assert.are.equal(5, db.profile.schemaVersion)
         end)
+
+        it("preserves existing filter fields when adding missing defaults", function()
+            local db = initWithSeed(ns, {
+                schemaVersion = 4,
+                history = {
+                    enabled = true,
+                    maxEntries = 100,
+                    filter = {
+                        search = "ony",
+                        encounterID = 123,
+                        -- barVisible intentionally absent
+                    },
+                },
+            })
+
+            assert.are.equal("ony", db.profile.history.filter.search)
+            assert.are.equal(123, db.profile.history.filter.encounterID)
+            assert.is_true(db.profile.history.filter.barVisible)
+        end)
+
+        it("replaces a corrupt non-table filter with defaults", function()
+            local db = initWithSeed(ns, {
+                schemaVersion = 4,
+                history = {
+                    enabled = true,
+                    maxEntries = 100,
+                    filter = "garbage string",
+                },
+            })
+
+            assert.is_table(db.profile.history.filter)
+            assert.is_true(db.profile.history.filter.barVisible)
+            assert.are.equal("", db.profile.history.filter.search)
+        end)
     end)
 end)

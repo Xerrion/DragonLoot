@@ -192,17 +192,14 @@ local function FillMissingDefaults(profile)
                 -- Validate existing values: reset if type doesn't match or is invalid
                 elseif type(currentValue) ~= type(defaultValue) then
                     profile[section][key] = DeepCopyValue(defaultValue)
-                -- Handle nested tables (like color values {r,g,b})
+                -- Handle nested tables (like color values {r,g,b} or history.filter):
+                -- merge missing/wrong-type keys from defaults without discarding valid
+                -- existing scalars or extra user fields (e.g. filter.encounterID).
                 elseif type(defaultValue) == "table" then
-                    local isValid = true
                     for k, v in pairs(defaultValue) do
-                        if type(currentValue[k]) ~= type(v) then
-                            isValid = false
-                            break
+                        if currentValue[k] == nil or type(currentValue[k]) ~= type(v) then
+                            currentValue[k] = DeepCopyValue(v)
                         end
-                    end
-                    if not isValid then
-                        profile[section][key] = DeepCopyValue(defaultValue)
                     end
                 end
             end

@@ -27,6 +27,9 @@ local UIDropDownMenu_SetText = UIDropDownMenu_SetText
 local math_floor = math.floor
 local math_abs = math.abs
 local string_format = string.format
+local string_lower = string.lower
+local string_match = string.match
+local string_find = string.find
 local table_sort = table.sort
 local tostring = tostring
 
@@ -98,6 +101,56 @@ local filterState = {
     encounterID = nil, -- nil means "All Encounters"
     search = "",
 }
+
+-- Pure: depends only on its two arguments and cached Lua stdlib. Returns true
+-- if `entry` should be visible under `state`. See spec/HistoryFilter_spec.lua.
+local function MatchesFilter(entry, state)
+    if not entry or not state then
+        return true
+    end
+
+    if state.encounterID ~= nil and entry.encounterID ~= state.encounterID then
+        return false
+    end
+
+    local search = state.search
+    if not search or search == "" then
+        return true
+    end
+
+    local needle = string_lower(search)
+
+    local itemLink = entry.itemLink
+    if itemLink then
+        local itemName = string_match(itemLink, "%[(.-)%]")
+        if itemName and string_find(string_lower(itemName), needle, 1, true) then
+            return true
+        end
+    end
+
+    local winner = entry.winner
+    if winner and winner ~= "" then
+        if string_find(string_lower(winner), needle, 1, true) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function GetVisibleEntries()
+    local out = {}
+    for i = 1, #ns.historyData do
+        local e = ns.historyData[i]
+        if MatchesFilter(e, filterState) then
+            out[#out + 1] = e
+        end
+    end
+    return out
+end
+
+-- Expose pure filter for unit tests; not part of the public API.
+ns.HistoryFrame._MatchesFilter = MatchesFilter
 
 local function ShouldShowFilterBar()
     local db = ns.Addon and ns.Addon.db and ns.Addon.db.profile
@@ -829,8 +882,9 @@ RefreshHistory = function()
     local db = ns.Addon.db.profile
     local entryHeight = GetEntryHeight()
     local entrySpacing = GetEntrySpacing()
+    local visible = GetVisibleEntries()
     local yOffset = 0
-    for i, data in ipairs(ns.historyData) do
+    for i, data in ipairs(visible) do
         local entry = AcquireEntry()
         PopulateEntry(entry, data)
         entry:ClearAllPoints()
@@ -854,6 +908,10 @@ RefreshHistory = function()
         totalHeight = 1
     end
     scrollChild:SetHeight(totalHeight)
+
+    if containerFrame.filterBar and containerFrame.filterBar.countText then
+        containerFrame.filterBar.countText:SetText(string_format("%d/%d", #visible, #ns.historyData))
+    end
 
     UpdateScrollBar()
 end
@@ -968,7 +1026,7 @@ local function InitEncounterDropdown(self, level, _menuList)
     info.func = function()
         filterState.encounterID = nil
         UIDropDownMenu_SetText(self, L["All Encounters"])
-        -- Phase 4 will trigger refresh here
+        ns.HistoryFrame.Refresh()
     end
     UIDropDownMenu_AddButton(info, level)
     -- Phase 5 will append per-encounter options here.
@@ -997,7 +1055,7 @@ local function CreateFilterBar(parent)
     searchBox:SetAutoFocus(false)
     searchBox:HookScript("OnTextChanged", function(eb)
         filterState.search = eb:GetText() or ""
-        -- Phase 4 will trigger refresh here
+        ns.HistoryFrame.Refresh()
     end)
 
     -- Visible-count placeholder (wired in Phase 4).

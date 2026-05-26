@@ -1,4 +1,5 @@
 [tools]
+just = "latest"
 lua = "5.1"
 stylua = "latest"
 

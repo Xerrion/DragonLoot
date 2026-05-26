@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.1](https://github.com/Xerrion/DragonLoot/compare/0.15.0...0.15.1) (2026-05-26)
+
+
+### 🐛 Bug Fixes
+
+* **history:** anchor item/looter text to row edges so padding separates them ([#165](https://github.com/Xerrion/DragonLoot/issues/165)) ([#169](https://github.com/Xerrion/DragonLoot/issues/169)) ([7b33f70](https://github.com/Xerrion/DragonLoot/commit/7b33f70b433f712f863ebc2f15e6e380e4abe59a))
+
+
+### ⚙️ Miscellaneous Tasks
+
+* drop TWW Retail support and add Copilot review instructions ([#170](https://github.com/Xerrion/DragonLoot/issues/170)) ([5ff189d](https://github.com/Xerrion/DragonLoot/commit/5ff189db13c0029fd22d356f14c28b6bbed82089))
+
 ## [0.15.0](https://github.com/Xerrion/DragonLoot/compare/0.14.0...0.15.0) (2026-05-25)
 
 

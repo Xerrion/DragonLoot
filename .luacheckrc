@@ -77,6 +77,9 @@ files["DragonLoot/"] = {
         -- WoW API - Loot History
         "C_LootHistory",
 
+        -- WoW API - Encounter Journal
+        "EJ_GetEncounterInfo",
+
         -- WoW Frames - Loot
         "LootFrame",
         "GroupLootFrame1", "GroupLootFrame2", "GroupLootFrame3", "GroupLootFrame4",

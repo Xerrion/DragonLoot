@@ -22,6 +22,7 @@ end
 
 describe("MatchesFilter", function()
     local MatchesFilter
+    local UNKNOWN_ENCOUNTER
 
     before_each(function()
         mock.Reset()
@@ -29,7 +30,9 @@ describe("MatchesFilter", function()
         ns.historyData = {}
         mock.LoadFile(ns, "DragonLoot/Display/HistoryFrame.lua")
         MatchesFilter = ns.HistoryFrame._MatchesFilter
+        UNKNOWN_ENCOUNTER = ns.HistoryFrame._UNKNOWN_ENCOUNTER
         assert.is_function(MatchesFilter)
+        assert.is_not_nil(UNKNOWN_ENCOUNTER)
     end)
 
     it("returns true for any entry when filter is empty", function()
@@ -99,5 +102,17 @@ describe("MatchesFilter", function()
         assert.is_true(MatchesFilter(entry, { encounterID = nil, search = "thrall" }))
         -- "ony" would have hit item name but link has no [...], and winner has no "ony"
         assert.is_false(MatchesFilter(entry, { encounterID = nil, search = "ony" }))
+    end)
+
+    it("UNKNOWN_ENCOUNTER state matches entry with nil encounterID", function()
+        local entry = MakeEntry()
+        entry.encounterID = nil
+        entry.encounterName = nil
+        assert.is_true(MatchesFilter(entry, { encounterID = UNKNOWN_ENCOUNTER, search = "" }))
+    end)
+
+    it("UNKNOWN_ENCOUNTER state rejects entry with a real encounterID", function()
+        local entry = MakeEntry({ encounterID = 1084 })
+        assert.is_false(MatchesFilter(entry, { encounterID = UNKNOWN_ENCOUNTER, search = "" }))
     end)
 end)

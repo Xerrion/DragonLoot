@@ -24,6 +24,7 @@ local UIDropDownMenu_CreateInfo = UIDropDownMenu_CreateInfo
 local UIDropDownMenu_AddButton = UIDropDownMenu_AddButton
 local UIDropDownMenu_SetWidth = UIDropDownMenu_SetWidth
 local UIDropDownMenu_SetText = UIDropDownMenu_SetText
+local EJ_GetEncounterInfo = EJ_GetEncounterInfo
 local math_floor = math.floor
 local math_abs = math.abs
 local string_format = string.format
@@ -97,19 +98,36 @@ ns.historyData = {}
 -- pipeline; Phase 6 will sync with db.profile.history.filter)
 -------------------------------------------------------------------------------
 
+-- Sentinel for filterState.encounterID meaning "only entries with nil
+-- encounterID" (i.e. loot recorded outside a tracked encounter). Any non-nil
+-- value that can't collide with a real encounterID works; -1 is conventional
+-- and reads clearly at callsites. Immutable after this assignment.
+local UNKNOWN_ENCOUNTER = -1
+
+-- [encounterID] = resolved display name. Populated lazily on Retail via
+-- EJ_GetEncounterInfo when the dropdown is opened; Classic entries carry
+-- entry.encounterName captured at ENCOUNTER_START and bypass this cache.
+local encounterNameCache = {}
+
 local filterState = {
     encounterID = nil, -- nil means "All Encounters"
     search = "",
 }
 
--- Pure: depends only on its two arguments and cached Lua stdlib. Returns true
--- if `entry` should be visible under `state`. See spec/HistoryFilter_spec.lua.
+-- Pure: depends only on its two arguments, cached Lua stdlib, and the
+-- module-immutable UNKNOWN_ENCOUNTER upvalue (a constant, so the function
+-- remains a function of its inputs). Returns true if `entry` should be
+-- visible under `state`. See spec/HistoryFilter_spec.lua.
 local function MatchesFilter(entry, state)
     if not entry or not state then
         return true
     end
 
-    if state.encounterID ~= nil and entry.encounterID ~= state.encounterID then
+    if state.encounterID == UNKNOWN_ENCOUNTER then
+        if entry.encounterID ~= nil then
+            return false
+        end
+    elseif state.encounterID ~= nil and entry.encounterID ~= state.encounterID then
         return false
     end
 
@@ -151,6 +169,7 @@ end
 
 -- Expose pure filter for unit tests; not part of the public API.
 ns.HistoryFrame._MatchesFilter = MatchesFilter
+ns.HistoryFrame._UNKNOWN_ENCOUNTER = UNKNOWN_ENCOUNTER
 
 local function ShouldShowFilterBar()
     local db = ns.Addon and ns.Addon.db and ns.Addon.db.profile
@@ -1016,10 +1035,69 @@ end
 -- Filter bar creation (encounter dropdown + search box)
 -------------------------------------------------------------------------------
 
+-- Resolve a display name for an encounterID. Priority:
+--   1. nil ID -> localized "Unknown encounter".
+--   2. entry.encounterName captured at ENCOUNTER_START (Classic listener).
+--   3. Cached lookup from a previous EJ_GetEncounterInfo call.
+--   4. EJ_GetEncounterInfo when available (Retail; may be absent on Classic).
+--   5. tostring(id) fallback so the user can always filter.
+local function ResolveEncounterName(encounterID, entry)
+    if encounterID == nil then
+        return L["Unknown encounter"]
+    end
+    if entry and entry.encounterName and entry.encounterName ~= "" then
+        return entry.encounterName
+    end
+    local cached = encounterNameCache[encounterID]
+    if cached then
+        return cached
+    end
+    if EJ_GetEncounterInfo then
+        local name = EJ_GetEncounterInfo(encounterID)
+        if name and name ~= "" then
+            encounterNameCache[encounterID] = name
+            return name
+        end
+    end
+    local fallback = tostring(encounterID)
+    encounterNameCache[encounterID] = fallback
+    return fallback
+end
+
+-- Fires on every dropdown open, so the option list always reflects current
+-- ns.historyData -- no manual invalidation needed when entries arrive while
+-- the dropdown is closed.
 local function InitEncounterDropdown(self, level, _menuList)
     if level ~= 1 then
         return
     end
+
+    -- Walk current history once: collect distinct encounterIDs (keeping the
+    -- first entry seen for each, used as the encounterName source for Classic)
+    -- and remember whether any entry lacks an encounterID at all.
+    local seen = {}
+    local hasUnknown = false
+    for i = 1, #ns.historyData do
+        local e = ns.historyData[i]
+        local id = e.encounterID
+        if id == nil then
+            hasUnknown = true
+        elseif not seen[id] then
+            seen[id] = e
+        end
+    end
+
+    local options = {}
+    for id, entry in pairs(seen) do
+        options[#options + 1] = { id = id, name = ResolveEncounterName(id, entry) }
+    end
+    table_sort(options, function(a, b)
+        if a.name == b.name then
+            return a.id < b.id
+        end
+        return a.name < b.name
+    end)
+
     local info = UIDropDownMenu_CreateInfo()
     info.text = L["All Encounters"]
     info.checked = (filterState.encounterID == nil)
@@ -1029,7 +1107,30 @@ local function InitEncounterDropdown(self, level, _menuList)
         ns.HistoryFrame.Refresh()
     end
     UIDropDownMenu_AddButton(info, level)
-    -- Phase 5 will append per-encounter options here.
+
+    for _, opt in ipairs(options) do
+        info = UIDropDownMenu_CreateInfo()
+        info.text = opt.name
+        info.checked = (filterState.encounterID == opt.id)
+        info.func = function()
+            filterState.encounterID = opt.id
+            UIDropDownMenu_SetText(self, opt.name)
+            ns.HistoryFrame.Refresh()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
+
+    if hasUnknown then
+        info = UIDropDownMenu_CreateInfo()
+        info.text = L["Unknown encounter"]
+        info.checked = (filterState.encounterID == UNKNOWN_ENCOUNTER)
+        info.func = function()
+            filterState.encounterID = UNKNOWN_ENCOUNTER
+            UIDropDownMenu_SetText(self, L["Unknown encounter"])
+            ns.HistoryFrame.Refresh()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
 end
 
 local function CreateFilterBar(parent)

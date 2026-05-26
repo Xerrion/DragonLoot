@@ -1177,7 +1177,8 @@ local function CreateFilterBar(parent)
 
     -- Encounter dropdown (legacy UIDropDownMenu API).
     -- Parented to the main container so popup anchor math works correctly.
-    local encounterDropdown = CreateFrame("Frame", nil, parent, "UIDropDownMenuTemplate")
+    local encounterDropdown =
+        CreateFrame("Frame", "DragonLootHistoryEncounterDropdown", parent, "UIDropDownMenuTemplate")
     encounterDropdown:SetPoint("LEFT", bar, "LEFT", 4, 0)
     encounterDropdown.displayMode = "MENU"
     UIDropDownMenu_Initialize(encounterDropdown, InitEncounterDropdown)

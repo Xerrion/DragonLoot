@@ -34,7 +34,10 @@ function time()
 end
 
 function GetItemInfo(link)
-    return link or "Item", link, 4
+    if link == nil then
+        return nil
+    end
+    return link, link, 4
 end
 
 function InCombatLockdown()
@@ -72,6 +75,9 @@ function M.SetInstance(id)
 end
 
 function M.SetInstanceInfo(info)
+    if type(info) ~= "table" then
+        return
+    end
     for k, v in pairs(info) do
         M._instanceInfo[k] = v
     end

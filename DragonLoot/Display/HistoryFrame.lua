@@ -189,8 +189,18 @@ local function RestoreFilter()
         return
     end
     local persisted = db.profile.history.filter
-    filterState.encounterID = persisted.encounterID
-    filterState.search = persisted.search or ""
+
+    local persistedEncounterID = persisted.encounterID
+    if persistedEncounterID ~= nil and type(persistedEncounterID) ~= "number" then
+        persistedEncounterID = nil
+    end
+    filterState.encounterID = persistedEncounterID
+
+    local persistedSearch = persisted.search
+    if type(persistedSearch) ~= "string" then
+        persistedSearch = ""
+    end
+    filterState.search = persistedSearch
 end
 
 -- Expose pure filter for unit tests; not part of the public API.
@@ -1167,8 +1177,7 @@ local function CreateFilterBar(parent)
 
     -- Encounter dropdown (legacy UIDropDownMenu API).
     -- Parented to the main container so popup anchor math works correctly.
-    local encounterDropdown =
-        CreateFrame("Frame", "DragonLootHistoryEncounterDropdown", parent, "UIDropDownMenuTemplate")
+    local encounterDropdown = CreateFrame("Frame", nil, parent, "UIDropDownMenuTemplate")
     encounterDropdown:SetPoint("LEFT", bar, "LEFT", 4, 0)
     encounterDropdown.displayMode = "MENU"
     UIDropDownMenu_Initialize(encounterDropdown, InitEncounterDropdown)
@@ -1176,7 +1185,7 @@ local function CreateFilterBar(parent)
     UIDropDownMenu_SetText(encounterDropdown, L["All Encounters"])
 
     -- Search box (SearchBoxTemplate gives clear-X + placeholder for free).
-    local searchBox = CreateFrame("EditBox", "DragonLootHistorySearchBox", bar, "SearchBoxTemplate")
+    local searchBox = CreateFrame("EditBox", nil, bar, "SearchBoxTemplate")
     searchBox:SetSize(150, 20)
     searchBox:SetPoint("LEFT", encounterDropdown, "RIGHT", 6, 2)
     searchBox:SetAutoFocus(false)

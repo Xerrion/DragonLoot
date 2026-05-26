@@ -37,7 +37,6 @@ local GetInstanceInfo = GetInstanceInfo
 -------------------------------------------------------------------------------
 
 local frame = CreateFrame("Frame")
-frame:RegisterEvent("ENCOUNTER_START")
 frame:SetScript("OnEvent", function(_, event, encounterID, encounterName, difficultyID, groupSize)
     if event ~= "ENCOUNTER_START" then
         return
@@ -53,5 +52,21 @@ frame:SetScript("OnEvent", function(_, event, encounterID, encounterName, diffic
     }
 end)
 
+-------------------------------------------------------------------------------
+-- Public Interface: ns.EncounterListener_Classic
+-------------------------------------------------------------------------------
+
+local function Initialize(_)
+    frame:RegisterEvent("ENCOUNTER_START")
+end
+
+local function Shutdown()
+    frame:UnregisterEvent("ENCOUNTER_START")
+end
+
 -- Minimal handle for tests; production code should read ns.currentEncounter.
-ns.EncounterListener_Classic = { _frame = frame }
+ns.EncounterListener_Classic = {
+    _frame = frame,
+    Initialize = Initialize,
+    Shutdown = Shutdown,
+}

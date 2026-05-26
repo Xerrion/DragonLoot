@@ -61,6 +61,7 @@ describe("EncounterListener_Classic", function()
         mock.SetTime(123)
 
         mock.LoadFile(ns, "DragonLoot/Listeners/EncounterListener_Classic.lua")
+        ns.EncounterListener_Classic.Initialize(MakeAddonStub())
 
         assert.is_nil(ns.currentEncounter)
 
@@ -86,6 +87,7 @@ describe("EncounterListener_Classic", function()
 
         mock.SetInstance(409)
         mock.LoadFile(ns, "DragonLoot/Listeners/EncounterListener_Classic.lua")
+        ns.EncounterListener_Classic.Initialize(MakeAddonStub())
         mock.FireEvent("ENCOUNTER_START", 663, "Lucifron", 9, 40)
 
         StubLootHistorySingleItem("|cffa335ee|Hitem:18814::::::::60:::::|h[Choker]|h|r")
@@ -109,6 +111,7 @@ describe("EncounterListener_Classic", function()
 
         mock.SetInstance(409)
         mock.LoadFile(ns, "DragonLoot/Listeners/EncounterListener_Classic.lua")
+        ns.EncounterListener_Classic.Initialize(MakeAddonStub())
         mock.FireEvent("ENCOUNTER_START", 663, "Lucifron", 9, 40)
 
         -- Player leaves the instance before loot arrives.
@@ -135,6 +138,7 @@ describe("EncounterListener_Classic", function()
 
         mock.SetInstance(409)
         mock.LoadFile(ns, "DragonLoot/Listeners/EncounterListener_Classic.lua")
+        ns.EncounterListener_Classic.Initialize(MakeAddonStub())
         -- No ENCOUNTER_START fired.
 
         StubLootHistorySingleItem("|cffa335ee|Hitem:18814::::::::60:::::|h[Choker]|h|r")

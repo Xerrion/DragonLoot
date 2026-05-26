@@ -9,8 +9,8 @@
 
 - Do not use `require`. Load libraries with `LibStub("LibName-X.Y")`.
 - Flag Lua 5.2+ syntax or APIs, including `_ENV`, `goto`, `table.pack`, `table.unpack`, `bit32`, and `//`.
-- Each file starts with the standard header: 80 hyphens, filename, one-line description, blank line, `-- Supported versions: ...`, then `local ADDON_NAME, ns = ...`.
-- Keep addon state in `ns`; only `DragonLootDB` and `SLASH_DRAGONLOOT1/2` should be real globals.
+- Each file starts with the standard header: 80 hyphens, filename, one-line description, blank line, `-- Supported versions: ...`, then either `local ADDON_NAME, ns = ...` or `local _, ns = ...` when the addon name is unused.
+- Keep addon state in `ns` where possible; accepted globals include `DragonLootDB`, `SLASH_DRAGONLOOT1/2`, `DragonLootNS` for the LoadOnDemand options bridge, and the `DragonLoot_Options` global API.
 - Naming: PascalCase files and functions, camelCase locals, UPPER_SNAKE_CASE module constants.
 - Use 4 spaces, no tabs, double quotes, Unix line endings, and 120-character lines. `Locales/*.lua` is exempt from the line-length rule.
 

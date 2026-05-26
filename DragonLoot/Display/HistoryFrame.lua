@@ -316,15 +316,10 @@ local function ApplyLayoutOffsets(frame)
     titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
 
     -- Scroll frame and scrollbar insets
+    local topBarOffset = GetTopBarOffset()
     if scrollFrame then
         scrollFrame:ClearAllPoints()
-        scrollFrame:SetPoint(
-            "TOPLEFT",
-            frame,
-            "TOPLEFT",
-            padding + borderSize,
-            -(TITLE_BAR_HEIGHT + padding + borderSize)
-        )
+        scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", padding + borderSize, -(topBarOffset + padding + borderSize))
         scrollFrame:SetPoint(
             "BOTTOMRIGHT",
             frame,
@@ -340,7 +335,7 @@ local function ApplyLayoutOffsets(frame)
             frame,
             "TOPRIGHT",
             -(padding + borderSize),
-            -(TITLE_BAR_HEIGHT + padding + borderSize)
+            -(topBarOffset + padding + borderSize)
         )
         scrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(padding + borderSize), padding + borderSize)
     end
@@ -1442,6 +1437,11 @@ function ns.HistoryFrame.ApplySettings()
 
     -- Update backdrop
     ApplyBackdrop(containerFrame)
+
+    -- Honor filter bar visibility toggle live
+    if containerFrame.filterBar then
+        containerFrame.filterBar:SetShown(ShouldShowFilterBar())
+    end
 
     -- Update layout offsets for border thickness
     ApplyLayoutOffsets(containerFrame)

@@ -167,9 +167,37 @@ local function GetVisibleEntries()
     return out
 end
 
+-- Mirror the in-memory filterState into db.profile.history.filter so the
+-- selection survives /reload and session boundaries. Called AFTER every
+-- mutation and BEFORE Refresh, so a Refresh failure cannot leave the
+-- persisted state stale relative to filterState.
+local function PersistFilter()
+    local db = ns.Addon and ns.Addon.db
+    if not db or not db.profile or not db.profile.history or not db.profile.history.filter then
+        return
+    end
+    local persisted = db.profile.history.filter
+    persisted.encounterID = filterState.encounterID
+    persisted.search = filterState.search
+end
+
+-- Pull persisted filter selection back into filterState. Silent on missing
+-- db so it is safe to call from early init paths.
+local function RestoreFilter()
+    local db = ns.Addon and ns.Addon.db
+    if not db or not db.profile or not db.profile.history or not db.profile.history.filter then
+        return
+    end
+    local persisted = db.profile.history.filter
+    filterState.encounterID = persisted.encounterID
+    filterState.search = persisted.search or ""
+end
+
 -- Expose pure filter for unit tests; not part of the public API.
 ns.HistoryFrame._MatchesFilter = MatchesFilter
 ns.HistoryFrame._UNKNOWN_ENCOUNTER = UNKNOWN_ENCOUNTER
+ns.HistoryFrame._PersistFilter = PersistFilter
+ns.HistoryFrame._RestoreFilter = RestoreFilter
 
 local function ShouldShowFilterBar()
     local db = ns.Addon and ns.Addon.db and ns.Addon.db.profile
@@ -1103,6 +1131,7 @@ local function InitEncounterDropdown(self, level, _menuList)
     info.checked = (filterState.encounterID == nil)
     info.func = function()
         filterState.encounterID = nil
+        PersistFilter()
         UIDropDownMenu_SetText(self, L["All Encounters"])
         ns.HistoryFrame.Refresh()
     end
@@ -1114,6 +1143,7 @@ local function InitEncounterDropdown(self, level, _menuList)
         info.checked = (filterState.encounterID == opt.id)
         info.func = function()
             filterState.encounterID = opt.id
+            PersistFilter()
             UIDropDownMenu_SetText(self, opt.name)
             ns.HistoryFrame.Refresh()
         end
@@ -1126,6 +1156,7 @@ local function InitEncounterDropdown(self, level, _menuList)
         info.checked = (filterState.encounterID == UNKNOWN_ENCOUNTER)
         info.func = function()
             filterState.encounterID = UNKNOWN_ENCOUNTER
+            PersistFilter()
             UIDropDownMenu_SetText(self, L["Unknown encounter"])
             ns.HistoryFrame.Refresh()
         end
@@ -1156,6 +1187,7 @@ local function CreateFilterBar(parent)
     searchBox:SetAutoFocus(false)
     searchBox:HookScript("OnTextChanged", function(eb)
         filterState.search = eb:GetText() or ""
+        PersistFilter()
         ns.HistoryFrame.Refresh()
     end)
 
@@ -1175,6 +1207,32 @@ local function CreateFilterBar(parent)
     end
 
     return bar
+end
+
+-------------------------------------------------------------------------------
+-- Apply restored filterState to the live widgets at Initialize-time.
+-- Module-local: only the Initialize-time restore path needs this today.
+-------------------------------------------------------------------------------
+
+local function ApplyFilterToWidgets()
+    if not containerFrame or not containerFrame.filterBar then
+        return
+    end
+    local bar = containerFrame.filterBar
+    local label
+    if filterState.encounterID == nil then
+        label = L["All Encounters"]
+    elseif filterState.encounterID == UNKNOWN_ENCOUNTER then
+        label = L["Unknown encounter"]
+    else
+        label = ResolveEncounterName(filterState.encounterID, nil)
+    end
+    UIDropDownMenu_SetText(bar.encounterDropdown, label)
+
+    -- SetText triggers SearchBoxTemplate's OnTextChanged, which our HookScript
+    -- mirrors back to filterState.search. The value already matches, so the
+    -- hook is a no-op; PersistFilter writes the same value it just read.
+    bar.searchBox:SetText(filterState.search or "")
 end
 
 -------------------------------------------------------------------------------
@@ -1326,6 +1384,8 @@ function ns.HistoryFrame.Initialize()
     ns.HistoryFrame.ApplySettings()
     RestoreFramePosition()
     LoadPersistedEntries()
+    RestoreFilter()
+    ApplyFilterToWidgets()
     ns.DebugPrint("HistoryFrame initialized")
 end
 

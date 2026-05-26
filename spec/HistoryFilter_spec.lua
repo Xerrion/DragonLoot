@@ -116,3 +116,69 @@ describe("MatchesFilter", function()
         assert.is_false(MatchesFilter(entry, { encounterID = UNKNOWN_ENCOUNTER, search = "" }))
     end)
 end)
+
+describe("Filter persistence", function()
+    local function LoadFrame(profileSeed)
+        mock.Reset()
+        mock._profileSeed = profileSeed
+        local ns = mock.CreateNamespace()
+        ns.historyData = {}
+        mock.LoadFile(ns, "DragonLoot/Display/HistoryFrame.lua")
+        -- Mimic the addon init wiring so ns.Addon.db exists for the helpers.
+        ns.Addon.db = LibStub("AceDB-3.0"):New("DragonLootDB", { profile = {} }, true)
+        return ns
+    end
+
+    it("RestoreFilter copies persisted encounterID and search into filterState", function()
+        local ns = LoadFrame({
+            history = { filter = { encounterID = 1084, search = "thrall", barVisible = true } },
+        })
+
+        ns.HistoryFrame._RestoreFilter()
+
+        -- PersistFilter then mirrors filterState back; round-trip must preserve values.
+        ns.HistoryFrame._PersistFilter()
+        local stored = ns.Addon.db.profile.history.filter
+        assert.equals(1084, stored.encounterID)
+        assert.equals("thrall", stored.search)
+    end)
+
+    it("RestoreFilter defaults search to empty string when persisted value is nil", function()
+        local ns = LoadFrame({
+            history = { filter = { barVisible = true } },
+        })
+
+        ns.HistoryFrame._RestoreFilter()
+        ns.HistoryFrame._PersistFilter()
+        local stored = ns.Addon.db.profile.history.filter
+        assert.is_nil(stored.encounterID)
+        assert.equals("", stored.search)
+    end)
+
+    it("PersistFilter writes UNKNOWN_ENCOUNTER sentinel through unchanged", function()
+        local UNKNOWN = -1
+        local ns = LoadFrame({
+            history = { filter = { encounterID = UNKNOWN, search = "" } },
+        })
+        assert.equals(UNKNOWN, ns.HistoryFrame._UNKNOWN_ENCOUNTER)
+
+        ns.HistoryFrame._RestoreFilter()
+        ns.HistoryFrame._PersistFilter()
+        assert.equals(UNKNOWN, ns.Addon.db.profile.history.filter.encounterID)
+    end)
+
+    it("RestoreFilter is a no-op when ns.Addon.db is unset", function()
+        mock.Reset()
+        local ns = mock.CreateNamespace()
+        ns.historyData = {}
+        mock.LoadFile(ns, "DragonLoot/Display/HistoryFrame.lua")
+        ns.Addon.db = nil
+
+        assert.has_no.errors(function()
+            ns.HistoryFrame._RestoreFilter()
+        end)
+        assert.has_no.errors(function()
+            ns.HistoryFrame._PersistFilter()
+        end)
+    end)
+end)

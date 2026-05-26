@@ -38,7 +38,7 @@ adds a dedicated loot history panel for tracking drops and winners.
 
 | Client | Interface Versions |
 |---|---|
-| Retail | 120005, 120001, 120000, 110207 |
+| Retail | 120005 |
 | TBC Anniversary | 20505 |
 | MoP Classic | 50503 |
 

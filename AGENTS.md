@@ -2,11 +2,11 @@
 
 ## Target Versions
 
-| Version         | Interface              | TOC Directive                          |
-| --------------- | ---------------------- | -------------------------------------- |
-| Retail          | 120005, 110207, 120000 | `## Interface: 120005, 110207, 120000` |
-| TBC Anniversary | 20505                  | `## Interface-BCC: 20505`              |
-| MoP Classic     | 50503                  | `## Interface-Mists: 50503`            |
+| Version           | Interface | TOC Directive               |
+| ----------------- | --------- | --------------------------- |
+| Retail (Midnight) | 120005    | `## Interface: 120005`      |
+| TBC Anniversary   | 20505     | `## Interface-BCC: 20505`   |
+| MoP Classic       | 50503     | `## Interface-Mists: 50503` |
 
 Version-specific files load via BigWigsMods packager comment directives (`#@retail@` / `#@non-retail@`) in the TOC.
 

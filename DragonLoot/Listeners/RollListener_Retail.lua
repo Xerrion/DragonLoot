@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- RollListener_Retail.lua
--- Loot roll event handling for Retail (The War Within, Midnight)
+-- Loot roll event handling for Retail (Midnight)
 --
 -- Supported versions: Retail
 -------------------------------------------------------------------------------

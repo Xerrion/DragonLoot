@@ -1,6 +1,6 @@
 ## Interface: 120005
 ## Interface-BCC: 20505
-## Interface-Mists: 50503
+## Interface-Mists: 50504
 ## Title: Dragon Loot
 ## Notes: Customizable loot addon that replaces the default Blizzard loot window and loot roll views.
 ## Author: Xerrion

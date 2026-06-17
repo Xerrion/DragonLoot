@@ -16,17 +16,19 @@ The repository is structured as a multi-addon project separating core logic, con
 
 - **`DragonLoot/`** (Core Addon)
   - `Core/`: Core bootstrap (`Init.lua`), addon lifecycle (`Lifecycle.lua`), AceDB database configurations, slash commands, and the minimap icon.
-  - `Display/`: Custom loot frames (`LootFrame.lua`), roll frames (`RollFrame.lua`), history window (`HistoryFrame.lua`), and associated UI/layout animations.
-  - `Listeners/`: Event listeners handling version-specific API differences (e.g., `LootListener_Retail.lua` vs. `LootListener_Classic.lua`). Uses packager directives (`#@retail@` / `#@non-retail@`) to load correct listeners.
+  - `Display/`: Custom loot frames (`LootFrame.lua`), roll frames (`RollFrame.lua`), history window (`HistoryFrame.lua`) with encounter/search filtering, and associated UI/layout animations.
+  - `Listeners/`: Event listeners handling version-specific API differences (e.g., `LootListener_Retail.lua` vs. `LootListener_Classic.lua`, `EncounterListener_Classic.lua`). Uses packager directives (`#@retail@` / `#@non-retail@`) to load correct listeners.
   - `Locales/`: Localized strings for translation support.
   - `Libs/`: Embedded external libraries (Ace3, LibSharedMedia-3.0, LibAnimate, etc.).
 - **`DragonLoot_Options/`** (Load-on-Demand Configuration)
   - A separate companion addon loaded on-demand when the user opens the options interface.
-  - Contains individual tabs for configuring appearance, animations, roll frame, and history settings, and embeds the custom `DragonWidgets` library.
+  - Contains individual tabs for configuring appearance, animations, roll frame, and history settings including the filter bar toggle, and embeds the custom `DragonWidgets` library.
 - **`spec/`** (Testing Suite)
-  - Contains the busted unit test suite (`Config_spec.lua`, `Lifecycle_spec.lua`, `MasterLoot_spec.lua`) and a comprehensive WoW API mock harness (`wow_mock.lua`).
+  - Contains 71 busted tests, including `HistoryFilter_spec.lua` and `EncounterListener_Classic_spec.lua`, and a comprehensive WoW API mock harness (`wow_mock.lua`).
 
 ## Config Schema Reference
+
+Current profile schema version: 5.
 
 ### Appearance (`db.profile.appearance`)
 
@@ -66,29 +68,33 @@ The repository is structured as a multi-addon project separating core logic, con
 
 ### History (`db.profile.history`)
 
-| Key              | Type    | Default |
-| ---------------- | ------- | ------- |
-| enabled          | boolean | true    |
-| maxEntries       | number  | 50      |
-| autoShow         | boolean | false   |
-| lock             | boolean | false   |
-| trackDirectLoot  | boolean | true    |
-| minQuality       | number  | 2       |
-| rowHeightPadding | number  | 6       |
+| Key                | Type       | Default |
+| ------------------ | ---------- | ------- |
+| enabled            | boolean    | true    |
+| maxEntries         | number     | 100     |
+| autoShow           | boolean    | false   |
+| lock               | boolean    | false   |
+| trackDirectLoot    | boolean    | true    |
+| minQuality         | number     | 2       |
+| rowHeightPadding   | number     | 6       |
+| filter.encounterID | number/nil | nil     |
+| filter.search      | string     | ""      |
+| filter.barVisible  | boolean    | true    |
 
 ## Version-Specific API Differences
 
-| Aspect                      | Retail                        | Classic (TBC/MoP)       |
-| --------------------------- | ----------------------------- | ----------------------- |
-| GetLootSlotInfo returns     | 10                            | 6                       |
-| GetLootRollItemInfo returns | 13 (incl canTransmog)         | 12                      |
-| C_LootHistory               | Encounter-based               | Roll-item indexed       |
-| CANCEL_ALL_LOOT_ROLLS       | Yes                           | No                      |
-| LOOT_READY event            | Yes (fires after LOOT_OPENED) | No                      |
-| C_Loot.GetLootRollDuration  | Yes                           | No                      |
-| Loot listener               | LootListener_Retail           | LootListener_Classic    |
-| Roll listener               | RollListener_Retail           | RollListener_Classic    |
-| History listener            | HistoryListener_Retail        | HistoryListener_Classic |
+| Aspect                      | Retail                        | Classic (TBC/MoP)                           |
+| --------------------------- | ----------------------------- | ------------------------------------------- |
+| GetLootSlotInfo returns     | 10                            | 6                                           |
+| GetLootRollItemInfo returns | 13 (incl canTransmog)         | 12                                          |
+| C_LootHistory               | Encounter-based               | Roll-item indexed                           |
+| CANCEL_ALL_LOOT_ROLLS       | Yes                           | No                                          |
+| LOOT_READY event            | Yes (fires after LOOT_OPENED) | No                                          |
+| C_Loot.GetLootRollDuration  | Yes                           | No                                          |
+| Loot listener               | LootListener_Retail           | LootListener_Classic                        |
+| Roll listener               | RollListener_Retail           | RollListener_Classic                        |
+| Encounter listener          | N/A                           | EncounterListener_Classic (`#@non-retail@`) |
+| History listener            | HistoryListener_Retail        | HistoryListener_Classic                     |
 
 ## DragonToast Integration
 

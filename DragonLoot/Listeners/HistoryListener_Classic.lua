@@ -21,6 +21,7 @@ end
 
 local C_LootHistory = C_LootHistory
 local GetItemInfo = GetItemInfo
+local GetInstanceInfo = GetInstanceInfo
 local GetTime = GetTime
 local time = time
 local table_sort = table.sort
@@ -86,7 +87,7 @@ local function RefreshFromAPI()
             quality = q or 1
         end
 
-        entries[#entries + 1] = {
+        local entry = {
             itemLink = itemLink,
             itemTexture = GetItemTexture(itemLink),
             quality = quality,
@@ -99,6 +100,21 @@ local function RefreshFromAPI()
             isComplete = isDone,
             rollResults = rollResults,
         }
+
+        -- Tag with encounter context from EncounterListener_Classic's cache,
+        -- but only if the player is still in the same instance the encounter
+        -- started in (ADR-0004). The cache is sticky across reloads/zones, so
+        -- the instanceID comparison is the staleness guard.
+        local enc = ns.currentEncounter
+        if enc then
+            local _, _, _, _, _, _, _, curInstanceID = GetInstanceInfo()
+            if enc.instanceID == curInstanceID then
+                entry.encounterID = enc.id
+                entry.encounterName = enc.name
+            end
+        end
+
+        entries[#entries + 1] = entry
     end
 
     -- Carry forward persisted wallTime for drops we already saw on a prior day.

@@ -72,6 +72,14 @@ local defaults = {
             contentPadding = 6,
             rowHeightPadding = 6,
             showRollDetails = true,
+            -- filter.encounterID is intentionally absent from this literal (nil in a table
+            -- constructor is a no-op). The field is part of the documented shape and gets
+            -- populated at runtime when the user selects an encounter in the history UI.
+            filter = {
+                -- encounterID = nil,
+                search = "",
+                barVisible = true,
+            },
         },
 
         appearance = {
@@ -140,7 +148,7 @@ local defaults = {
 -- Profile Migration
 -------------------------------------------------------------------------------
 
-local CURRENT_SCHEMA = 4
+local CURRENT_SCHEMA = 5
 
 local function DeepCopyValue(value)
     if type(value) ~= "table" then
@@ -184,17 +192,14 @@ local function FillMissingDefaults(profile)
                 -- Validate existing values: reset if type doesn't match or is invalid
                 elseif type(currentValue) ~= type(defaultValue) then
                     profile[section][key] = DeepCopyValue(defaultValue)
-                -- Handle nested tables (like color values {r,g,b})
+                -- Handle nested tables (like color values {r,g,b} or history.filter):
+                -- merge missing/wrong-type keys from defaults without discarding valid
+                -- existing scalars or extra user fields (e.g. filter.encounterID).
                 elseif type(defaultValue) == "table" then
-                    local isValid = true
                     for k, v in pairs(defaultValue) do
-                        if type(currentValue[k]) ~= type(v) then
-                            isValid = false
-                            break
+                        if currentValue[k] == nil or type(currentValue[k]) ~= type(v) then
+                            currentValue[k] = DeepCopyValue(v)
                         end
-                    end
-                    if not isValid then
-                        profile[section][key] = DeepCopyValue(defaultValue)
                     end
                 end
             end
@@ -245,6 +250,12 @@ local function MigrateProfile(db)
     -- No profile data needs transformation - the new char scope is added by AceDB's defaults
     -- handling when InitializeDB passes the updated defaults table to AceDB:New. The schema
     -- bump is recorded by the unconditional assignment to profile.schemaVersion below.
+
+    -- v4 -> v5: introduce db.profile.history.filter for the loot history encounter/search
+    -- filter UI (issue #89). No transformation of existing data is required - FillMissingDefaults
+    -- (run above when version < CURRENT_SCHEMA) seeds the new filter sub-table from defaults.
+    -- Existing db.char.history.entries are deliberately left untouched; pre-feature entries
+    -- without encounterID surface in the "Unknown encounter" bucket at filter time.
 
     profile.schemaVersion = CURRENT_SCHEMA
 end

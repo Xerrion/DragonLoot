@@ -47,7 +47,7 @@ files["DragonLoot/"] = {
 
     read_globals = {
         -- WoW API - General
-        "UnitName", "UnitClass", "IsInInstance",
+        "UnitName", "UnitClass", "IsInInstance", "GetInstanceInfo",
         "GetCursorPosition", "GetItemInfoInstant", "GetItemQualityColor",
         "C_Item", "C_Container", "C_AddOns", "IsAddOnLoaded", "LoadAddOn",
         "CreateColor", "PlaySoundFile",
@@ -57,6 +57,11 @@ files["DragonLoot/"] = {
         "ShowUIPanel",
         "IsModifiedClick", "GameTooltip_ShowCompareItem",
         "GetCVarBool",
+
+        -- WoW API - UIDropDownMenu (legacy)
+        "UIDropDownMenu_Initialize", "UIDropDownMenu_CreateInfo",
+        "UIDropDownMenu_AddButton", "UIDropDownMenu_SetWidth",
+        "UIDropDownMenu_SetText",
 
         -- WoW API - Loot
         "GetNumLootItems", "GetLootSlotInfo", "GetLootSlotLink", "GetLootSlotType",
@@ -71,6 +76,9 @@ files["DragonLoot/"] = {
 
         -- WoW API - Loot History
         "C_LootHistory",
+
+        -- WoW API - Encounter Journal
+        "EJ_GetEncounterInfo",
 
         -- WoW Frames - Loot
         "LootFrame",
@@ -116,6 +124,7 @@ files["DragonLoot/Locales/*.lua"] = {
 files["spec/"] = {
     globals = {
         "UISpecialFrames",
+        "C_LootHistory",
     },
 }
 

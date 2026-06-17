@@ -191,6 +191,21 @@ local function CreateDisplaySection(parent, db, yOffset)
     })
     innerY = LC.AnchorWidget(rollDetailsToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
+    -- Show Filter Bar toggle
+    local filterBarToggle = W.CreateToggle(content, {
+        label = L["Show filter bar"],
+        tooltip = L["Show the encounter and search filter bar in the history window"],
+        get = function()
+            return db.profile.history.filter and db.profile.history.filter.barVisible ~= false
+        end,
+        set = function(value)
+            db.profile.history.filter = db.profile.history.filter or {}
+            db.profile.history.filter.barVisible = value
+            ApplyHistorySettings()
+        end,
+    })
+    innerY = LC.AnchorWidget(filterBarToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
     -- Slider: Max Entries
     local maxEntriesSlider = W.CreateSlider(content, {
         label = L["Max Entries"],

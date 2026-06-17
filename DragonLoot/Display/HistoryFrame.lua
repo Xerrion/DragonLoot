@@ -19,9 +19,18 @@ local time = time
 local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local HandleModifiedItemClick = HandleModifiedItemClick
 local IsShiftKeyDown = IsShiftKeyDown
+local UIDropDownMenu_Initialize = UIDropDownMenu_Initialize
+local UIDropDownMenu_CreateInfo = UIDropDownMenu_CreateInfo
+local UIDropDownMenu_AddButton = UIDropDownMenu_AddButton
+local UIDropDownMenu_SetWidth = UIDropDownMenu_SetWidth
+local UIDropDownMenu_SetText = UIDropDownMenu_SetText
+local EJ_GetEncounterInfo = EJ_GetEncounterInfo
 local math_floor = math.floor
 local math_abs = math.abs
 local string_format = string.format
+local string_lower = string.lower
+local string_match = string.match
+local string_find = string.find
 local table_sort = table.sort
 local tostring = tostring
 
@@ -35,6 +44,7 @@ local DU = ns.DisplayUtils
 local FRAME_WIDTH = 350
 local FRAME_HEIGHT = 400
 local TITLE_BAR_HEIGHT = 24
+local FILTER_BAR_HEIGHT = 26
 local SCROLL_STEP = 3
 local SCROLLBAR_WIDTH = 14
 local SCROLLBAR_GAP = 2
@@ -82,6 +92,134 @@ local detailRowPool = {}
 -------------------------------------------------------------------------------
 
 ns.historyData = {}
+
+-------------------------------------------------------------------------------
+-- Filter state (Phase 3: widgets only; Phase 4 will read this in the filter
+-- pipeline; Phase 6 will sync with db.profile.history.filter)
+-------------------------------------------------------------------------------
+
+-- Sentinel for filterState.encounterID meaning "only entries with nil
+-- encounterID" (i.e. loot recorded outside a tracked encounter). Any non-nil
+-- value that can't collide with a real encounterID works; -1 is conventional
+-- and reads clearly at callsites. Immutable after this assignment.
+local UNKNOWN_ENCOUNTER = -1
+
+-- [encounterID] = resolved display name. Populated lazily on Retail via
+-- EJ_GetEncounterInfo when the dropdown is opened; Classic entries carry
+-- entry.encounterName captured at ENCOUNTER_START and bypass this cache.
+local encounterNameCache = {}
+
+local filterState = {
+    encounterID = nil, -- nil means "All Encounters"
+    search = "",
+}
+
+-- Pure: depends only on its two arguments, cached Lua stdlib, and the
+-- module-immutable UNKNOWN_ENCOUNTER upvalue (a constant, so the function
+-- remains a function of its inputs). Returns true if `entry` should be
+-- visible under `state`. See spec/HistoryFilter_spec.lua.
+local function MatchesFilter(entry, state)
+    if not entry or not state then
+        return true
+    end
+
+    if state.encounterID == UNKNOWN_ENCOUNTER then
+        if entry.encounterID ~= nil then
+            return false
+        end
+    elseif state.encounterID ~= nil and entry.encounterID ~= state.encounterID then
+        return false
+    end
+
+    local search = state.search
+    if not search or search == "" then
+        return true
+    end
+
+    local needle = string_lower(search)
+
+    local itemLink = entry.itemLink
+    if itemLink then
+        local itemName = string_match(itemLink, "%[(.-)%]")
+        if itemName and string_find(string_lower(itemName), needle, 1, true) then
+            return true
+        end
+    end
+
+    local winner = entry.winner
+    if winner and winner ~= "" then
+        if string_find(string_lower(winner), needle, 1, true) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function GetVisibleEntries()
+    local out = {}
+    for i = 1, #ns.historyData do
+        local e = ns.historyData[i]
+        if MatchesFilter(e, filterState) then
+            out[#out + 1] = e
+        end
+    end
+    return out
+end
+
+-- Mirror the in-memory filterState into db.profile.history.filter so the
+-- selection survives /reload and session boundaries. Called AFTER every
+-- mutation and BEFORE Refresh, so a Refresh failure cannot leave the
+-- persisted state stale relative to filterState.
+local function PersistFilter()
+    local db = ns.Addon and ns.Addon.db
+    if not db or not db.profile or not db.profile.history or not db.profile.history.filter then
+        return
+    end
+    local persisted = db.profile.history.filter
+    persisted.encounterID = filterState.encounterID
+    persisted.search = filterState.search
+end
+
+-- Pull persisted filter selection back into filterState. Silent on missing
+-- db so it is safe to call from early init paths.
+local function RestoreFilter()
+    local db = ns.Addon and ns.Addon.db
+    if not db or not db.profile or not db.profile.history or not db.profile.history.filter then
+        return
+    end
+    local persisted = db.profile.history.filter
+
+    local persistedEncounterID = persisted.encounterID
+    if persistedEncounterID ~= nil and type(persistedEncounterID) ~= "number" then
+        persistedEncounterID = nil
+    end
+    filterState.encounterID = persistedEncounterID
+
+    local persistedSearch = persisted.search
+    if type(persistedSearch) ~= "string" then
+        persistedSearch = ""
+    end
+    filterState.search = persistedSearch
+end
+
+-- Expose pure filter for unit tests; not part of the public API.
+ns.HistoryFrame._MatchesFilter = MatchesFilter
+ns.HistoryFrame._UNKNOWN_ENCOUNTER = UNKNOWN_ENCOUNTER
+ns.HistoryFrame._PersistFilter = PersistFilter
+ns.HistoryFrame._RestoreFilter = RestoreFilter
+
+local function ShouldShowFilterBar()
+    local db = ns.Addon and ns.Addon.db and ns.Addon.db.profile
+    if not db or not db.history or not db.history.filter then
+        return true
+    end
+    return db.history.filter.barVisible ~= false
+end
+
+local function GetTopBarOffset()
+    return TITLE_BAR_HEIGHT + (ShouldShowFilterBar() and FILTER_BAR_HEIGHT or 0)
+end
 
 -- Forward declaration for RefreshHistory (used by OnEntryClick)
 local RefreshHistory
@@ -188,15 +326,10 @@ local function ApplyLayoutOffsets(frame)
     titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
 
     -- Scroll frame and scrollbar insets
+    local topBarOffset = GetTopBarOffset()
     if scrollFrame then
         scrollFrame:ClearAllPoints()
-        scrollFrame:SetPoint(
-            "TOPLEFT",
-            frame,
-            "TOPLEFT",
-            padding + borderSize,
-            -(TITLE_BAR_HEIGHT + padding + borderSize)
-        )
+        scrollFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", padding + borderSize, -(topBarOffset + padding + borderSize))
         scrollFrame:SetPoint(
             "BOTTOMRIGHT",
             frame,
@@ -212,7 +345,7 @@ local function ApplyLayoutOffsets(frame)
             frame,
             "TOPRIGHT",
             -(padding + borderSize),
-            -(TITLE_BAR_HEIGHT + padding + borderSize)
+            -(topBarOffset + padding + borderSize)
         )
         scrollBar:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(padding + borderSize), padding + borderSize)
     end
@@ -801,8 +934,9 @@ RefreshHistory = function()
     local db = ns.Addon.db.profile
     local entryHeight = GetEntryHeight()
     local entrySpacing = GetEntrySpacing()
+    local visible = GetVisibleEntries()
     local yOffset = 0
-    for i, data in ipairs(ns.historyData) do
+    for i, data in ipairs(visible) do
         local entry = AcquireEntry()
         PopulateEntry(entry, data)
         entry:ClearAllPoints()
@@ -826,6 +960,10 @@ RefreshHistory = function()
         totalHeight = 1
     end
     scrollChild:SetHeight(totalHeight)
+
+    if containerFrame.filterBar and containerFrame.filterBar.countText then
+        containerFrame.filterBar.countText:SetText(string_format("%d/%d", #visible, #ns.historyData))
+    end
 
     UpdateScrollBar()
 end
@@ -927,6 +1065,182 @@ local function CreateTitleBar(parent)
 end
 
 -------------------------------------------------------------------------------
+-- Filter bar creation (encounter dropdown + search box)
+-------------------------------------------------------------------------------
+
+-- Resolve a display name for an encounterID. Priority:
+--   1. nil ID -> localized "Unknown encounter".
+--   2. entry.encounterName captured at ENCOUNTER_START (Classic listener).
+--   3. Cached lookup from a previous EJ_GetEncounterInfo call.
+--   4. EJ_GetEncounterInfo when available (Retail; may be absent on Classic).
+--   5. tostring(id) fallback so the user can always filter.
+local function ResolveEncounterName(encounterID, entry)
+    if encounterID == nil then
+        return L["Unknown encounter"]
+    end
+    if entry and entry.encounterName and entry.encounterName ~= "" then
+        return entry.encounterName
+    end
+    local cached = encounterNameCache[encounterID]
+    if cached then
+        return cached
+    end
+    if EJ_GetEncounterInfo then
+        local name = EJ_GetEncounterInfo(encounterID)
+        if name and name ~= "" then
+            encounterNameCache[encounterID] = name
+            return name
+        end
+    end
+    local fallback = tostring(encounterID)
+    encounterNameCache[encounterID] = fallback
+    return fallback
+end
+
+-- Fires on every dropdown open, so the option list always reflects current
+-- ns.historyData -- no manual invalidation needed when entries arrive while
+-- the dropdown is closed.
+local function InitEncounterDropdown(self, level, _menuList)
+    if level ~= 1 then
+        return
+    end
+
+    -- Walk current history once: collect distinct encounterIDs (keeping the
+    -- first entry seen for each, used as the encounterName source for Classic)
+    -- and remember whether any entry lacks an encounterID at all.
+    local seen = {}
+    local hasUnknown = false
+    for i = 1, #ns.historyData do
+        local e = ns.historyData[i]
+        local id = e.encounterID
+        if id == nil then
+            hasUnknown = true
+        elseif not seen[id] then
+            seen[id] = e
+        end
+    end
+
+    local options = {}
+    for id, entry in pairs(seen) do
+        options[#options + 1] = { id = id, name = ResolveEncounterName(id, entry) }
+    end
+    table_sort(options, function(a, b)
+        if a.name == b.name then
+            return a.id < b.id
+        end
+        return a.name < b.name
+    end)
+
+    local info = UIDropDownMenu_CreateInfo()
+    info.text = L["All Encounters"]
+    info.checked = (filterState.encounterID == nil)
+    info.func = function()
+        filterState.encounterID = nil
+        PersistFilter()
+        UIDropDownMenu_SetText(self, L["All Encounters"])
+        ns.HistoryFrame.Refresh()
+    end
+    UIDropDownMenu_AddButton(info, level)
+
+    for _, opt in ipairs(options) do
+        info = UIDropDownMenu_CreateInfo()
+        info.text = opt.name
+        info.checked = (filterState.encounterID == opt.id)
+        info.func = function()
+            filterState.encounterID = opt.id
+            PersistFilter()
+            UIDropDownMenu_SetText(self, opt.name)
+            ns.HistoryFrame.Refresh()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
+
+    if hasUnknown then
+        info = UIDropDownMenu_CreateInfo()
+        info.text = L["Unknown encounter"]
+        info.checked = (filterState.encounterID == UNKNOWN_ENCOUNTER)
+        info.func = function()
+            filterState.encounterID = UNKNOWN_ENCOUNTER
+            PersistFilter()
+            UIDropDownMenu_SetText(self, L["Unknown encounter"])
+            ns.HistoryFrame.Refresh()
+        end
+        UIDropDownMenu_AddButton(info, level)
+    end
+end
+
+local function CreateFilterBar(parent)
+    local bar = CreateFrame("Frame", nil, parent)
+    bar:SetHeight(FILTER_BAR_HEIGHT)
+    bar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -TITLE_BAR_HEIGHT)
+    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, -TITLE_BAR_HEIGHT)
+
+    -- Encounter dropdown (legacy UIDropDownMenu API).
+    -- Parented to the main container so popup anchor math works correctly.
+    local encounterDropdown =
+        CreateFrame("Frame", "DragonLootHistoryEncounterDropdown", parent, "UIDropDownMenuTemplate")
+    encounterDropdown:SetPoint("LEFT", bar, "LEFT", 4, 0)
+    encounterDropdown.displayMode = "MENU"
+    UIDropDownMenu_Initialize(encounterDropdown, InitEncounterDropdown)
+    UIDropDownMenu_SetWidth(encounterDropdown, 150)
+    UIDropDownMenu_SetText(encounterDropdown, L["All Encounters"])
+
+    -- Search box (SearchBoxTemplate gives clear-X + placeholder for free).
+    local searchBox = CreateFrame("EditBox", nil, bar, "SearchBoxTemplate")
+    searchBox:SetSize(150, 20)
+    searchBox:SetPoint("LEFT", encounterDropdown, "RIGHT", 6, 2)
+    searchBox:SetAutoFocus(false)
+    searchBox:HookScript("OnTextChanged", function(eb)
+        filterState.search = eb:GetText() or ""
+        PersistFilter()
+        ns.HistoryFrame.Refresh()
+    end)
+
+    -- Visible-count placeholder (wired in Phase 4).
+    local countText = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    countText:SetPoint("RIGHT", bar, "RIGHT", -8, 0)
+    countText:SetText("")
+
+    bar.encounterDropdown = encounterDropdown
+    bar.searchBox = searchBox
+    bar.countText = countText
+
+    if ShouldShowFilterBar() then
+        bar:Show()
+    else
+        bar:Hide()
+    end
+
+    return bar
+end
+
+-------------------------------------------------------------------------------
+-- Apply restored filterState to the live widgets at Initialize-time.
+-- Module-local: only the Initialize-time restore path needs this today.
+-------------------------------------------------------------------------------
+
+local function ApplyFilterToWidgets()
+    if not containerFrame or not containerFrame.filterBar then
+        return
+    end
+    local bar = containerFrame.filterBar
+    local label
+    if filterState.encounterID == nil then
+        label = L["All Encounters"]
+    elseif filterState.encounterID == UNKNOWN_ENCOUNTER then
+        label = L["Unknown encounter"]
+    else
+        label = ResolveEncounterName(filterState.encounterID, nil)
+    end
+    UIDropDownMenu_SetText(bar.encounterDropdown, label)
+
+    -- SetText triggers SearchBoxTemplate's OnTextChanged, which our HookScript
+    -- mirrors back to filterState.search. The value already matches, so the
+    -- hook is a no-op; PersistFilter writes the same value it just read.
+    bar.searchBox:SetText(filterState.search or "")
+end
+
+-------------------------------------------------------------------------------
 -- Scroll frame creation
 -------------------------------------------------------------------------------
 
@@ -938,10 +1252,11 @@ end
 
 local function CreateScrollComponents(parent)
     local padding = GetContentPadding()
+    local topBarOffset = GetTopBarOffset()
 
     -- Scroll frame (clip region)
     local sf = CreateFrame("ScrollFrame", "DragonLootHistoryScroll", parent)
-    sf:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -(TITLE_BAR_HEIGHT + padding))
+    sf:SetPoint("TOPLEFT", parent, "TOPLEFT", padding, -(topBarOffset + padding))
     sf:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -(padding + SCROLLBAR_WIDTH + SCROLLBAR_GAP), padding)
 
     -- Scroll child
@@ -953,7 +1268,7 @@ local function CreateScrollComponents(parent)
     -- Scroll bar
     local bar = CreateFrame("Slider", "DragonLootHistoryScrollBar", parent, "BackdropTemplate")
     bar:SetWidth(SCROLLBAR_WIDTH)
-    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -padding, -(TITLE_BAR_HEIGHT + padding))
+    bar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -padding, -(topBarOffset + padding))
     bar:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -padding, padding)
     bar:SetOrientation("VERTICAL")
     bar:SetMinMaxValues(0, 0)
@@ -1006,6 +1321,9 @@ local function CreateContainerFrame()
 
     -- Title bar
     frame.titleBar = CreateTitleBar(frame)
+
+    -- Filter bar (encounter dropdown + search)
+    frame.filterBar = CreateFilterBar(frame)
 
     -- Dragging
     frame:EnableMouse(true)
@@ -1071,6 +1389,8 @@ function ns.HistoryFrame.Initialize()
     ns.HistoryFrame.ApplySettings()
     RestoreFramePosition()
     LoadPersistedEntries()
+    RestoreFilter()
+    ApplyFilterToWidgets()
     ns.DebugPrint("HistoryFrame initialized")
 end
 
@@ -1127,6 +1447,11 @@ function ns.HistoryFrame.ApplySettings()
 
     -- Update backdrop
     ApplyBackdrop(containerFrame)
+
+    -- Honor filter bar visibility toggle live
+    if containerFrame.filterBar then
+        containerFrame.filterBar:SetShown(ShouldShowFilterBar())
+    end
 
     -- Update layout offsets for border thickness
     ApplyLayoutOffsets(containerFrame)

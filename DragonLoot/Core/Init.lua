@@ -302,6 +302,7 @@ local MODULES = {
     { name = "LootFrame" },
     { name = "RollManager" },
     { name = "HistoryFrame" },
+    { name = "EncounterListener_Classic", passAddon = true },
     { name = "HistoryListener", passAddon = true },
     { name = "LootHistoryChat", passAddon = true },
     { name = "Listeners", passAddon = true },

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/Xerrion/DragonLoot/compare/0.18.0...0.18.1) (2026-10-14)
+
+
+### ⚙️ Miscellaneous Tasks
+
+* update TOC Interface versions ([#196](https://github.com/Xerrion/DragonLoot/issues/196)) ([95710ec](https://github.com/Xerrion/DragonLoot/commit/95710ec5fffef34820c9170051a53c4eaf0076d7))
+
 ## [0.18.0](https://github.com/Xerrion/DragonLoot/compare/0.17.0...0.18.0) (2026-09-09)
 
 

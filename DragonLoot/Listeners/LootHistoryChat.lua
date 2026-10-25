@@ -16,7 +16,7 @@ local time = time
 local UnitName = UnitName
 local UnitClass = UnitClass
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
-local GetItemInfo = GetItemInfo
+local GetItemInfo = C_Item.GetItemInfo
 local pairs = pairs
 local LifecycleUtil = ns.LifecycleUtil
 

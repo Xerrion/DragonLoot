@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+* Use namespaced item-info APIs for loot history on supported clients ([#198](https://github.com/Xerrion/DragonLoot/issues/198)).
+* Replace the history clear icon with localized "Clear" text to distinguish it from Close.
+
 ## [0.18.1](https://github.com/Xerrion/DragonLoot/compare/0.18.0...0.18.1) (2026-10-14)
 
 

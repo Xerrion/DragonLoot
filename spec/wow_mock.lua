@@ -147,21 +147,62 @@ function GetLootRollItemLink(rollID)
 end
 
 -------------------------------------------------------------------------------
--- Loot history mocks (Classic roll-item indexed C_LootHistory)
+-- Item API mocks (C_Item only; removed global aliases are not provided)
 --
--- Tests populate M._lootHistory.items with an ordered list of
+-- Tests seed M._items[itemLink] with { itemID, name, quality, icon }.
+-------------------------------------------------------------------------------
+
+M._items = {}
+
+C_Item = {
+    GetItemInfo = function(itemLink)
+        local item = M._items[itemLink]
+        if not item then
+            return nil
+        end
+        return item.name, itemLink, item.quality, nil, nil, nil, nil, nil, nil, item.icon
+    end,
+    GetItemInfoInstant = function(itemLink)
+        local item = M._items[itemLink]
+        if not item then
+            return nil
+        end
+        return item.itemID, nil, nil, nil, item.icon
+    end,
+}
+
+-------------------------------------------------------------------------------
+-- Loot history mocks (Retail encounter drops and Classic roll-item history)
+--
+-- Classic tests populate M._lootHistory.items with an ordered list of
 -- { rollID, itemLink, numPlayers, isDone, winnerIndex, isMasterLoot } and
 -- M._lootHistory.players with players[itemIndex] = ordered list of
--- { name, class, rollType, roll, isWinner, isMe }. Both default to empty, so a
--- spec that never touches loot history sees an API reporting nothing.
+-- { name, class, rollType, roll, isWinner, isMe }. Retail tests seed encounters
+-- with { encounterID } records and drops[encounterID] with API drop records.
+-- All collections default to empty.
 -------------------------------------------------------------------------------
 
 M._lootHistory = {
     items = {},
     players = {},
+    encounters = {},
+    drops = {},
 }
 
 C_LootHistory = {
+    GetAllEncounterInfos = function()
+        return M._lootHistory.encounters
+    end,
+    GetSortedDropsForEncounter = function(encounterID)
+        return M._lootHistory.drops[encounterID] or {}
+    end,
+    GetSortedInfoForDrop = function(encounterID, lootListID)
+        for _, drop in ipairs(M._lootHistory.drops[encounterID] or {}) do
+            if drop.lootListID == lootListID then
+                return drop
+            end
+        end
+    end,
     GetNumItems = function()
         return #M._lootHistory.items
     end,
@@ -552,8 +593,12 @@ function M.Reset()
     M._masterLoot.candidates = {}
     M._masterLoot.given = {}
 
+    M._items = {}
+
     M._lootHistory.items = {}
     M._lootHistory.players = {}
+    M._lootHistory.encounters = {}
+    M._lootHistory.drops = {}
 
     M._rollSubmissions = {}
     M._popupDialogs = {}

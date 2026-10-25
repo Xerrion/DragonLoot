@@ -11,8 +11,7 @@ local _, ns = ...
 -- Cached WoW API
 -------------------------------------------------------------------------------
 
-local GetItemInfoInstant = GetItemInfoInstant
-local GetItemInfo = GetItemInfo
+local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local GetLootRollItemInfo = GetLootRollItemInfo
 local ConfirmLootRoll = ConfirmLootRoll
 local StaticPopup_Show = StaticPopup_Show
@@ -51,11 +50,7 @@ function LS.GetItemTexture(itemLink)
     if not itemLink then
         return nil
     end
-    if GetItemInfoInstant then
-        local _, _, _, _, icon = GetItemInfoInstant(itemLink)
-        return icon
-    end
-    local _, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemLink)
+    local _, _, _, _, icon = GetItemInfoInstant(itemLink)
     return icon
 end
 

@@ -886,6 +886,8 @@ local function CreateTitleBar(parent)
     local fontPath, fontSize, fontOutline = GetFont()
     titleBar.text = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+    titleBar.text:SetJustifyH("LEFT")
+    titleBar.text:SetWordWrap(false)
     titleBar.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(titleBar.text, ns.Addon.db)
     titleBar.text:SetText(L["DragonLoot - Loot History"])
@@ -907,9 +909,15 @@ local function CreateTitleBar(parent)
 
     -- Clear button
     local clearBtn = CreateFrame("Button", nil, titleBar)
-    clearBtn:SetSize(16, 16)
-    clearBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
-    clearBtn:SetNormalTexture("Interface\\Buttons\\UI-StopButton")
+    clearBtn:SetHeight(TITLE_BAR_HEIGHT - 4)
+    clearBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 2)
+    clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    clearBtn.text:SetPoint("CENTER", clearBtn, "CENTER", 0, 0)
+    clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
+    DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
+    clearBtn.text:SetWordWrap(false)
+    clearBtn.text:SetText(L["Clear"])
+    clearBtn:SetWidth(clearBtn.text:GetStringWidth() + 12)
     clearBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
     clearBtn:SetScript("OnClick", function()
         ns.HistoryFrame.ClearHistory()
@@ -922,6 +930,8 @@ local function CreateTitleBar(parent)
     clearBtn:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+    titleBar.clearButton = clearBtn
+    titleBar.text:SetPoint("RIGHT", clearBtn, "LEFT", -8, 0)
 
     return titleBar
 end
@@ -1131,10 +1141,14 @@ function ns.HistoryFrame.ApplySettings()
     -- Update layout offsets for border thickness
     ApplyLayoutOffsets(containerFrame)
 
-    -- Update title font
+    -- Update title and clear button fonts
     local fontPath, fontSize, fontOutline = GetFont()
     containerFrame.titleBar.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(containerFrame.titleBar.text, ns.Addon.db)
+    local clearBtn = containerFrame.titleBar.clearButton
+    clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
+    DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
+    clearBtn:SetWidth(clearBtn.text:GetStringWidth() + 12)
 
     -- Update visible entries with current icon size and entry height
     local db = ns.Addon.db.profile

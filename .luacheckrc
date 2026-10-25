@@ -22,7 +22,7 @@ read_globals = {
 
     -- WoW API - General
     "CreateFrame", "GetTime", "UIParent", "GameTooltip", "_G",
-    "PlaySound", "SOUNDKIT", "GetItemInfo", "C_Timer", "StaticPopup_Show", "ReloadUI",
+    "PlaySound", "SOUNDKIT", "C_Timer", "StaticPopup_Show", "ReloadUI",
     "time",
 
     -- Libraries
@@ -48,7 +48,7 @@ files["DragonLoot/"] = {
     read_globals = {
         -- WoW API - General
         "UnitName", "UnitClass", "IsInInstance",
-        "GetCursorPosition", "GetItemInfoInstant", "GetItemQualityColor",
+        "GetCursorPosition", "GetItemQualityColor",
         "C_Item", "C_Container", "C_AddOns", "IsAddOnLoaded", "LoadAddOn",
         "CreateColor", "PlaySoundFile",
         "ChatFrame_OpenChat", "IsShiftKeyDown",

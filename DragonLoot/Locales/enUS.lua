@@ -134,6 +134,7 @@ L["%dh ago"] = true
 L["%dm ago"] = true
 L["%ds ago"] = true
 L["(waiting on rolls)"] = true
+L["Clear"] = true
 L["Clear History"] = true
 L["DragonLoot - Loot History"] = true
 L["Highest: %s (%d)"] = true

@@ -20,7 +20,7 @@ end
 -------------------------------------------------------------------------------
 
 local C_LootHistory = C_LootHistory
-local GetItemInfo = GetItemInfo
+local GetItemInfo = C_Item.GetItemInfo
 local GetTime = GetTime
 local time = time
 

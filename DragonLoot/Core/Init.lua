@@ -2,7 +2,7 @@
 -- Init.lua
 -- DragonLoot addon bootstrap and namespace setup
 --
--- Supported versions: Retail, MoP Classic, TBC Anniversary, Cata, Classic
+-- Supported versions: Retail, Forever, MoP Classic, TBC Anniversary, Cata, Classic
 -------------------------------------------------------------------------------
 
 local ADDON_NAME, ns = ...
@@ -18,9 +18,9 @@ ns.ADDON_NAME = ADDON_NAME
 ns.ADDON_TITLE = "DragonLoot"
 ns.VERSION = "@project-version@"
 
--- Centralized version helpers. WOW_PROJECT_MAINLINE identifies Retail;
--- everything else (TBC Anniversary, Cata Classic, MoP Classic, Classic Era)
--- is treated as Classic for API-shape purposes.
+-- Mainline API helpers: WOW_PROJECT_MAINLINE identifies both Retail and Forever.
+-- Other projects (TBC Anniversary, Cata Classic, MoP Classic, Classic Era) use
+-- Classic API shapes.
 ns.IsRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
 ns.IsClassic = not ns.IsRetail
 

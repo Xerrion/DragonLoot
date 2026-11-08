@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------------
 -- HistoryItemAPI_spec.lua
--- Tests history event handlers with C_Item APIs and removed global aliases.
+-- Tests history event handlers with C_Item APIs and Mainline drop identifiers.
 -------------------------------------------------------------------------------
 
 local mock = require("spec.wow_mock")
@@ -45,6 +45,15 @@ local function NewHistoryNamespace(projectID)
         AddEntry = function(entry)
             recorder.entries[#recorder.entries + 1] = entry
         end,
+        UpdateEntryByKey = function(dropKey, entry)
+            for index, existingEntry in ipairs(recorder.entries) do
+                if existingEntry.dropKey == dropKey then
+                    recorder.entries[index] = entry
+                    return
+                end
+            end
+            recorder.entries[#recorder.entries + 1] = entry
+        end,
         SetEntries = function(entries)
             recorder.entries = entries
             ns.historyData = entries
@@ -76,6 +85,25 @@ local function NewHistoryNamespace(projectID)
     return ns, recorder, environment
 end
 
+local function NewEncounterHistoryNamespace()
+    local ns, recorder, environment = NewHistoryNamespace(1)
+    LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Retail.lua", environment)
+    LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Classic.lua", environment)
+    return ns, recorder
+end
+
+local function NewEncounterDrop(identifierField, lootListID)
+    return {
+        [identifierField] = lootListID,
+        itemHyperlink = ITEM_LINK,
+        winner = { playerName = "Winner", playerClass = "MAGE" },
+        currentLeader = { state = 0, roll = 98 },
+        rollInfos = {
+            { playerName = "Winner", playerGUID = "Player-1", playerClass = "MAGE", state = 0, roll = 98 },
+        },
+    }
+end
+
 local function AssertItemEntry(entry, quality)
     assert.are.equal(ITEM_LINK, entry.itemLink)
     assert.are.equal(ITEM_ICON, entry.itemTexture)
@@ -89,32 +117,84 @@ describe("History item APIs without legacy globals", function()
         mock._group.units.player = { className = "Warrior", classFile = "WARRIOR", classID = 1 }
     end)
 
-    it("records Retail encounter drops and roll-result item details", function()
-        local ns, recorder, environment = NewHistoryNamespace(1)
-        LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Retail.lua", environment)
-        LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Classic.lua", environment)
-        ns.HistoryListener.Initialize(ns.Addon)
-        mock._lootHistory.drops[42] = {
-            {
-                lootListID = 7,
-                itemHyperlink = ITEM_LINK,
-                winner = { playerName = "Winner", playerClass = "MAGE" },
-                currentLeader = { state = 0, roll = 98 },
-                rollInfos = {
-                    { playerName = "Winner", playerGUID = "Player-1", playerClass = "MAGE", state = 0, roll = 98 },
-                },
-            },
-        }
+    for _, schema in ipairs({
+        { name = "Retail", identifierField = "lootListID" },
+        { name = "Forever", identifierField = "lootListKey" },
+    }) do
+        it("records " .. schema.name .. " encounter drops and deduplicates roll results", function()
+            local ns, recorder = NewEncounterHistoryNamespace()
+            ns.HistoryListener.Initialize(ns.Addon)
+            local drop = NewEncounterDrop(schema.identifierField, 7)
+            drop.winner = nil
+            mock._lootHistory.drops[42] = { drop }
 
-        recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, 7)
+            recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, 7)
 
-        assert.are.equal(1, #recorder.entries)
-        AssertItemEntry(recorder.entries[1], 4)
-        assert.are.equal("Winner", recorder.entries[1].winner)
-        assert.is_true(recorder.entries[1].isComplete)
-        local expected = { ITEM_LINK, "Namespace Helm", 4, ITEM_ICON, "Winner", "MAGE", 1, 98 }
-        assert.are.same(expected, recorder.notifications[1])
-    end)
+            assert.are.equal(1, #recorder.entries)
+            AssertItemEntry(recorder.entries[1], 4)
+            assert.are.equal("42-7", recorder.entries[1].dropKey)
+            assert.is_false(recorder.entries[1].isComplete)
+            local expected = { ITEM_LINK, "Namespace Helm", 4, ITEM_ICON, "Winner", "MAGE", 1, 98 }
+            assert.are.same({ expected }, recorder.notifications)
+
+            drop.winner = drop.rollInfos[1]
+            recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, 7)
+            recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, 7)
+
+            assert.are.equal(1, #recorder.entries)
+            assert.are.equal("Winner", recorder.entries[1].winner)
+            assert.is_true(recorder.entries[1].isComplete)
+            assert.are.same({
+                { playerName = "Winner", playerClass = "MAGE", rollType = 1, roll = 98 },
+            }, recorder.entries[1].rollResults)
+            assert.are.same({ expected }, recorder.notifications)
+
+            mock._lootHistory.drops[42][2] = NewEncounterDrop(schema.identifierField, 8)
+            mock._lootHistory.drops[43] = { NewEncounterDrop(schema.identifierField, 7) }
+            recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, 8)
+            recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 43, 7)
+
+            assert.are.equal(3, #recorder.entries)
+            assert.are.equal("42-8", recorder.entries[2].dropKey)
+            assert.are.equal("43-7", recorder.entries[3].dropKey)
+            assert.are.same({ expected, expected, expected }, recorder.notifications)
+        end)
+
+        it("seeds new and persisted " .. schema.name .. " drops without replaying notifications", function()
+            local ns, recorder = NewEncounterHistoryNamespace()
+            recorder.entries[1] = {
+                dropKey = "42-7",
+                itemLink = ITEM_LINK,
+                winner = "Previous winner",
+                isComplete = false,
+            }
+            mock._lootHistory.encounters = { { encounterID = 42 } }
+            mock._lootHistory.drops[42] = {
+                NewEncounterDrop(schema.identifierField, 7),
+                NewEncounterDrop(schema.identifierField, 8),
+            }
+
+            ns.HistoryListener.Initialize(ns.Addon)
+
+            assert.are.equal(2, #recorder.entries)
+            assert.are.equal("42-7", recorder.entries[1].dropKey)
+            assert.are.equal("42-8", recorder.entries[2].dropKey)
+            assert.are.equal("Winner", recorder.entries[1].winner)
+            assert.is_true(recorder.entries[1].isComplete)
+            AssertItemEntry(recorder.entries[1], 4)
+            AssertItemEntry(recorder.entries[2], 4)
+            assert.are.equal(0, #recorder.notifications)
+
+            for _ = 1, 2 do
+                for _, lootListID in ipairs({ 7, 8 }) do
+                    recorder.events.LOOT_HISTORY_UPDATE_DROP("LOOT_HISTORY_UPDATE_DROP", 42, lootListID)
+                end
+            end
+
+            assert.are.equal(2, #recorder.entries)
+            assert.are.equal(2, #recorder.notifications)
+        end)
+    end
 
     it("records directly looted items", function()
         local ns, recorder, environment = NewHistoryNamespace(1)

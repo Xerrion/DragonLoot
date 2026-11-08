@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Features
+
+* Add Forever support for the core and options addons, Mainline loot rolls, and encounter-based loot history.
+
 ### Bug Fixes
 
 * Use namespaced item-info APIs for loot history on supported clients ([#198](https://github.com/Xerrion/DragonLoot/issues/198)).

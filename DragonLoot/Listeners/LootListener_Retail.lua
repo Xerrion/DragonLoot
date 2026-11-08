@@ -1,14 +1,14 @@
 -------------------------------------------------------------------------------
 -- LootListener_Retail.lua
--- Retail loot window event listener
+-- Mainline loot window event listener
 --
--- Supported versions: Retail
+-- Supported versions: Retail, Forever
 -------------------------------------------------------------------------------
 
 local _, ns = ...
 
 -------------------------------------------------------------------------------
--- Version guard: only run on Retail
+-- Version guard: Mainline APIs (Retail and Forever)
 -------------------------------------------------------------------------------
 
 if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then

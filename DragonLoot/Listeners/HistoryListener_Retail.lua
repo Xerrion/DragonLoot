@@ -1,14 +1,14 @@
 -------------------------------------------------------------------------------
 -- HistoryListener_Retail.lua
--- Loot history event handling for Retail using encounter-based C_LootHistory
+-- Loot history event handling for Retail and Forever using encounter-based C_LootHistory
 --
--- Supported versions: Retail
+-- Supported versions: Retail, Forever
 -------------------------------------------------------------------------------
 
 local _, ns = ...
 
 -------------------------------------------------------------------------------
--- Version guard: only run on Retail
+-- Version guard: only run on Mainline clients (Retail and Forever)
 -------------------------------------------------------------------------------
 
 if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
@@ -53,7 +53,7 @@ end
 
 -------------------------------------------------------------------------------
 -- Roll state conversion
--- Retail C_LootHistory uses enumerated roll states that differ from classic
+-- Mainline C_LootHistory uses enumerated roll states that differ from classic
 -------------------------------------------------------------------------------
 
 local ROLL_STATE_MAP = {
@@ -76,7 +76,7 @@ end
 -- Process individual roll results for notifications
 -------------------------------------------------------------------------------
 
-local function ProcessRollResults(encounterID, drop)
+local function ProcessRollResults(dropKey, drop)
     if isInitializing then
         return
     end
@@ -96,11 +96,7 @@ local function ProcessRollResults(encounterID, drop)
 
     for _, rollInfo in ipairs(drop.rollInfos) do
         if rollInfo.playerName and rollInfo.state then
-            local dedupKey = encounterID
-                .. "-"
-                .. drop.lootListID
-                .. "-"
-                .. (rollInfo.playerGUID or rollInfo.playerName)
+            local dedupKey = dropKey .. "-" .. (rollInfo.playerGUID or rollInfo.playerName)
             if not notifiedRollResults[dedupKey] then
                 notifiedRollResults[dedupKey] = true
                 local rollType = stateMap[rollInfo.state]
@@ -134,7 +130,8 @@ local function ProcessDrop(encounterID, drop)
         return
     end
 
-    local dropKey = encounterID .. "-" .. drop.lootListID
+    local lootListID = drop.lootListID or drop.lootListKey
+    local dropKey = encounterID .. "-" .. lootListID
 
     local winner = drop.winner
     local leader = drop.currentLeader
@@ -188,7 +185,7 @@ local function ProcessDrop(encounterID, drop)
     end
 
     -- Process individual roll results for notifications
-    ProcessRollResults(encounterID, drop)
+    ProcessRollResults(dropKey, drop)
 end
 
 -------------------------------------------------------------------------------

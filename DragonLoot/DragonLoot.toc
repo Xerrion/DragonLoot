@@ -1,6 +1,7 @@
 ## Interface: 120105
 ## Interface-BCC: 20506
 ## Interface-Mists: 50504
+## Interface-Camelot: 16001
 ## Title: Dragon Loot
 ## Notes: Customizable loot addon that replaces the default Blizzard loot window and loot roll views.
 ## Author: Xerrion
@@ -57,11 +58,19 @@ Listeners\LootListener_Retail.lua
 Listeners\RollListener_Retail.lua
 Listeners\HistoryListener_Retail.lua
 #@end-retail@
+# Forever shares Mainline APIs despite being a separate packager flavor.
+#@version-forever@
+Listeners\LootListener_Retail.lua
+Listeners\RollListener_Retail.lua
+Listeners\HistoryListener_Retail.lua
+#@end-version-forever@
 #@non-retail@
+#@non-version-forever@
 Listeners\LootListener_Classic.lua
 Listeners\RollListener_Classic.lua
 Listeners\HistoryListener_Classic.lua
 Listeners\MasterLootListener_Classic.lua
+#@end-non-version-forever@
 #@end-non-retail@
 
 # Listeners (shared)

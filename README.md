@@ -10,7 +10,7 @@
 [![License](https://img.shields.io/github/license/Xerrion/DragonLoot?style=for-the-badge)](https://github.com/Xerrion/DragonLoot/blob/master/LICENSE)
 [![CurseForge](https://img.shields.io/badge/CurseForge-1472582-f16436?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/wow/addons/dragon-loot)
 [![Wago](https://img.shields.io/badge/Wago-qKQmADKx-c0392b?style=for-the-badge&logo=wago)](https://addons.wago.io/addons/dragon-loot)
-[![WoW Versions](https://img.shields.io/badge/WoW-Retail%20%7C%20MoP%20Classic%20%7C%20TBC%20Anniversary-blue?style=for-the-badge&logo=battledotnet)](https://worldofwarcraft.blizzard.com/)
+[![WoW Versions](https://img.shields.io/badge/WoW-Retail%20%7C%20Forever%20%7C%20MoP%20Classic%20%7C%20TBC%20Anniversary-blue?style=for-the-badge&logo=battledotnet)](https://worldofwarcraft.blizzard.com/)
 [![Lint](https://img.shields.io/github/actions/workflow/status/Xerrion/DragonLoot/lint.yml?style=for-the-badge&label=luacheck)](https://github.com/Xerrion/DragonLoot/actions)
 
 </div>
@@ -38,9 +38,10 @@ adds a dedicated loot history panel for tracking drops and winners.
 
 | Client | Interface Versions |
 |---|---|
-| Retail | 120005 |
-| TBC Anniversary | 20505 |
-| MoP Classic | 50503 |
+| Retail | 120105 |
+| Forever | 16001 |
+| TBC Anniversary | 20506 |
+| MoP Classic | 50504 |
 
 ## 📦 Installation
 
@@ -55,8 +56,9 @@ Available on major platforms:
 ### Manual Install
 
 1. Download the latest release.
-2. Extract the `DragonLoot` and `DragonLoot_Options` folders into your AddOns directory:
-   - `World of Warcraft/_retail_/Interface/AddOns/`
+2. Extract the `DragonLoot` and `DragonLoot_Options` folders into your client's AddOns directory:
+   - Retail: `World of Warcraft/_retail_/Interface/AddOns/`
+   - Forever: `World of Warcraft/_forever_/Interface/AddOns/`
 3. Restart World of Warcraft or type `/reload` in-game.
 
 ## 🧩 Sub-addons

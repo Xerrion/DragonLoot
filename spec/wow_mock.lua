@@ -42,7 +42,9 @@ function IsInInstance()
 end
 
 function PlaySound() end
+
 function PlaySoundFile() end
+
 function hooksecurefunc() end
 
 -------------------------------------------------------------------------------
@@ -198,7 +200,7 @@ C_LootHistory = {
     end,
     GetSortedInfoForDrop = function(encounterID, lootListID)
         for _, drop in ipairs(M._lootHistory.drops[encounterID] or {}) do
-            if drop.lootListID == lootListID then
+            if (drop.lootListID or drop.lootListKey) == lootListID then
                 return drop
             end
         end
@@ -301,28 +303,41 @@ local function CreateMockFrame()
     }
 
     function frame.SetPoint() end
+
     function frame.ClearAllPoints() end
+
     function frame:Show()
         self._shown = true
     end
+
     function frame:Hide()
         self._shown = false
     end
+
     function frame:IsShown()
         return self._shown
     end
+
     function frame.SetSize() end
+
     function frame.SetHeight() end
+
     function frame.SetWidth() end
+
     function frame.SetMovable() end
+
     function frame.EnableMouse() end
+
     function frame.SetFrameStrata() end
+
     function frame:SetScript(script, handler)
         self._scripts[script] = handler
     end
+
     function frame:GetScript(script)
         return self._scripts[script]
     end
+
     function frame.CreateTexture()
         return {
             SetAllPoints = function() end,
@@ -336,6 +351,7 @@ local function CreateMockFrame()
             Show = function() end,
         }
     end
+
     function frame.CreateFontString()
         return {
             SetFont = function() end,
@@ -350,15 +366,23 @@ local function CreateMockFrame()
             SetShadowColor = function() end,
         }
     end
+
     function frame.RegisterForClicks() end
+
     function frame.SetBackdrop() end
+
     function frame.SetBackdropColor() end
+
     function frame.SetBackdropBorderColor() end
+
     function frame.SetClampedToScreen() end
+
     function frame.SetFrameLevel() end
+
     function frame.SetText(self, text)
         self._text = text
     end
+
     function frame.GetFontString()
         return {
             SetFont = function() end,
@@ -372,12 +396,15 @@ local function CreateMockFrame()
     function frame:RegisterEvent(event)
         self._events[event] = true
     end
+
     function frame:UnregisterEvent(event)
         self._events[event] = nil
     end
+
     function frame:UnregisterAllEvents()
         wipe(self._events)
     end
+
     function frame:IsEventRegistered(event)
         return self._events[event] or false
     end
@@ -442,18 +469,24 @@ local aceAddonMock = {
             _mixins = { ... },
         }
         function addon.RegisterChatCommand() end
+
         function addon:RegisterEvent() end
+
         function addon:UnregisterEvent() end
+
         function addon.ScheduleTimer(_, func, _)
             if func then
                 func()
             end
             return {}
         end
+
         function addon.ScheduleRepeatingTimer()
             return {}
         end
+
         function addon.CancelTimer() end
+
         return addon
     end,
 }
@@ -515,6 +548,7 @@ function M.CreateNamespace()
     ns.Addon = {}
 
     function ns.Print() end
+
     function ns.DebugPrint() end
 
     return ns

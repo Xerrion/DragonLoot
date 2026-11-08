@@ -20,7 +20,7 @@ Thank you for your interest in contributing to **DragonLoot** - a loot tracking 
 
 ## Prerequisites
 
-- World of Warcraft client (Retail, TBC Anniversary, MoP Classic, Cata, or Classic)
+- World of Warcraft client (Retail, Forever, TBC Anniversary, MoP Classic, Cata, or Classic)
 - [Lua 5.1](https://www.lua.org/) (for linting)
 - [Luacheck](https://github.com/mpeterv/luacheck) (for static analysis)
 - [Git](https://git-scm.com/)
@@ -101,12 +101,24 @@ luacheck path/to/File.lua    # single file for fast feedback
 
 ## Testing
 
-DragonLoot does not have automated tests. Manual testing checklist:
+Run the automated formatting, lint, and test checks:
+
+```bash
+just check
+```
+
+Then test in the target client:
 
 1. Load the addon in the target game version
 2. Exercise core loot tracking features
 3. Enable Lua errors: `/console scriptErrors 1`
 4. Verify no errors in the error frame
+
+Forever uses the Mainline loot, roll, and encounter-history listeners, not the Classic listeners.
+Its [loot-history schema](https://github.com/Gethe/wow-ui-source/blob/9dc84f0d3bbae1768ac3405b3716000bd93eda06/Interface/AddOns/Blizzard_APIDocumentationGenerated/LootHistoryDocumentation.lua)
+uses `lootListKey` where Retail uses `lootListID`; keep both history paths covered.
+The packager generates `_Camelot.toc` files from `Interface-Camelot` in both addon manifests.
+Maintain those interface versions manually until the shared TOC updater supports Forever.
 
 ## Submitting Changes
 

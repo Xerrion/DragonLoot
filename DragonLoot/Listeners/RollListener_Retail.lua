@@ -1,14 +1,14 @@
 -------------------------------------------------------------------------------
 -- RollListener_Retail.lua
--- Loot roll event handling for Retail (Midnight)
+-- Loot roll event handling for Mainline clients
 --
--- Supported versions: Retail
+-- Supported versions: Retail, Forever
 -------------------------------------------------------------------------------
 
 local _, ns = ...
 
 -------------------------------------------------------------------------------
--- Version guard: only run on Retail
+-- Version guard: Mainline APIs (Retail and Forever)
 -------------------------------------------------------------------------------
 
 if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then

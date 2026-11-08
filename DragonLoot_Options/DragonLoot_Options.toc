@@ -1,6 +1,7 @@
 ## Interface: 120105
 ## Interface-BCC: 20506
 ## Interface-Mists: 50504
+## Interface-Camelot: 16001
 ## Title: DragonLoot Options
 ## Author: Xerrion
 ## Notes: Custom configuration UI for DragonLoot

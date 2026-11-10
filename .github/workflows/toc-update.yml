@@ -14,5 +14,4 @@ jobs:
   toc-update:
     uses: Xerrion/wow-workflows/.github/workflows/toc-update.yml@main
     with:
-      # The shared updater does not support Forever; maintain Interface-Camelot manually.
-      flavors: "retail classic tbc"
+      flavors: "retail classic tbc forever"

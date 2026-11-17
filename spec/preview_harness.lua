@@ -105,6 +105,9 @@ function M.Start(options)
             self.font = { path, size, flags }
         end
         function object:SetText(value)
+            if self.kind == "FontString" and value ~= nil and value ~= "" then
+                assert(self.font or self.fontTemplate, "FontString:SetText(): Font not set")
+            end
             self.text = value
         end
         function object:GetText()
@@ -167,8 +170,10 @@ function M.Start(options)
         function object:CreateTexture()
             return widget("Texture", nil, self)
         end
-        function object:CreateFontString()
-            return widget("FontString", nil, self)
+        function object:CreateFontString(fontName, _, template)
+            local fontString = widget("FontString", fontName, self)
+            fontString.fontTemplate = template
+            return fontString
         end
         function object:Enable()
             self.enabled = true

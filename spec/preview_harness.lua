@@ -2,7 +2,8 @@
 local mock = require("spec.wow_mock")
 local M = {}
 
-function M.Start()
+function M.Start(options)
+    options = options or {}
     local previous, created = {}, {}
     local function override(name, value)
         previous[name] = { rawget(_G, name) }
@@ -59,7 +60,25 @@ function M.Start()
             self.shown = value
         end
         function object:SetScript(event, fn)
+            assert(self:HasScript(event), self.kind .. " does not support " .. event)
             self.scripts[event] = fn
+        end
+        function object:HasScript(event)
+            if self.kind == "Texture" or self.kind == "FontString" then
+                return false
+            end
+            if event == "OnClick" then
+                return self.kind == "Button"
+            elseif event == "OnValueChanged" then
+                return self.kind == "Slider"
+            end
+            return event == "OnEnter"
+                or event == "OnLeave"
+                or event == "OnUpdate"
+                or event == "OnDragStart"
+                or event == "OnDragStop"
+                or event == "OnMouseWheel"
+                or event == "OnSizeChanged"
         end
         function object:GetScript(event)
             return self.scripts[event]
@@ -100,6 +119,9 @@ function M.Start()
         function object:SetTextColor(...)
             self.textColor = { ... }
         end
+        function object:SetShadowOffset(...)
+            self.shadowOffset = { ... }
+        end
         function object:SetBackdrop(value)
             self.backdrop = value
         end
@@ -115,8 +137,14 @@ function M.Start()
         function object:SetColorTexture(...)
             self.color = { ... }
         end
+        function object:SetGradient(...)
+            self.gradient = { ... }
+        end
         function object:SetValue(value)
             self.value = value
+        end
+        function object:GetValue()
+            return self.value or 0
         end
         function object:SetScale(value)
             self.scale = value
@@ -164,7 +192,6 @@ function M.Start()
             "SetAllPoints",
             "SetAlpha",
             "SetBlendMode",
-            "SetGradient",
             "SetVertexColor",
             "SetTexCoord",
             "SetDrawLayer",
@@ -173,7 +200,6 @@ function M.Start()
             "SetWordWrap",
             "SetNonSpaceWrap",
             "SetShadowColor",
-            "SetShadowOffset",
             "RegisterForClicks",
             "RegisterForDrag",
             "SetMovable",
@@ -183,6 +209,11 @@ function M.Start()
             "SetPushedTexture",
             "SetDesaturated",
             "SetMinMaxValues",
+            "EnableMouseWheel",
+            "SetOrientation",
+            "SetValueStep",
+            "SetThumbTexture",
+            "SetVerticalScroll",
             "SetHighlightAtlas",
             "SetAtlas",
         }) do
@@ -197,32 +228,46 @@ function M.Start()
     local function forbidden()
         error("preview reached gameplay, timers, or item queries")
     end
-    for _, name in ipairs({
-        "LootSlot",
-        "CloseLoot",
-        "GetLootSlotInfo",
-        "GetNumLootItems",
-        "GetLootSlotType",
-        "GetLootSlotLink",
-        "GetLootRollItemInfo",
-        "GetLootRollItemLink",
-        "RollOnLoot",
-    }) do
+    for _, name in
+        ipairs(options.allowGameplay and {} or {
+            "LootSlot",
+            "CloseLoot",
+            "GetLootSlotInfo",
+            "GetNumLootItems",
+            "GetLootSlotType",
+            "GetLootSlotLink",
+            "GetLootRollItemInfo",
+            "GetLootRollItemLink",
+            "RollOnLoot",
+        })
+    do
         override(name, forbidden)
     end
-    override("C_Timer", { After = forbidden, NewTicker = forbidden })
-    override("C_Item", { GetItemInfo = forbidden, GetDetailedItemLevelInfo = forbidden })
+    if not options.allowGameplay then
+        override("C_Timer", { After = forbidden, NewTicker = forbidden })
+        override("C_Item", { GetItemInfo = forbidden, GetDetailedItemLevelInfo = forbidden })
+    end
+    for name, value in pairs(options.globals or {}) do
+        override(name, value)
+    end
     local oldLibStub = LibStub
+    local media, registrations = {}, {}
+    local mediaLibrary = {
+        Register = function(_, kind, name, value, languageMask)
+            media[kind] = media[kind] or {}
+            media[kind][name] = value
+            registrations[#registrations + 1] = { kind, name, value, languageMask }
+        end,
+        Fetch = function(_, kind, value)
+            return media[kind] and media[kind][value] or value
+        end,
+        HashTable = function(_, kind)
+            return media[kind] or {}
+        end,
+    }
     override("LibStub", function(name, ...)
         if name == "LibSharedMedia-3.0" then
-            return {
-                Fetch = function(_, _, value)
-                    return value
-                end,
-                HashTable = function()
-                    return {}
-                end,
-            }
+            return mediaLibrary
         end
         return oldLibStub(name, ...)
     end)
@@ -236,16 +281,28 @@ function M.Start()
     mock.LoadConfig(ns)
     ns.InitializeDB(ns.Addon)
     ns.Addon.db.char = { history = { entries = { { itemLink = "real saved entry" } } } }
-    ns.Addon.ScheduleTimer = forbidden
-    ns.Addon.ScheduleRepeatingTimer = forbidden
-    ns.Print = forbidden
+    local timers = {}
+    local function RecordTimer(_, callback)
+        timers[#timers + 1] = callback
+        return #timers
+    end
+    ns.Addon.ScheduleTimer = options.allowGameplay and RecordTimer or forbidden
+    ns.Addon.ScheduleRepeatingTimer = options.allowGameplay and RecordTimer or forbidden
+    ns.Print = options.allowGameplay and function() end or forbidden
     ns.RollTypeNames = {}
     mock.LoadFile(ns, "DragonLoot/Display/DisplayUtils.lua")
     for _, name in ipairs({ "LootFrame", "RollFrame", "HistoryFrame" }) do
         mock.LoadFile(ns, "DragonLoot/Display/" .. name .. ".lua")
     end
     ns.historyData[1] = { itemLink = "real live entry" }
-    local context = { ns = ns, created = created, widget = widget }
+    local context = {
+        ns = ns,
+        created = created,
+        widget = widget,
+        timers = timers,
+        media = media,
+        registrations = registrations,
+    }
     function context:Restore()
         for name, value in pairs(previous) do
             rawset(_G, name, value[1])

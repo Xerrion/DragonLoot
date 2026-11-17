@@ -214,7 +214,7 @@ end
 ns.Tabs[#ns.Tabs + 1] = {
     id = "animation",
     label = L["Animation"],
-    order = 8,
+    order = 6,
     createFunc = CreateContent,
     refreshFunc = function()
         if RefreshState then

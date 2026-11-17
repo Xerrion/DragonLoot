@@ -128,6 +128,86 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
     })
     innerY = LC.AnchorWidget(enableToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
+    section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
+    yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+
+    return yOffset
+end
+
+local function CreateContentSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    local section = W.CreateSection(parent, L["Content"])
+    local content = section.content
+    local innerY = -LC.SECTION_PADDING_TOP
+
+    local itemLevelToggle = W.CreateToggle(content, {
+        label = L["Show Item Level"],
+        tooltip = L["Show item level overlay on roll frame icon"],
+        get = function()
+            return db.profile.appearance.showItemLevel
+        end,
+        set = function(value)
+            db.profile.appearance.showItemLevel = value
+            NotifyRollManager()
+        end,
+    })
+    layoutWidgets[#layoutWidgets + 1] = itemLevelToggle
+    innerY = LC.AnchorWidget(itemLevelToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local timerTextToggle = W.CreateToggle(content, {
+        label = L["Show Timer Text"],
+        tooltip = L["Show remaining seconds on the normal timer bar"],
+        get = function()
+            return db.profile.rollFrame.showTimerText
+        end,
+        set = function(value)
+            db.profile.rollFrame.showTimerText = value
+            NotifyRollManager()
+        end,
+    })
+    layoutWidgets[#layoutWidgets + 1] = timerTextToggle
+    innerY = LC.AnchorWidget(timerTextToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+    reapplySubState[#reapplySubState + 1] = function()
+        timerTextToggle:SetDisabled(db.profile.rollFrame.timerBarStyle == "minimal")
+    end
+
+    -- The tally reads Classic's roll-item indexed C_LootHistory, which Retail
+    -- removed in 10.1.0 with no rollID-keyed replacement.
+    local isTallySupported = dlns.IsClassic and true or false
+    -- stylua: ignore
+    local tallySupportedTooltip = L["Show how many group members picked each roll option,"
+        .. " and the winning roll once the roll ends. The result summary needs Keep Frame After Voting."]
+    local tallyUnsupportedTooltip = L["Roll tally needs the Classic loot history API and is not available on Retail."]
+
+    local tallyToggle = W.CreateToggle(content, {
+        label = L["Show Roll Tally"],
+        tooltip = isTallySupported and tallySupportedTooltip or tallyUnsupportedTooltip,
+        disabled = not isTallySupported,
+        get = function()
+            return db.profile.rollFrame.showRollTally
+        end,
+        set = function(value)
+            db.profile.rollFrame.showRollTally = value
+            NotifyRollTally()
+        end,
+    })
+    -- Registering it as a layout widget would let the master enable toggle
+    -- re-enable it on Retail, where it must stay locked.
+    if isTallySupported then
+        layoutWidgets[#layoutWidgets + 1] = tallyToggle
+    end
+    innerY = LC.AnchorWidget(tallyToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
+    yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+
+    return yOffset
+end
+
+local function CreateBehaviorSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    local section = W.CreateSection(parent, L["Behavior"])
+    local content = section.content
+    local innerY = -LC.SECTION_PADDING_TOP
+
     local lockToggle = W.CreateToggle(content, {
         label = L["Lock Position"],
         tooltip = L["Prevent the roll frame from being dragged"],
@@ -211,32 +291,16 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
         lingerSlider:SetDisabled(not db.profile.rollFrame.keepOpenAfterVote)
     end
 
-    -- The tally reads Classic's roll-item indexed C_LootHistory, which Retail
-    -- removed in 10.1.0 with no rollID-keyed replacement.
-    local isTallySupported = dlns.IsClassic and true or false
-    -- stylua: ignore
-    local tallySupportedTooltip = L["Show how many group members picked each roll option,"
-        .. " and the winning roll once the roll ends. The result summary needs Keep Frame After Voting."]
-    local tallyUnsupportedTooltip = L["Roll tally needs the Classic loot history API and is not available on Retail."]
+    section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
+    yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
-    local tallyToggle = W.CreateToggle(content, {
-        label = L["Show Roll Tally"],
-        tooltip = isTallySupported and tallySupportedTooltip or tallyUnsupportedTooltip,
-        disabled = not isTallySupported,
-        get = function()
-            return db.profile.rollFrame.showRollTally
-        end,
-        set = function(value)
-            db.profile.rollFrame.showRollTally = value
-            NotifyRollTally()
-        end,
-    })
-    -- Registering it as a layout widget would let the master enable toggle
-    -- re-enable it on Retail, where it must stay locked.
-    if isTallySupported then
-        layoutWidgets[#layoutWidgets + 1] = tallyToggle
-    end
-    innerY = LC.AnchorWidget(tallyToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+    return yOffset
+end
+
+local function CreateToolsSection(parent, yOffset)
+    local section = W.CreateSection(parent, L["Position and Testing"])
+    local content = section.content
+    local innerY = -LC.SECTION_PADDING_TOP
 
     local centerHBtn = W.CreateButton(content, {
         text = L["Center Horizontally"],
@@ -305,6 +369,20 @@ local function CreateFrameSection(parent, db, yOffset, layoutWidgets, reapplySub
 
     local isCompact = db.profile.rollFrame.compactTextLayout
 
+    innerY = CreateLayoutSlider(
+        content,
+        db,
+        innerY,
+        L["Frame Width"],
+        L["Width of the roll frame"],
+        "frameWidth",
+        200,
+        500,
+        10,
+        "%d",
+        layoutWidgets
+    )
+
     frameMinHeightSlider = W.CreateSlider(content, {
         label = L["Frame Height"],
         tooltip = L["Minimum height of the roll frame (effective height may be higher based on icon size)"],
@@ -341,16 +419,15 @@ local function CreateFrameSection(parent, db, yOffset, layoutWidgets, reapplySub
         content,
         db,
         innerY,
-        L["Frame Width"],
-        L["Width of the roll frame"],
-        "frameWidth",
-        200,
-        500,
-        10,
+        L["Frame Spacing"],
+        L["Spacing between multiple roll frames"],
+        "frameSpacing",
+        0,
+        16,
+        1,
         "%d",
         layoutWidgets
     )
-
     rowSpacingSlider = W.CreateSlider(content, {
         label = L["Row Spacing"],
         tooltip = L["Vertical spacing between roll rows"],
@@ -369,6 +446,20 @@ local function CreateFrameSection(parent, db, yOffset, layoutWidgets, reapplySub
     rowSpacingSlider:SetDisabled(isCompact)
     layoutWidgets[#layoutWidgets + 1] = rowSpacingSlider
     innerY = LC.AnchorWidget(rowSpacingSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    innerY = CreateLayoutSlider(
+        content,
+        db,
+        innerY,
+        L["Content Padding"],
+        L["Inner padding of the roll frame"],
+        "contentPadding",
+        0,
+        12,
+        1,
+        "%d",
+        layoutWidgets
+    )
 
     local compactToggle = W.CreateToggle(content, {
         label = L["Compact Text Layout"],
@@ -427,6 +518,9 @@ local function CreateTimerBarSection(parent, db, yOffset, layoutWidgets, reapply
             end
             if minimalHeightSlider then
                 minimalHeightSlider:SetDisabled(not isMinimal)
+            end
+            if RefreshState then
+                RefreshState()
             end
             NotifyRollManager()
         end,
@@ -628,7 +722,7 @@ local function CreateTimerBarSection(parent, db, yOffset, layoutWidgets, reapply
 end
 
 -------------------------------------------------------------------------------
--- Section: Buttons (button size, spacing, frame spacing, content padding)
+-- Section: Buttons (button size, spacing, order)
 -------------------------------------------------------------------------------
 
 local function CreateButtonsSection(parent, db, yOffset, layoutWidgets)
@@ -676,33 +770,6 @@ local function CreateButtonsSection(parent, db, yOffset, layoutWidgets)
         "%d",
         layoutWidgets
     )
-    innerY = CreateLayoutSlider(
-        content,
-        db,
-        innerY,
-        L["Frame Spacing"],
-        L["Spacing between multiple roll frames"],
-        "frameSpacing",
-        0,
-        16,
-        1,
-        "%d",
-        layoutWidgets
-    )
-    innerY = CreateLayoutSlider(
-        content,
-        db,
-        innerY,
-        L["Content Padding"],
-        L["Inner padding of the roll frame"],
-        "contentPadding",
-        0,
-        12,
-        1,
-        "%d",
-        layoutWidgets
-    )
-
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
@@ -717,6 +784,24 @@ local function CreateIconSection(parent, db, yOffset, layoutWidgets, reapplySubS
     local section = W.CreateSection(parent, L["Icon"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
+
+    local rollIconSlider = W.CreateSlider(content, {
+        label = L["Roll Icon Size"],
+        tooltip = L["Icon size in the roll frame"],
+        min = 16,
+        max = 64,
+        step = 2,
+        format = "%d",
+        get = function()
+            return db.profile.appearance.rollIconSize
+        end,
+        set = function(value)
+            db.profile.appearance.rollIconSize = value
+            NotifyRollManager()
+        end,
+    })
+    layoutWidgets[#layoutWidgets + 1] = rollIconSlider
+    innerY = LC.AnchorWidget(rollIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local iconOutsideGapSlider -- forward declared; assigned below
 
@@ -831,9 +916,12 @@ local function CreateContent(parent)
 
     yOffset = CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reapplySubState)
     yOffset = CreateFrameSection(parent, db, yOffset, layoutWidgets, reapplySubState)
-    yOffset = CreateTimerBarSection(parent, db, yOffset, layoutWidgets, reapplySubState)
-    yOffset = CreateButtonsSection(parent, db, yOffset, layoutWidgets)
     yOffset = CreateIconSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    yOffset = CreateContentSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    yOffset = CreateButtonsSection(parent, db, yOffset, layoutWidgets)
+    yOffset = CreateTimerBarSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    yOffset = CreateBehaviorSection(parent, db, yOffset, layoutWidgets, reapplySubState)
+    yOffset = CreateToolsSection(parent, yOffset)
 
     -- Apply initial disabled state
     RefreshState = function()

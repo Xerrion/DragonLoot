@@ -55,15 +55,37 @@ local FONT_OUTLINE_VALUES = {
 }
 
 -------------------------------------------------------------------------------
--- Slot background dropdown values
+-- Section: Style
 -------------------------------------------------------------------------------
 
-local SLOT_BG_VALUES = {
-    { value = "gradient", text = L["Gradient"] },
-    { value = "flat", text = L["Flat"] },
-    { value = "stripe", text = L["Stripe"] },
-    { value = "none", text = L["None"] },
-}
+local function CreateStyleSection(parent, yOffset)
+    local section = W.CreateSection(parent, L["Style"])
+    local content = section.content
+    local innerY = -LC.SECTION_PADDING_TOP
+
+    -- stylua: ignore
+    local description = W.CreateDescription(
+        content,
+        L["Apply modern font styling, frame backgrounds and borders, flat item highlights without glow, "
+            .. "and roll timer styling. Keep sizes, positions, content, and behavior."]
+    )
+    innerY = LC.AnchorWidget(description, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    local applyButton = W.CreateButton(content, {
+        text = L["Apply Modern Style"],
+        width = 200,
+        onClick = function()
+            dlns.ApplyModernStyle()
+            if ns.RefreshVisibleWidgets then
+                ns.RefreshVisibleWidgets()
+            end
+        end,
+    })
+    innerY = LC.AnchorWidget(applyButton, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
+
+    section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
+    return LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
+end
 
 -------------------------------------------------------------------------------
 -- Section: Font
@@ -139,64 +161,13 @@ local function CreateFontSection(parent, db, yOffset)
 end
 
 -------------------------------------------------------------------------------
--- Section: Icon Sizes
+-- Section: Icon Borders
 -------------------------------------------------------------------------------
 
 local function CreateIconSection(parent, db, yOffset)
-    local section = W.CreateSection(parent, L["Icon Sizes"])
+    local section = W.CreateSection(parent, L["Icon Borders"])
     local content = section.content
     local innerY = -LC.SECTION_PADDING_TOP
-
-    local lootIconSlider = W.CreateSlider(content, {
-        label = L["Loot Icon Size"],
-        tooltip = L["Icon size in the loot window"],
-        min = 16,
-        max = 64,
-        step = 2,
-        format = "%d",
-        get = function()
-            return db.profile.appearance.lootIconSize
-        end,
-        set = function(value)
-            db.profile.appearance.lootIconSize = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    innerY = LC.AnchorWidget(lootIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
-
-    local rollIconSlider = W.CreateSlider(content, {
-        label = L["Roll Icon Size"],
-        tooltip = L["Icon size in the roll frame"],
-        min = 16,
-        max = 64,
-        step = 2,
-        format = "%d",
-        get = function()
-            return db.profile.appearance.rollIconSize
-        end,
-        set = function(value)
-            db.profile.appearance.rollIconSize = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    innerY = LC.AnchorWidget(rollIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
-
-    local historyIconSlider = W.CreateSlider(content, {
-        label = L["History Icon Size"],
-        tooltip = L["Icon size in the history frame"],
-        min = 16,
-        max = 48,
-        step = 2,
-        format = "%d",
-        get = function()
-            return db.profile.appearance.historyIconSize
-        end,
-        set = function(value)
-            db.profile.appearance.historyIconSize = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    innerY = LC.AnchorWidget(historyIconSlider, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local qualityBorderToggle = W.CreateToggle(content, {
         label = L["Quality Border"],
@@ -210,32 +181,6 @@ local function CreateIconSection(parent, db, yOffset)
         end,
     })
     innerY = LC.AnchorWidget(qualityBorderToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
-
-    local itemLevelToggle = W.CreateToggle(content, {
-        label = L["Show Item Level"],
-        tooltip = L["Show item level overlay on roll frame icon"],
-        get = function()
-            return db.profile.appearance.showItemLevel
-        end,
-        set = function(value)
-            db.profile.appearance.showItemLevel = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    innerY = LC.AnchorWidget(itemLevelToggle, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
-
-    local slotBgDropdown = W.CreateDropdown(content, {
-        label = L["Slot Background"],
-        values = SLOT_BG_VALUES,
-        get = function()
-            return db.profile.appearance.slotBackground
-        end,
-        set = function(value)
-            db.profile.appearance.slotBackground = value
-            LC.NotifyAppearanceChange()
-        end,
-    })
-    innerY = LC.AnchorWidget(slotBgDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -378,6 +323,7 @@ local function CreateContent(parent)
     local db = dlns.Addon.db
     local yOffset = LC.PADDING_TOP
 
+    yOffset = CreateStyleSection(parent, yOffset)
     yOffset = CreateFontSection(parent, db, yOffset)
     yOffset = CreateIconSection(parent, db, yOffset)
     yOffset = CreateBackgroundSection(parent, db, yOffset)
@@ -393,6 +339,6 @@ end
 ns.Tabs[#ns.Tabs + 1] = {
     id = "appearance",
     label = L["Appearance"],
-    order = 7,
+    order = 5,
     createFunc = CreateContent,
 }

@@ -212,7 +212,7 @@ end
 ns.Tabs[#ns.Tabs + 1] = {
     id = "notifications",
     label = L["Notifications"],
-    order = 5,
+    order = 8,
     createFunc = CreateContent,
     refreshFunc = function()
         if RefreshState then

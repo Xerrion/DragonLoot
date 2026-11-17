@@ -167,6 +167,7 @@ local function NewRollFrameNamespace(settings, rollData)
         end,
     })
     ns.DisplayUtils = {
+        Style = { text = { 0.91, 0.94, 0.97 } },
         WHITE8x8 = "white",
         ApplyBackdrop = function() end,
         ApplyFontShadow = function() end,

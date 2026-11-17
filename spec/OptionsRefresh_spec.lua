@@ -46,6 +46,8 @@ describe("options profile refresh", function()
             callbacks.OnProfileCopied()
             callbacks.OnProfileReset()
             assert.are.equal(3, refreshes)
+            options.RefreshVisibleWidgets()
+            assert.are.equal(4, refreshes)
             assert.are.equal("sidebar", config.navigation)
             assert.is_true(config.settingsLayout)
             assert.are.equal(220, config.preview.height)
@@ -81,8 +83,9 @@ describe("options profile refresh", function()
                 return widget
             end
         end
-        W.CreateSection = function(parent)
+        W.CreateSection = function(parent, label)
             local section = context.widget("Frame", nil, parent)
+            section.label = label
             section.content = context.widget("Frame", nil, section)
             function section:SetContentHeight(height)
                 self:SetHeight(height + 40)
@@ -120,7 +123,7 @@ describe("options profile refresh", function()
         }
         mock.LoadFile(options, "DragonLoot_Options/Tabs/" .. file .. ".lua")
         options.Tabs[1].createFunc(context.widget("Frame"))
-        return recorded, options.Tabs[1].refreshFunc
+        return recorded, options.Tabs[1].refreshFunc, options.Tabs[1], options
     end
 
     for _, test in ipairs({
@@ -155,5 +158,125 @@ describe("options profile refresh", function()
         cfg.compactTextLayout = false
         refresh()
         assert.is_false(widgets["Frame Height"].disabled)
+    end)
+
+    it("recomputes loot content and background dependencies after a profile replacement", function()
+        local widgets, refresh = buildTab("LootWindowTab")
+        local db = context.ns.Addon.db
+        local originalProfile = db.profile
+        originalProfile.lootWindow.showDetails = false
+        db.profile = { lootWindow = { enabled = false, showDetails = false }, appearance = { slotBackground = "flat" } }
+        refresh()
+        for _, label in ipairs({ "Show Item Details", "Show Stack Counts", "Quality Glow", "Background Intensity" }) do
+            assert.is_true(widgets[label].disabled)
+        end
+        widgets["Show Item Details"]:Refresh()
+        assert.is_false(widgets["Show Item Details"].value)
+        db.profile.lootWindow.enabled = true
+        refresh()
+        assert.is_false(widgets["Show Item Details"].disabled)
+        assert.is_false(widgets["Background Intensity"].disabled)
+        widgets["Slot Background"].options.set("none")
+        assert.is_true(widgets["Background Intensity"].disabled)
+        widgets["Slot Background"].options.set("gradient")
+        assert.is_false(widgets["Background Intensity"].disabled)
+        widgets["Show Item Details"].options.set(true)
+        assert.is_true(db.profile.lootWindow.showDetails)
+        assert.is_false(originalProfile.lootWindow.showDetails)
+    end)
+
+    it("keeps timer text disabled for minimal bars and disabled roll frames", function()
+        local widgets, refresh = buildTab("LootRollTab")
+        local cfg = context.ns.Addon.db.profile.rollFrame
+        assert.is_false(widgets["Show Timer Text"].disabled)
+        widgets["Timer Bar Style"].options.set("minimal")
+        assert.is_true(widgets["Show Timer Text"].disabled)
+        cfg.enabled = false
+        cfg.timerBarStyle = "normal"
+        refresh()
+        assert.is_true(widgets["Show Timer Text"].disabled)
+        assert.is_true(widgets["Show Item Level"].disabled)
+        cfg.enabled = true
+        refresh()
+        assert.is_false(widgets["Show Timer Text"].disabled)
+        widgets["Show Timer Text"].options.set(false)
+        assert.is_false(cfg.showTimerText)
+    end)
+
+    it("refreshes new history geometry and content controls with the feature state", function()
+        local widgets, refresh = buildTab("HistoryTab")
+        local cfg = context.ns.Addon.db.profile.history
+        cfg.enabled = false
+        refresh()
+        for _, label in ipairs({ "Width", "Height", "Scale", "History Icon Size", "Show Timestamps" }) do
+            assert.is_true(widgets[label].disabled)
+        end
+        cfg.enabled = true
+        cfg.trackDirectLoot = false
+        refresh()
+        assert.is_false(widgets["Show Timestamps"].disabled)
+        assert.is_true(widgets["Minimum Quality"].disabled)
+        widgets["Width"].options.set(600)
+        widgets["Height"].options.set(240)
+        widgets["Scale"].options.set(1.3)
+        widgets["Show Timestamps"].options.set(false)
+        assert.are.equal(600, cfg.width)
+        assert.are.equal(240, cfg.height)
+        assert.are.equal(1.3, cfg.scale)
+        assert.is_false(cfg.showTimestamp)
+    end)
+
+    it("keeps moved appearance controls on their feature pages using the existing saved keys", function()
+        for _, test in ipairs({
+            { "LootWindowTab", "Loot Icon Size", "lootIconSize", 48 },
+            { "LootRollTab", "Roll Icon Size", "rollIconSize", 54 },
+            { "HistoryTab", "History Icon Size", "historyIconSize", 32 },
+            { "LootRollTab", "Show Item Level", "showItemLevel", false },
+        }) do
+            local widgets = buildTab(test[1])
+            widgets[test[2]].options.set(test[4])
+            assert.are.equal(test[4], context.ns.Addon.db.profile.appearance[test[3]])
+            assert.are.equal(test[4], widgets[test[2]].options.get())
+        end
+        local shared = buildTab("AppearanceTab")
+        assert.is_nil(shared["Loot Icon Size"])
+        assert.is_nil(shared["Roll Icon Size"])
+        assert.is_nil(shared["History Icon Size"])
+        assert.is_nil(shared["Show Item Level"])
+        assert.is_not_nil(shared["Quality Border"])
+    end)
+
+    it("applies the visible modern style action and requests controls and preview refresh", function()
+        local widgets, _, _, options = buildTab("AppearanceTab")
+        local profile = context.ns.Addon.db.profile
+        profile.appearance.font = "Custom Font"
+        profile.appearance.fontSize = 17
+        profile.lootWindow.x = 123
+        local refreshes = 0
+        options.RefreshVisibleWidgets = function()
+            refreshes = refreshes + 1
+        end
+        widgets["Apply Modern Style"].options.onClick()
+        assert.are.equal("Dragon UI", profile.appearance.font)
+        assert.are.equal(17, profile.appearance.fontSize)
+        assert.are.equal(123, profile.lootWindow.x)
+        assert.are.equal(1, refreshes)
+        assert.are.equal("Style", widgets["Apply Modern Style"]:GetParent():GetParent().label)
+    end)
+
+    it("declares presentation pages before behavior and keeps actions in their own final sections", function()
+        for _, test in ipairs({
+            { "AppearanceTab", 5 },
+            { "AnimationTab", 6 },
+            { "AutoLootTab", 7 },
+            { "NotificationsTab", 8 },
+        }) do
+            local _, _, tab = buildTab(test[1])
+            assert.are.equal(test[2], tab.order)
+        end
+        local roll = buildTab("LootRollTab")
+        assert.are.equal("Position and Testing", roll["Test Roll"]:GetParent():GetParent().label)
+        local history = buildTab("HistoryTab")
+        assert.are.equal("History Actions", history["Clear History"]:GetParent():GetParent().label)
     end)
 end)

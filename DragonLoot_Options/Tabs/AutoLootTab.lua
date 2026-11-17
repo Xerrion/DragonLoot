@@ -190,7 +190,7 @@ end
 ns.Tabs[#ns.Tabs + 1] = {
     id = "autoLoot",
     label = L["Auto-Loot"],
-    order = 6,
+    order = 7,
     createFunc = CreateContent,
     refreshFunc = function()
         if RefreshState then

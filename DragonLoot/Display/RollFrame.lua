@@ -357,7 +357,7 @@ local function ApplyTimerBarOffsets(frame, rollFrameDB, iconSize, padding, borde
         timerBarAnchor:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -borderSize, bottomInset)
         frame.timerBar.text:Hide()
     else
-        -- Normal: indented past icon, configurable height, text visible
+        -- Normal: indented past icon, configurable height and text visibility
         local barHeight = (rollFrameDB and rollFrameDB.timerBarHeight) or 12
         timerBarAnchor:SetHeight(barHeight)
         timerBarAnchor:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", contentLeftInset, timerBarSpacing + bottomInset)
@@ -368,7 +368,11 @@ local function ApplyTimerBarOffsets(frame, rollFrameDB, iconSize, padding, borde
             -(padding + ROLL_TIMER_RIGHT_GAP + borderSize),
             timerBarSpacing + bottomInset
         )
-        frame.timerBar.text:Show()
+        if not rollFrameDB or rollFrameDB.showTimerText ~= false then
+            frame.timerBar.text:Show()
+        else
+            frame.timerBar.text:Hide()
+        end
     end
 end
 
@@ -706,7 +710,7 @@ local function CreateTimerBar(parent)
 
     bar.text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     bar.text:SetPoint("CENTER", bar, "CENTER", 0, 0)
-    bar.text:SetTextColor(1, 1, 1)
+    bar.text:SetTextColor(unpack(DU.Style.text))
 
     bar.container = container
     ApplyTimerBarBorder(container)
@@ -1648,6 +1652,12 @@ function ns.RollFrame.ApplySettings()
             -- Update timer bar background color
             local bgColor = rollFrame.timerBarBackgroundColor or { r = 0.1, g = 0.1, b = 0.1 }
             frame.timerBar.bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, rollFrame.timerBarBackgroundAlpha or 0.5)
+            -- A style preset can change the fixed color while a roll is held open
+            -- after voting, when timer updates have already stopped.
+            if rollFrame.timerBarColorMode == "custom" then
+                local r, g, b = GetTimerBarColor(1, 1)
+                frame.timerBar:SetStatusBarColor(r, g, b)
+            end
 
             -- Update fonts
             frame.itemName:SetFont(fontPath, fontSize, fontOutline)
@@ -1880,7 +1890,9 @@ function ns.RollFrame.CreatePreview(parent)
         for _, control in ipairs(controls) do
             control:EnableMouse(false)
             for _, script in ipairs({ "OnClick", "OnEnter", "OnLeave", "OnUpdate", "OnDragStart", "OnDragStop" }) do
-                control:SetScript(script, nil)
+                if control:HasScript(script) then
+                    control:SetScript(script, nil)
+                end
             end
         end
         self.previewWidth = self:GetWidth()

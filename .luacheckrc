@@ -3,6 +3,7 @@ max_line_length = 120
 codes = true
 exclude_files = {
     "DragonLoot/Libs/",
+    "DragonLoot_Options/Libs/",
     ".release/",
     ".types.lua",
 }

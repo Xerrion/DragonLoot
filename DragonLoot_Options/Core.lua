@@ -116,10 +116,6 @@ local function CreateOptionsPanel()
     panelResult = DW.CreateOptionsPanel({
         name = "DragonLootOptionsFrame",
         title = L["DragonLoot Options"],
-        width = 1080,
-        height = 720,
-        navigation = "sidebar",
-        settingsLayout = true,
         preview = { height = 220, createFunc = ns.CreatePreview },
         tabs = tabDefs,
     })

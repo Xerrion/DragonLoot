@@ -18,11 +18,11 @@ ns.ADDON_NAME = ADDON_NAME
 ns.ADDON_TITLE = "DragonLoot"
 ns.VERSION = "@project-version@"
 
--- Mainline API helpers: WOW_PROJECT_MAINLINE identifies both Retail and Forever.
--- Other projects (TBC Anniversary, Cata Classic, MoP Classic, Classic Era) use
--- Classic API shapes.
-ns.IsRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
-ns.IsClassic = not ns.IsRetail
+-- Retail and Forever use Mainline APIs, but Forever has its own project ID.
+-- TBC Anniversary, Cata Classic, MoP Classic, and Classic Era use Classic APIs.
+ns.IsMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+    or (WOW_PROJECT_CAMELOT ~= nil and WOW_PROJECT_ID == WOW_PROJECT_CAMELOT)
+ns.IsClassic = not ns.IsMainline
 
 -- Color constants
 ns.COLOR_GOLD = "|cffffd700"
@@ -115,17 +115,20 @@ end
 -------------------------------------------------------------------------------
 
 -- Events the default group roll frames listen for
--- CONFIRM_DISENCHANT_ROLL is Retail-only; Classic clients reject it
+-- CONFIRM_DISENCHANT_ROLL is Mainline-only; Classic clients reject it
 local ROLL_FRAME_EVENTS = {
     "START_LOOT_ROLL",
     "CANCEL_LOOT_ROLL",
     "CONFIRM_LOOT_ROLL",
 }
-if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
+if ns.IsMainline then
     ROLL_FRAME_EVENTS[#ROLL_FRAME_EVENTS + 1] = "CONFIRM_DISENCHANT_ROLL"
 end
 
 local lootFrameHooked = false
+local suppressLootFrame = false
+local lootFrameOnEvent
+local lootFrameOnHide
 local rollFrameHooksInstalled = false
 local suppressRollContainer = false
 
@@ -138,7 +141,7 @@ local function EnsureBlizzardLootFrameLoaded()
     if LootFrame then
         return
     end
-    if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+    if not ns.IsMainline then
         return
     end
     if C_AddOns and C_AddOns.LoadAddOn then
@@ -156,21 +159,24 @@ local function SuppressBlizzardLootFrame()
     if not LootFrame then
         return
     end
-    -- UnregisterAllEvents covers the stock master loot flow on Classic too:
-    -- LootFrame owns OPEN_MASTER_LOOT_LIST and is the only frame that shows
-    -- MasterLooterFrame, so silencing LootFrame's events prevents the default
-    -- master loot popup from appearing without touching MasterLooterFrame.
+    -- UI skins can re-register or show LootFrame after startup. Silence its
+    -- dispatcher and OnHide before hiding it: OnHide calls CloseLoot(), which
+    -- would otherwise close the loot session underneath our replacement.
+    if not suppressLootFrame then
+        lootFrameOnEvent = LootFrame:GetScript("OnEvent")
+        lootFrameOnHide = LootFrame:GetScript("OnHide")
+        suppressLootFrame = true
+    end
+    LootFrame:SetScript("OnEvent", nil)
+    LootFrame:SetScript("OnHide", nil)
     LootFrame:UnregisterAllEvents()
     LootFrame:Hide()
 
-    -- One-time hook: catches any code path that calls LootFrame:Show()
-    -- (e.g. Blizzard event dispatch race, LoD addon re-showing the frame).
-    -- The hook is permanent but config-gated, so it becomes a no-op when
-    -- the custom loot window is disabled.
+    -- OnShow also catches SetShown(true), unlike a hook on Show alone.
+    -- The hook is permanent, but restoration releases ownership immediately.
     if not lootFrameHooked then
-        hooksecurefunc(LootFrame, "Show", function(self)
-            local db = ns.Addon.db and ns.Addon.db.profile
-            if db and db.lootWindow and db.lootWindow.enabled then
+        LootFrame:HookScript("OnShow", function(self)
+            if suppressLootFrame then
                 self:Hide()
             end
         end)
@@ -241,9 +247,14 @@ local function SuppressBlizzardRollFrames()
 end
 
 local function RestoreBlizzardLootFrame()
-    if not LootFrame then
+    if not LootFrame or not suppressLootFrame then
         return
     end
+    suppressLootFrame = false
+    LootFrame:SetScript("OnEvent", lootFrameOnEvent)
+    LootFrame:SetScript("OnHide", lootFrameOnHide)
+    lootFrameOnEvent = nil
+    lootFrameOnHide = nil
     -- Only restore the base events all versions register at load time.
     -- Dynamic events (LOOT_SLOT_CLEARED, LOOT_SLOT_CHANGED) are re-registered
     -- by Blizzard's own OnShow handler when the frame next shows.
@@ -303,9 +314,15 @@ local MODULES = {
     { name = "LootFrame" },
     { name = "RollManager" },
     { name = "HistoryFrame" },
-    { name = "HistoryListener", passAddon = true },
-    { name = "LootHistoryChat", passAddon = true },
-    { name = "Listeners", passAddon = true },
+    {
+        name = "HistoryListener",
+        passAddon = true,
+    },
+    {
+        name = "LootHistoryChat",
+        passAddon = true,
+    },
+    { name = "Listeners" },
     { name = "MasterLootFrame" },
     { name = "MasterLootListener" },
 }

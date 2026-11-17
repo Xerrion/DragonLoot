@@ -49,8 +49,7 @@ local function NewTallyNamespace(recorder, options)
             return key
         end,
     })
-    ns.IsRetail = options.isRetail or false
-    ns.IsClassic = not ns.IsRetail
+    ns.IsClassic = not options.isRetail
 
     StubRollFrame(ns, recorder)
     ns.RollListener = {

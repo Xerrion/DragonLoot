@@ -37,7 +37,7 @@ local DU = ns.DisplayUtils
 -- Version detection
 -------------------------------------------------------------------------------
 
-local isRetail = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE)
+local isMainline = ns.IsMainline
 
 -------------------------------------------------------------------------------
 -- Slot type constants (from GetLootSlotType)
@@ -102,7 +102,7 @@ local containerFrame
 -------------------------------------------------------------------------------
 
 local function GetNormalizedSlotInfo(slotIndex)
-    if isRetail then
+    if isMainline then
         local icon, name, quantity, _, quality, locked, isQuestItem = GetLootSlotInfo(slotIndex)
         return icon, name, quantity, quality, locked, isQuestItem
     end

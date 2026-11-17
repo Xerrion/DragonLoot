@@ -10,6 +10,8 @@
 
 * Use namespaced item-info APIs for loot history on supported clients ([#198](https://github.com/Xerrion/DragonLoot/issues/198)).
 * Replace the history clear icon with localized "Clear" text to distinguish it from Close.
+* Fix loot-window event handling and reversible Blizzard-frame suppression for EllesmereUI, including WoW Forever ([#205](https://github.com/Xerrion/DragonLoot/issues/205)).
+* Recognize Forever's separate `WOW_PROJECT_CAMELOT` project ID (18), restoring its Mainline loot, roll, and history listeners instead of silently skipping them.
 
 ## [0.19.0](https://github.com/Xerrion/DragonLoot/compare/0.18.2...0.19.0) (2026-11-08)
 

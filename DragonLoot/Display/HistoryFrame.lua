@@ -35,7 +35,7 @@ local Style = DU.Style
 
 local FRAME_WIDTH = 350
 local FRAME_HEIGHT = 400
-local TITLE_BAR_HEIGHT = 24
+local TITLE_BAR_HEIGHT = DU.TITLE_BAR_HEIGHT
 local SCROLL_STEP = 3
 local SCROLLBAR_WIDTH = 14
 local SCROLLBAR_GAP = 2
@@ -188,11 +188,7 @@ local function ApplyLayoutOffsets(frame)
     local borderSize = ns.Addon.db.profile.appearance.borderSize or 1
     local padding = GetContentPadding()
 
-    -- Title bar spans across the top, inset by border
-    local titleBar = frame.titleBar
-    titleBar:ClearAllPoints()
-    titleBar:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -borderSize)
-    titleBar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
+    DU.ApplyTitleBar(frame.titleBar, ns.Addon.db)
 
     -- Scroll frame and scrollbar insets
     if scrollFrame then
@@ -903,36 +899,11 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateTitleBar(parent, isPreview)
-    local titleBar = CreateFrame("Frame", nil, parent)
-    titleBar:SetHeight(TITLE_BAR_HEIGHT)
-    titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
-    titleBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
-    titleBar.background = titleBar:CreateTexture(nil, "BACKGROUND")
-    titleBar.background:SetAllPoints()
-    titleBar.background:SetColorTexture(unpack(Style.title))
-    titleBar.accent = titleBar:CreateTexture(nil, "ARTWORK")
-    titleBar.accent:SetSize(2, 12)
-    titleBar.accent:SetPoint("LEFT", titleBar, "LEFT", 0, 0)
-    titleBar.accent:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 1)
-    titleBar.separator = titleBar:CreateTexture(nil, "ARTWORK")
-    titleBar.separator:SetHeight(1)
-    titleBar.separator:SetPoint("BOTTOMLEFT", titleBar, "BOTTOMLEFT", 0, 0)
-    titleBar.separator:SetPoint("BOTTOMRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
-    titleBar.separator:SetColorTexture(unpack(Style.border))
-
+    local titleBar = DU.CreateTitleBar(parent, ns.Addon.db, L["DragonLoot - Loot History"])
     local fontPath, fontSize, fontOutline = GetFont()
-    titleBar.text = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
-    titleBar.text:SetJustifyH("LEFT")
-    titleBar.text:SetWordWrap(false)
-    titleBar.text:SetFont(fontPath, fontSize, fontOutline)
-    DU.ApplyFontShadow(titleBar.text, ns.Addon.db)
-    titleBar.text:SetText(L["DragonLoot - Loot History"])
-    titleBar.text:SetTextColor(unpack(Style.text))
 
     -- Close button
-    local closeBtn = DU.CreateCloseButton(titleBar, ns.Addon.db)
-    closeBtn:SetPoint("TOPRIGHT", titleBar, "TOPRIGHT", -2, -2)
+    local closeBtn = titleBar.closeButton
     closeBtn:SetScript("OnClick", function()
         ns.HistoryFrame.Hide()
     end)
@@ -940,8 +911,6 @@ local function CreateTitleBar(parent, isPreview)
     -- Clear button
     local clearBtn = CreateFrame("Button", nil, titleBar, "BackdropTemplate")
     DU.ApplyButtonSurface(clearBtn)
-    clearBtn:SetHeight(TITLE_BAR_HEIGHT - 4)
-    clearBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
     clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     clearBtn.text:SetPoint("CENTER", clearBtn, "CENTER", 0, 0)
     clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
@@ -949,7 +918,6 @@ local function CreateTitleBar(parent, isPreview)
     DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
     clearBtn.text:SetWordWrap(false)
     clearBtn.text:SetText(L["Clear"])
-    clearBtn:SetWidth(clearBtn.text:GetStringWidth() + 12)
     clearBtn:SetScript("OnClick", function()
         ns.HistoryFrame.ClearHistory()
     end)
@@ -962,8 +930,7 @@ local function CreateTitleBar(parent, isPreview)
         GameTooltip:Hide()
     end)
     titleBar.clearButton = clearBtn
-    titleBar.closeButton = closeBtn
-    titleBar.text:SetPoint("RIGHT", clearBtn, "LEFT", -8, 0)
+    DU.ApplyTitleBar(titleBar, ns.Addon.db)
 
     if isPreview then
         closeBtn:EnableMouse(false)
@@ -1188,15 +1155,7 @@ function ns.HistoryFrame.ApplySettings()
     -- Update layout offsets for border thickness
     ApplyLayoutOffsets(containerFrame)
 
-    -- Update title and clear button fonts
     local fontPath, fontSize, fontOutline = GetFont()
-    containerFrame.titleBar.text:SetFont(fontPath, fontSize, fontOutline)
-    DU.ApplyFontShadow(containerFrame.titleBar.text, ns.Addon.db)
-    DU.ApplyCloseButtonFont(containerFrame.titleBar.closeButton, ns.Addon.db)
-    local clearBtn = containerFrame.titleBar.clearButton
-    clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
-    DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
-    clearBtn:SetWidth(clearBtn.text:GetStringWidth() + 12)
 
     -- Update visible entries with current icon size and entry height
     local db = ns.Addon.db.profile
@@ -1373,17 +1332,7 @@ function ns.HistoryFrame.CreatePreview(parent)
         content:SetWidth(math.max(1, self:GetWidth() - 2 * (padding + border)))
         content:SetHeight(#rows * (GetEntryHeight() + spacing))
         ApplyBackdrop(self)
-        self.titleBar:ClearAllPoints()
-        self.titleBar:SetPoint("TOPLEFT", self, "TOPLEFT", border, -border)
-        self.titleBar:SetPoint("TOPRIGHT", self, "TOPRIGHT", -border, -border)
-        local font, size, flags = GetFont()
-        self.titleBar.text:SetFont(font, size, flags)
-        DU.ApplyFontShadow(self.titleBar.text, ns.Addon.db)
-        DU.ApplyCloseButtonFont(self.titleBar.closeButton, ns.Addon.db)
-        local clear = self.titleBar.clearButton
-        clear.text:SetFont(font, size, flags)
-        DU.ApplyFontShadow(clear.text, ns.Addon.db)
-        clear:SetWidth(clear.text:GetStringWidth() + 12)
+        DU.ApplyTitleBar(self.titleBar, ns.Addon.db)
         for i, row in ipairs(rows) do
             samples[i].timestamp = GetTime() - i * 20
             PopulateEntry(row, samples[i], true)

@@ -10,6 +10,35 @@ local function findFrame(context, name)
     error("Missing frame " .. name)
 end
 
+local function assertHeader(frame, border)
+    local header = frame.titleBar
+    local close = header.closeButton
+    assert.are.equal(24, header:GetHeight())
+    assert.are.same({
+        { "TOPLEFT", frame, "TOPLEFT", border, -border },
+        { "TOPRIGHT", frame, "TOPRIGHT", -border, -border },
+    }, header.points)
+    assert.are.equal(header, header.background.allPoints)
+    assert.are.equal("LEFT", header.text.justifyH)
+    assert.are.same({
+        { "LEFT", header, "LEFT", 12, 0 },
+        { "RIGHT", header.clearButton or close, "LEFT", -8, 0 },
+    }, header.text.points)
+    assert.are.same({ { "TOPRIGHT", header, "TOPRIGHT", -2, -2 } }, close.points)
+    assert.are.equal(20, close:GetWidth())
+    assert.are.equal(20, close:GetHeight())
+    assert.are.same({ { "LEFT", header, "LEFT", 0, 0 } }, header.accent.points)
+    assert.are.same({
+        { "BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0 },
+        { "BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0 },
+    }, header.separator.points)
+    if header.clearButton then
+        assert.are.equal(close:GetHeight(), header.clearButton:GetHeight())
+        assert.are.same({ { "RIGHT", close, "LEFT", -4, 0 } }, header.clearButton.points)
+        assert.are.same(header.text.font, header.clearButton.text.font)
+    end
+end
+
 describe("modern display style", function()
     local context
     before_each(function()
@@ -57,6 +86,8 @@ describe("modern display style", function()
         local loot = ns.LootFrame.CreatePreview(parent)
         local history = ns.HistoryFrame.CreatePreview(parent)
         local roll = ns.RollFrame.CreatePreview(parent)
+        assertHeader(loot, 1)
+        assertHeader(history, 1)
         for _, frame in ipairs({ loot, history, roll }) do
             assert.are.same({ 0.035, 0.047, 0.065, 0.98 }, frame.background)
             assert.are.same({ 0.22, 0.28, 0.35, 1 }, frame.borderColor)
@@ -94,6 +125,7 @@ describe("modern display style", function()
         cfg.appearance.font = "Custom Font"
         cfg.appearance.fontSize = 17
         cfg.appearance.backgroundColor = { r = 0.4, g = 0.2, b = 0.1 }
+        cfg.appearance.borderSize = 3
         cfg.appearance.showItemLevel = false
         cfg.rollFrame.timerBarColor = { r = 1, g = 0, b = 0 }
         cfg.history.width, cfg.history.height, cfg.history.scale = 620, 240, 1.3
@@ -123,13 +155,24 @@ describe("modern display style", function()
             assert.are.same({ 0.4, 0.2, 0.1, 0.98 }, frame.background)
             assert.are.same(frame.background, previews[i].background)
         end
+        for i = 1, 2 do
+            assertHeader(live[i], 3)
+            assertHeader(previews[i], 3)
+        end
         assert.are.same({ 1, 0, 0 }, live[3].timerBar.statusColor)
         ns.ApplyModernStyle()
+        local historyScroll = findFrame(context, "DragonLootHistoryScroll")
+        local liveScrollAnchors = historyScroll.points
         for i, preview in ipairs(previews) do
             preview:Refresh()
+            assert.are.equal(liveScrollAnchors, historyScroll.points)
             assert.are.same({ 0.035, 0.047, 0.065, 0.98 }, live[i].background)
             assert.are.same(live[i].background, preview.background)
             assert.are.same(live[i].borderColor, preview.borderColor)
+        end
+        for i = 1, 2 do
+            assertHeader(live[i], 1)
+            assertHeader(previews[i], 1)
         end
         assert.are.same(live[1].title.font, previews[1].title.font)
         assert.are.same(live[2].titleBar.text.font, previews[2].titleBar.text.font)

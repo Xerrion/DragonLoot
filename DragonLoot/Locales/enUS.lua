@@ -387,3 +387,11 @@ L["Profiles allow you to save different settings configurations."
     .. " or reset to defaults."] = true
 L["Reset Current Profile"] = true
 L["Reset all settings in the current profile to their default values"] = true
+
+-- Settings preview
+L["%d x %d · %d%% · %s"] = true
+L["Actual size"] = true
+L["Fit"] = true
+L["Clipped preview"] = true
+L["Feature disabled"] = true
+L["Preview unavailable"] = true

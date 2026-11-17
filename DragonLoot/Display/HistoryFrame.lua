@@ -284,15 +284,20 @@ end
 -- Entry frame creation
 -------------------------------------------------------------------------------
 
-local function CreateEntryFrame()
-    entryCount = entryCount + 1
-    local frameName = "DragonLootHistoryEntry" .. entryCount
+local function CreateEntryFrame(parent, isPreview)
+    local frameName
+    if not isPreview then
+        entryCount = entryCount + 1
+        frameName = "DragonLootHistoryEntry" .. entryCount
+    end
 
-    local entry = CreateFrame("Button", frameName, scrollChild)
+    local entry = CreateFrame("Button", frameName, parent or scrollChild)
     local entryHeight = GetEntryHeight()
     entry:SetHeight(entryHeight)
-    entry:EnableMouse(true)
-    entry:RegisterForClicks("LeftButtonUp")
+    entry:EnableMouse(not isPreview)
+    if not isPreview then
+        entry:RegisterForClicks("LeftButtonUp")
+    end
 
     -- Icon
     entry.icon = entry:CreateTexture(nil, "ARTWORK")
@@ -625,7 +630,7 @@ end
 -- Populate an entry frame with history data
 -------------------------------------------------------------------------------
 
-local function PopulateEntry(entry, data)
+local function PopulateEntry(entry, data, isPreview)
     if not entry or not data then
         return
     end
@@ -742,7 +747,12 @@ local function PopulateEntry(entry, data)
         local fontPath2, fontSize2, fontOutline2 = GetFont()
         entry.expandIndicator:SetFont(fontPath2, fontSize2 - 3, fontOutline2)
         DU.ApplyFontShadow(entry.expandIndicator, ns.Addon.db)
-        if expandedEntries[entryKey] then
+        if isPreview then
+            entry.expandIndicator:SetText("+")
+            entry.expandIndicator:Show()
+            entry.detailContainer:Hide()
+            entry:SetHeight(GetEntryHeight())
+        elseif expandedEntries[entryKey] then
             entry.expandIndicator:SetText("-")
             entry.expandIndicator:Show()
             PopulateEntryDetails(entry, data.rollResults)
@@ -753,13 +763,20 @@ local function PopulateEntry(entry, data)
         end
     else
         entry.expandIndicator:Hide()
-        ReleaseEntryDetails(entry)
+        if isPreview then
+            entry.detailContainer:Hide()
+            entry:SetHeight(GetEntryHeight())
+        else
+            ReleaseEntryDetails(entry)
+        end
     end
 
     -- Interaction scripts (named functions, no per-entry closures)
-    entry:SetScript("OnEnter", OnEntryEnter)
-    entry:SetScript("OnLeave", OnEntryLeave)
-    entry:SetScript("OnClick", OnEntryClick)
+    if not isPreview then
+        entry:SetScript("OnEnter", OnEntryEnter)
+        entry:SetScript("OnLeave", OnEntryLeave)
+        entry:SetScript("OnClick", OnEntryClick)
+    end
 
     entry:Show()
 end
@@ -877,7 +894,7 @@ end
 -- Title bar creation
 -------------------------------------------------------------------------------
 
-local function CreateTitleBar(parent)
+local function CreateTitleBar(parent, isPreview)
     local titleBar = CreateFrame("Frame", nil, parent)
     titleBar:SetHeight(TITLE_BAR_HEIGHT)
     titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
@@ -932,6 +949,15 @@ local function CreateTitleBar(parent)
     end)
     titleBar.clearButton = clearBtn
     titleBar.text:SetPoint("RIGHT", clearBtn, "LEFT", -8, 0)
+
+    if isPreview then
+        closeBtn:EnableMouse(false)
+        closeBtn:SetScript("OnClick", nil)
+        clearBtn:EnableMouse(false)
+        clearBtn:SetScript("OnClick", nil)
+        clearBtn:SetScript("OnEnter", nil)
+        clearBtn:SetScript("OnLeave", nil)
+    end
 
     return titleBar
 end
@@ -1273,4 +1299,76 @@ function ns.HistoryFrame.ClearHistory()
     if containerFrame and containerFrame:IsShown() then
         RefreshHistory()
     end
+end
+
+-------------------------------------------------------------------------------
+-- Settings preview: samples never enter historyData or the persisted history.
+-------------------------------------------------------------------------------
+
+function ns.HistoryFrame.CreatePreview(parent)
+    local frame = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    frame:EnableMouse(false)
+    frame.titleBar = CreateTitleBar(frame, true)
+    local clip = CreateFrame("ScrollFrame", nil, frame)
+    clip:EnableMouse(false)
+    local content = CreateFrame("Frame", nil, clip)
+    content:EnableMouse(false)
+    clip:SetScrollChild(content)
+    local rows = { CreateEntryFrame(content, true), CreateEntryFrame(content, true) }
+    frame.previewRows = rows
+    local samples = {
+        {
+            itemLink = "[Gorehowl]",
+            itemTexture = 132447,
+            quality = 4,
+            winner = "TestPlayer",
+            winnerClass = "WARRIOR",
+            rollType = 1,
+            roll = 87,
+            rollResults = { { playerName = "TestPlayer", playerClass = "WARRIOR", rollType = 1, roll = 87 } },
+        },
+        {
+            itemLink = "[Super Mana Potion]",
+            itemTexture = 134762,
+            quality = 1,
+            winner = "TestPlayer",
+            winnerClass = "MAGE",
+            isDirectLoot = true,
+        },
+    }
+
+    function frame:Refresh()
+        local db = ns.Addon.db.profile
+        local history = db.history
+        local border = db.appearance.borderSize or 1
+        local padding = GetContentPadding()
+        local spacing = GetEntrySpacing()
+        self:SetSize(history.width or FRAME_WIDTH, history.height or FRAME_HEIGHT)
+        clip:ClearAllPoints()
+        clip:SetPoint("TOPLEFT", self, "TOPLEFT", padding + border, -(TITLE_BAR_HEIGHT + padding + border))
+        clip:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -(padding + border), padding + border)
+        content:SetWidth(math.max(1, self:GetWidth() - 2 * (padding + border)))
+        content:SetHeight(#rows * (GetEntryHeight() + spacing))
+        ApplyBackdrop(self)
+        self.titleBar:ClearAllPoints()
+        self.titleBar:SetPoint("TOPLEFT", self, "TOPLEFT", border, -border)
+        self.titleBar:SetPoint("TOPRIGHT", self, "TOPRIGHT", -border, -border)
+        local font, size, flags = GetFont()
+        self.titleBar.text:SetFont(font, size, flags)
+        DU.ApplyFontShadow(self.titleBar.text, ns.Addon.db)
+        local clear = self.titleBar.clearButton
+        clear.text:SetFont(font, size, flags)
+        DU.ApplyFontShadow(clear.text, ns.Addon.db)
+        clear:SetWidth(clear.text:GetStringWidth() + 12)
+        for i, row in ipairs(rows) do
+            samples[i].timestamp = GetTime() - i * 20
+            PopulateEntry(row, samples[i], true)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(i - 1) * (GetEntryHeight() + spacing))
+            row:SetPoint("RIGHT", content, "RIGHT", -(SCROLLBAR_WIDTH + SCROLLBAR_GAP), 0)
+        end
+    end
+
+    frame:Refresh()
+    return frame
 end

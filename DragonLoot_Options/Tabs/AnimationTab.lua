@@ -28,6 +28,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Build entrance/exit animation name values from LibAnimate
@@ -193,11 +194,12 @@ local function CreateContent(parent)
     ---------------------------------------------------------------------------
     -- Apply initial disabled state
     ---------------------------------------------------------------------------
-    if not db.profile.animation.enabled then
+    RefreshState = function()
         for _, widget in ipairs(animWidgets) do
-            widget:SetDisabled(true)
+            widget:SetDisabled(not db.profile.animation.enabled)
         end
     end
+    RefreshState()
 
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame
@@ -214,4 +216,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["Animation"],
     order = 8,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

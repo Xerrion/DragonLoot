@@ -718,35 +718,40 @@ end
 -- Create a single roll frame
 -------------------------------------------------------------------------------
 
-local function CreateRollFrame(index)
-    rollFrameCount = rollFrameCount + 1
-    local frameName = "DragonLootRoll" .. rollFrameCount
+local function CreateRollFrame(index, parent, isPreview)
+    local frameName
+    if not isPreview then
+        rollFrameCount = rollFrameCount + 1
+        frameName = "DragonLootRoll" .. rollFrameCount
+    end
 
-    local frame = CreateFrame("Frame", frameName, anchorFrame, "BackdropTemplate")
+    local frame = CreateFrame("Frame", frameName, parent or anchorFrame, "BackdropTemplate")
     frame:SetSize(GetFrameWidth(), GetFrameMinHeight())
     ApplyBackdrop(frame)
-    frame:SetFrameStrata("HIGH")
-    frame:SetFrameLevel(110)
+    if not isPreview then
+        frame:SetFrameStrata("HIGH")
+        frame:SetFrameLevel(110)
+    end
     frame:Hide()
 
     -- Drag: propagate movement to the shared anchor frame
-    frame:EnableMouse(true)
+    frame:EnableMouse(not isPreview)
     frame:SetMovable(false) -- frame itself doesn't move; anchor does
-    frame:RegisterForDrag("LeftButton")
-
-    frame:SetScript("OnDragStart", function()
-        local db = GetRollFrameDB()
-        if db and not db.lock and anchorFrame then
-            anchorFrame:StartMoving()
-        end
-    end)
-
-    frame:SetScript("OnDragStop", function()
-        if anchorFrame then
-            anchorFrame:StopMovingOrSizing()
-            SaveFramePosition()
-        end
-    end)
+    if not isPreview then
+        frame:RegisterForDrag("LeftButton")
+        frame:SetScript("OnDragStart", function()
+            local db = GetRollFrameDB()
+            if db and not db.lock and anchorFrame then
+                anchorFrame:StartMoving()
+            end
+        end)
+        frame:SetScript("OnDragStop", function()
+            if anchorFrame then
+                anchorFrame:StopMovingOrSizing()
+                SaveFramePosition()
+            end
+        end)
+    end
 
     -- Item icon
     frame.iconFrame = CreateRollIcon(frame)
@@ -922,7 +927,7 @@ end
 -- Unified roll frame rendering (visual output identical for real and test data)
 -------------------------------------------------------------------------------
 
-local function RenderRollFrame(frame, data, rollID, isTest)
+local function RenderRollFrame(frame, data, rollID, isTest, isPreview)
     local fontPath, fontSize, fontOutline = GetFont()
     local r, g, b = DU.GetQualityColor(data.quality)
 
@@ -986,7 +991,14 @@ local function RenderRollFrame(frame, data, rollID, isTest)
     end
 
     -- Item level overlay on icon (bottom-left corner)
-    if ns.Addon.db.profile.appearance.showItemLevel and not isTest then
+    if ns.Addon.db.profile.appearance.showItemLevel and isPreview then
+        if not frame.iconFrame.ilvl then
+            frame.iconFrame.ilvl = frame.iconFrame:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+            frame.iconFrame.ilvl:SetPoint("BOTTOMLEFT", frame.iconFrame, "BOTTOMLEFT", 2, 2)
+        end
+        frame.iconFrame.ilvl:SetText(data.itemLevel)
+        frame.iconFrame.ilvl:Show()
+    elseif ns.Addon.db.profile.appearance.showItemLevel and not isTest then
         local link = GetLootRollItemLink(rollID)
         local ilvl = link and C_Item and C_Item.GetDetailedItemLevelInfo and C_Item.GetDetailedItemLevelInfo(link)
         if not frame.iconFrame.ilvl then
@@ -1819,4 +1831,67 @@ function ns.RollFrame.StopTestRollLoop()
 
     loopRollIndex = 0
     ns.Print(L["Test roll loop stopped."])
+end
+
+-------------------------------------------------------------------------------
+-- Settings preview: independent frame, no manager, pools, timers, or voting.
+-------------------------------------------------------------------------------
+
+function ns.RollFrame.CreatePreview(parent)
+    local frame = CreateRollFrame(nil, parent, true)
+    local controls = {
+        frame,
+        frame.iconFrame,
+        frame.needButton,
+        frame.greedButton,
+        frame.disenchantButton,
+        frame.transmogButton,
+        frame.passButton,
+    }
+    local data = BuildTestRollData(TEST_ROLLS[1])
+    data.itemLevel = 226
+
+    function frame:Refresh()
+        local db = GetRollFrameDB() or {}
+        self:SetWidth(GetFrameWidth())
+        ApplyBackdrop(self)
+        local buttonSize = GetButtonSize()
+        for i = 3, #controls do
+            controls[i]:SetSize(buttonSize, buttonSize)
+        end
+        self.timerBar:SetStatusBarTexture(
+            LSM:Fetch("statusbar", db.timerBarTexture) or "Interface\\TargetingFrame\\UI-StatusBar"
+        )
+        local background = db.timerBarBackgroundColor or { r = 0.1, g = 0.1, b = 0.1 }
+        self.timerBar.bg:SetColorTexture(background.r, background.g, background.b, db.timerBarBackgroundAlpha or 0.5)
+        self.timerBar.container:SetHeight(
+            GetTimerBarStyle() == "minimal" and GetTimerBarMinimalHeight() or (db.timerBarHeight or 12)
+        )
+        ApplyTimerBarBorder(self.timerBar.container)
+        ApplyTimerBarInset(self.timerBar, self.timerBar.container)
+        RenderRollFrame(self, data, nil, true, true)
+        self.timerBar:SetValue(0.65)
+        local r, g, b = GetTimerBarColor(0.65, 1)
+        self.timerBar:SetStatusBarColor(r, g, b)
+        if GetTimerBarStyle() ~= "minimal" then
+            self.timerBar.text:SetText("15")
+        end
+        -- Preserve visible enabled/disabled button styling without accepting input.
+        for _, control in ipairs(controls) do
+            control:EnableMouse(false)
+            for _, script in ipairs({ "OnClick", "OnEnter", "OnLeave", "OnUpdate", "OnDragStart", "OnDragStop" }) do
+                control:SetScript(script, nil)
+            end
+        end
+        self.previewWidth = self:GetWidth()
+        self.previewHeight = self:GetHeight()
+        if db.iconPosition == "outside" then
+            self.previewWidth = self.previewWidth
+                + 2 * (GetRollIconSize() + (db.iconOutsideGap or 4) + math.abs(db.iconOffsetX or 0))
+        end
+        self.previewHeight = math.max(self.previewHeight, GetRollIconSize() + 2 * math.abs(db.iconOffsetY or 0))
+    end
+
+    frame:Refresh()
+    return frame
 end

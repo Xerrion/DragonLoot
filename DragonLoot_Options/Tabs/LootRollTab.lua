@@ -27,6 +27,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Notify roll manager helper
@@ -247,7 +248,7 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
             end
         end,
     })
-    centerHBtn:SetPoint("TOPLEFT", content, "TOPLEFT", LC.PADDING_SIDE, innerY)
+    innerY = LC.AnchorWidget(centerHBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local centerVBtn = W.CreateButton(content, {
         text = L["Center Vertically"],
@@ -259,9 +260,7 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
             end
         end,
     })
-    centerVBtn:SetPoint("LEFT", centerHBtn, "RIGHT", 8, 0)
-
-    innerY = innerY - centerHBtn:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
+    innerY = LC.AnchorWidget(centerVBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local testRollBtn = W.CreateButton(content, {
         text = L["Test Roll"],
@@ -273,7 +272,7 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
             end
         end,
     })
-    testRollBtn:SetPoint("TOPLEFT", content, "TOPLEFT", LC.PADDING_SIDE, innerY)
+    innerY = LC.AnchorWidget(testRollBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local testLoopBtn = W.CreateButton(content, {
         text = L["Test Loop"],
@@ -285,9 +284,7 @@ local function CreateRollFrameSection(parent, db, yOffset, layoutWidgets, reappl
             end
         end,
     })
-    testLoopBtn:SetPoint("LEFT", testRollBtn, "RIGHT", 8, 0)
-
-    innerY = innerY - testRollBtn:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
+    innerY = LC.AnchorWidget(testLoopBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -839,16 +836,17 @@ local function CreateContent(parent)
     yOffset = CreateIconSection(parent, db, yOffset, layoutWidgets, reapplySubState)
 
     -- Apply initial disabled state
-    if not db.profile.rollFrame.enabled then
+    RefreshState = function()
         for _, widget in ipairs(layoutWidgets) do
-            widget:SetDisabled(true)
+            widget:SetDisabled(not db.profile.rollFrame.enabled)
         end
-    else
-        -- Apply sub-state even when enabled (e.g. compact mode, timer bar style)
-        for _, fn in ipairs(reapplySubState) do
-            fn()
+        if db.profile.rollFrame.enabled then
+            for _, fn in ipairs(reapplySubState) do
+                fn()
+            end
         end
     end
+    RefreshState()
 
     parent:SetHeight(math_abs(yOffset) + LC.PADDING_BOTTOM)
 end
@@ -862,4 +860,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["Roll Frame"],
     order = 3,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

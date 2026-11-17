@@ -32,6 +32,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Static popup dialogs (defined at file scope)
@@ -160,7 +161,10 @@ local function CreateRecordingSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(qualityDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Apply initial disabled state based on current trackDirectLoot value
-    qualityDropdown:SetDisabled(not db.profile.history.trackDirectLoot)
+    RefreshState = function()
+        qualityDropdown:SetDisabled(not db.profile.history.trackDirectLoot)
+    end
+    RefreshState()
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -267,8 +271,7 @@ local function CreateDisplaySection(parent, db, yOffset)
             StaticPopup_Show("DRAGONLOOT_CLEAR_HISTORY")
         end,
     })
-    clearBtn:SetPoint("TOPLEFT", content, "TOPLEFT", LC.PADDING_SIDE, innerY)
-    innerY = innerY - clearBtn:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
+    innerY = LC.AnchorWidget(clearBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -307,4 +310,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["History"],
     order = 4,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

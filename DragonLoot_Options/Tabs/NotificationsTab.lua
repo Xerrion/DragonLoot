@@ -28,6 +28,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Section: Roll Notifications
@@ -125,6 +126,13 @@ local function CreateNotificationSection(parent, db, yOffset)
     })
     innerY = LC.AnchorWidget(qualityDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
+    RefreshState = function()
+        groupWinsToggle:SetDisabled(not db.profile.rollNotifications.showRollWon)
+        selfRollsToggle:SetDisabled(not db.profile.rollNotifications.showRollResults)
+        groupRollsToggle:SetDisabled(not db.profile.rollNotifications.showRollResults)
+    end
+    RefreshState()
+
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
 
@@ -206,4 +214,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["Notifications"],
     order = 5,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

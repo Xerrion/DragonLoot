@@ -28,6 +28,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -83,7 +84,10 @@ local function CreateSettingsSection(parent, db, yOffset)
     innerY = LC.AnchorWidget(qualityDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Apply initial disabled state
-    qualityDropdown:SetDisabled(not db.profile.autoLoot.enabled)
+    RefreshState = function()
+        qualityDropdown:SetDisabled(not db.profile.autoLoot.enabled)
+    end
+    RefreshState()
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -188,4 +192,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["Auto-Loot"],
     order = 6,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

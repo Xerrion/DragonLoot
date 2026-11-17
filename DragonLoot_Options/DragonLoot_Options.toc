@@ -30,6 +30,7 @@ Libs\DragonWidgets\DragonWidgets\Widgets\ItemSlot.lua
 Libs\DragonWidgets\DragonWidgets\Widgets\ItemList.lua
 
 Core.lua
+Preview.lua
 Tabs\GeneralTab.lua
 Tabs\LootWindowTab.lua
 Tabs\LootRollTab.lua

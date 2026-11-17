@@ -380,14 +380,19 @@ end
 -- Slot frame creation
 -------------------------------------------------------------------------------
 
-local function CreateSlotFrame()
-    slotCount = slotCount + 1
-    local frameName = "DragonLootSlot" .. slotCount
+local function CreateSlotFrame(parent, isPreview)
+    local frameName
+    if not isPreview then
+        slotCount = slotCount + 1
+        frameName = "DragonLootSlot" .. slotCount
+    end
 
-    local slot = CreateFrame("Button", frameName, containerFrame)
+    local slot = CreateFrame("Button", frameName, parent or containerFrame)
     slot:SetHeight(44)
-    slot:EnableMouse(true)
-    slot:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    slot:EnableMouse(not isPreview)
+    if not isPreview then
+        slot:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    end
 
     -- Row background (quality-tinted, configurable style)
     slot.rowBg = slot:CreateTexture(nil, "BACKGROUND")
@@ -455,9 +460,11 @@ local function CreateSlotFrame()
     slot.highlight:SetColorTexture(1, 1, 1, 0.15)
 
     -- Interaction scripts
-    slot:SetScript("OnClick", OnSlotClick)
-    slot:SetScript("OnEnter", OnSlotEnter)
-    slot:SetScript("OnLeave", OnSlotLeave)
+    if not isPreview then
+        slot:SetScript("OnClick", OnSlotClick)
+        slot:SetScript("OnEnter", OnSlotEnter)
+        slot:SetScript("OnLeave", OnSlotLeave)
+    end
 
     return slot
 end
@@ -592,7 +599,7 @@ end
 -- Unified slot rendering (visual output identical for real and test data)
 -------------------------------------------------------------------------------
 
-local function RenderSlot(slot, data, isTest)
+local function RenderSlot(slot, data, isTest, isPreview)
     local db = ns.Addon.db.profile
     local iconSize = db.appearance.lootIconSize or 36
     local fontPath, fontSize, fontOutline = GetFont()
@@ -670,7 +677,9 @@ local function RenderSlot(slot, data, isTest)
     slot:SetHeight(iconSize + 8)
 
     -- Interaction scripts differ by mode
-    if isTest then
+    if isPreview then
+        slot:EnableMouse(false)
+    elseif isTest then
         slot:SetScript("OnClick", function()
             ns.Print(L["Test slot clicked: "] .. data.name)
         end)
@@ -731,7 +740,7 @@ end
 -- Title bar close button creation
 -------------------------------------------------------------------------------
 
-local function CreateCloseButton(parent)
+local function CreateCloseButton(parent, isPreview)
     local ok, btn = pcall(CreateFrame, "Button", nil, parent, "UIPanelCloseButtonNoScripts")
     if not ok or not btn then
         btn = CreateFrame("Button", nil, parent)
@@ -742,10 +751,14 @@ local function CreateCloseButton(parent)
     btn:SetSize(24, 24)
     btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
 
-    btn:SetScript("OnClick", function()
-        CloseLoot()
-        ns.LootFrame.Hide()
-    end)
+    if isPreview then
+        btn:EnableMouse(false)
+    else
+        btn:SetScript("OnClick", function()
+            CloseLoot()
+            ns.LootFrame.Hide()
+        end)
+    end
 
     return btn
 end
@@ -754,11 +767,17 @@ end
 -- Container frame creation
 -------------------------------------------------------------------------------
 
-local function CreateContainerFrame()
-    local frame = CreateFrame("Frame", "DragonLootFrame", UIParent, "BackdropTemplate")
-    frame:SetFrameStrata("HIGH")
-    frame:SetFrameLevel(100)
-    frame:SetClampedToScreen(true)
+local function CreateContainerFrame(parent, isPreview)
+    local name
+    if not isPreview then
+        name = "DragonLootFrame"
+    end
+    local frame = CreateFrame("Frame", name, parent or UIParent, "BackdropTemplate")
+    if not isPreview then
+        frame:SetFrameStrata("HIGH")
+        frame:SetFrameLevel(100)
+        frame:SetClampedToScreen(true)
+    end
     frame:Hide()
 
     -- Backdrop
@@ -774,24 +793,24 @@ local function CreateContainerFrame()
     frame.title:SetTextColor(1, 0.82, 0)
 
     -- Close button
-    frame.closeBtn = CreateCloseButton(frame)
+    frame.closeBtn = CreateCloseButton(frame, isPreview)
 
     -- Dragging
-    frame:EnableMouse(true)
-    frame:SetMovable(true)
-    frame:RegisterForDrag("LeftButton")
-
-    frame:SetScript("OnDragStart", function(self)
-        local db = ns.Addon.db.profile.lootWindow
-        if not db.lock then
-            self:StartMoving()
-        end
-    end)
-
-    frame:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        SaveFramePosition()
-    end)
+    frame:EnableMouse(not isPreview)
+    if not isPreview then
+        frame:SetMovable(true)
+        frame:RegisterForDrag("LeftButton")
+        frame:SetScript("OnDragStart", function(self)
+            local db = ns.Addon.db.profile.lootWindow
+            if not db.lock then
+                self:StartMoving()
+            end
+        end)
+        frame:SetScript("OnDragStop", function(self)
+            self:StopMovingOrSizing()
+            SaveFramePosition()
+        end)
+    end
 
     -- Fishing hint
     frame.fishingText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -1246,4 +1265,52 @@ function ns.LootFrame.ShowTestLoot()
     ShowWithAnimation()
 
     ns.Print(L["Showing test loot window."])
+end
+
+-------------------------------------------------------------------------------
+-- Settings preview: owned by its host, never joins the live slot pool.
+-------------------------------------------------------------------------------
+
+function ns.LootFrame.CreatePreview(parent)
+    local frame = CreateContainerFrame(parent, true)
+    local rows = {}
+    for i = 1, 3 do
+        rows[i] = CreateSlotFrame(frame, true)
+    end
+    frame.previewRows = rows
+
+    function frame:Refresh()
+        local db = ns.Addon.db.profile
+        local border = db.appearance.borderSize or 1
+        local padding = GetContentPadding()
+        local spacing = GetSlotSpacing()
+        local rowHeight = (db.appearance.lootIconSize or 36) + 8
+        self:SetWidth(db.lootWindow.width or 250)
+        self:SetHeight(
+            math.max(
+                db.lootWindow.height or 300,
+                TITLE_BAR_HEIGHT + padding * 2 + border * 2 + #rows * (rowHeight + spacing)
+            )
+        )
+        ApplyBackdrop(self)
+        ApplyLayoutOffsets(self)
+        local font, size, flags = GetFont()
+        self.title:SetFont(font, size, flags)
+        DU.ApplyFontShadow(self.title, ns.Addon.db)
+        for i, row in ipairs(rows) do
+            RenderSlot(row, BuildTestSlotData(TEST_ITEMS[i], i), true, true)
+            row:ClearAllPoints()
+            row:SetPoint(
+                "TOPLEFT",
+                self,
+                "TOPLEFT",
+                padding + border,
+                -(TITLE_BAR_HEIGHT + padding + border + (i - 1) * (rowHeight + spacing))
+            )
+            row:SetPoint("RIGHT", self, "RIGHT", -(padding + border), 0)
+        end
+    end
+
+    frame:Refresh()
+    return frame
 end

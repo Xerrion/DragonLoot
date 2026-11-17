@@ -27,6 +27,7 @@ local LC = ns.DW.LayoutConstants
 -------------------------------------------------------------------------------
 
 local dlns
+local RefreshState
 
 -------------------------------------------------------------------------------
 -- Helper: call LootFrame.ApplySettings if available
@@ -205,11 +206,12 @@ local function CreateContent(parent)
     ---------------------------------------------------------------------------
     -- Apply initial disabled state
     ---------------------------------------------------------------------------
-    if not db.profile.lootWindow.enabled then
+    RefreshState = function()
         for _, widget in ipairs(layoutWidgets) do
-            widget:SetDisabled(true)
+            widget:SetDisabled(not db.profile.lootWindow.enabled)
         end
     end
+    RefreshState()
 
     ---------------------------------------------------------------------------
     -- Set content height for scroll frame
@@ -226,4 +228,9 @@ ns.Tabs[#ns.Tabs + 1] = {
     label = L["Loot Window"],
     order = 2,
     createFunc = CreateContent,
+    refreshFunc = function()
+        if RefreshState then
+            RefreshState()
+        end
+    end,
 }

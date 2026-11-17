@@ -139,6 +139,7 @@ local function CreateCurrentProfileSection(parent, db, yOffset, refreshAll)
             refreshAll()
         end,
     })
+    activeDropdown._layoutFullWidth = true
     innerY = LC.AnchorWidget(activeDropdown, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     -- New profile: text input on the left, create button to its right
@@ -147,8 +148,7 @@ local function CreateCurrentProfileSection(parent, db, yOffset, refreshAll)
         width = NEW_PROFILE_INPUT_WIDTH,
         maxLength = 64,
     })
-    newProfileInput:SetPoint("TOPLEFT", content, "TOPLEFT", LC.PADDING_SIDE, innerY)
-    newProfileInput:SetPoint("TOPRIGHT", content, "TOPRIGHT", -LC.PADDING_SIDE, innerY)
+    innerY = LC.AnchorWidget(newProfileInput, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     local createBtn = W.CreateButton(content, {
         text = L["Create"],
@@ -164,10 +164,7 @@ local function CreateCurrentProfileSection(parent, db, yOffset, refreshAll)
             refreshAll()
         end,
     })
-    createBtn:ClearAllPoints()
-    createBtn:SetPoint("LEFT", newProfileInput._editBox, "RIGHT", 8, 0)
-
-    innerY = innerY - newProfileInput:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
+    innerY = LC.AnchorWidget(createBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     section:SetContentHeight(math_abs(innerY) + LC.SECTION_PADDING_BOTTOM)
     yOffset = LC.AnchorSection(section, parent, yOffset) - LC.SPACING_BETWEEN_SECTIONS
@@ -209,8 +206,7 @@ local function CreateActionsSection(parent, db, yOffset, refreshAll)
             StaticPopup_Show("DRAGONLOOT_RESET_PROFILE")
         end,
     })
-    resetBtn:SetPoint("TOPLEFT", content, "TOPLEFT", LC.PADDING_SIDE, innerY)
-    innerY = innerY - resetBtn:GetHeight() - LC.SPACING_BETWEEN_WIDGETS
+    innerY = LC.AnchorWidget(resetBtn, content, innerY) - LC.SPACING_BETWEEN_WIDGETS
 
     -- Delete Profile dropdown
     local deleteDropdown = W.CreateDropdown(content, {

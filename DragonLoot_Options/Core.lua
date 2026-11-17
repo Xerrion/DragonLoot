@@ -75,6 +75,22 @@ end)
 
 local panelResult
 
+-- Register as soon as the options addon loads, including changes made before
+-- the Profiles page is ever visited. Getters always read the active profile.
+ns.dlns = _G.DragonLootNS
+local db = ns.dlns and ns.dlns.Addon and ns.dlns.Addon.db
+if db and db.RegisterCallback then
+    local function RefreshProfile()
+        if panelResult then
+            panelResult.RefreshVisibleWidgets()
+        end
+    end
+    db.RegisterCallback(ns, "OnProfileChanged", RefreshProfile)
+    db.RegisterCallback(ns, "OnProfileCopied", RefreshProfile)
+    db.RegisterCallback(ns, "OnProfileReset", RefreshProfile)
+    db.RegisterCallback(ns, "OnProfileDeleted", RefreshProfile)
+end
+
 -------------------------------------------------------------------------------
 -- Create the options panel (called lazily on first Open)
 -------------------------------------------------------------------------------
@@ -94,8 +110,11 @@ local function CreateOptionsPanel()
     panelResult = DW.CreateOptionsPanel({
         name = "DragonLootOptionsFrame",
         title = L["DragonLoot Options"],
-        width = 800,
-        height = 600,
+        width = 1080,
+        height = 720,
+        navigation = "sidebar",
+        settingsLayout = true,
+        preview = { height = 220, createFunc = ns.CreatePreview },
         tabs = tabDefs,
     })
 end

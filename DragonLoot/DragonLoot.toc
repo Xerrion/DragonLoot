@@ -52,26 +52,14 @@ Display\MasterLootFrame.lua
 # Listeners (shared utilities)
 Listeners\ListenerShared.lua
 
-# Listeners (version-specific)
-#@retail@
+# Version-specific listeners select their client in Lua.
 Listeners\LootListener_Retail.lua
 Listeners\RollListener_Retail.lua
 Listeners\HistoryListener_Retail.lua
-#@end-retail@
-# Forever shares Mainline APIs despite being a separate packager flavor.
-#@version-forever@
-Listeners\LootListener_Retail.lua
-Listeners\RollListener_Retail.lua
-Listeners\HistoryListener_Retail.lua
-#@end-version-forever@
-#@non-retail@
-#@non-version-forever@
 Listeners\LootListener_Classic.lua
 Listeners\RollListener_Classic.lua
 Listeners\HistoryListener_Classic.lua
 Listeners\MasterLootListener_Classic.lua
-#@end-non-version-forever@
-#@end-non-retail@
 
 # Listeners (shared)
 Listeners\LootHistoryChat.lua

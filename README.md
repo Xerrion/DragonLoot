@@ -124,15 +124,12 @@ settings.
 
 ## EllesmereUI Compatibility
 
-DragonLoot supports EllesmereUI, including on **WoW Forever**. Forever uses Mainline loot APIs but has its own client
-identity; DragonLoot selects the matching loot, roll, and history listeners automatically.
+DragonLoot supports EllesmereUI, including on **WoW Forever**. Forever's separate `WOW_PROJECT_CAMELOT` project ID
+(18) is recognized so the Mainline loot, roll, and history listeners load correctly. This fixes the missing loot
+window reported in [#205](https://github.com/Xerrion/DragonLoot/issues/205).
 
-Loot events use a private frame, independent of other addons' shared event callbacks. Blizzard's skinned loot window
-stays hidden without closing DragonLoot's loot session. EllesmereUI settings are not changed.
-
-EllesmereUI's **Quick Loot** still collects loot automatically. Disable Quick Loot in EllesmereUI, or hold **Shift**
-while opening loot, to use DragonLoot's manual loot window. WoW's auto-loot setting and DragonLoot's smart auto-loot
-settings still apply.
+Additional compatibility hardening keeps loot events on a private frame and hides Blizzard's skinned loot window
+without closing DragonLoot's loot session. EllesmereUI settings are not changed.
 
 After updating DragonLoot, type `/reload` to load the new files. To preview the loot window without looting an item,
 use `/dl test`. Use `/dl reset` if you need to move the window back to the center of the screen.

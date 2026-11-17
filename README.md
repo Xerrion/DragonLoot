@@ -1,159 +1,77 @@
 <div align="center">
 
-![Dragon Loot Logo](https://raw.githubusercontent.com/Xerrion/DragonLoot/refs/heads/master/assets/dragon-loot.png)
+<img src="assets/dragon-loot.png" width="96" alt="Dragon Loot logo">
 
 # Dragon Loot
 
-*A customizable loot window and roll frame replacement for World of Warcraft*
+**Roll on the drop. Remember who won.**
 
-[![Latest Release](https://img.shields.io/github/v/release/Xerrion/DragonLoot?style=for-the-badge)](https://github.com/Xerrion/DragonLoot/releases/latest)
-[![License](https://img.shields.io/github/license/Xerrion/DragonLoot?style=for-the-badge)](https://github.com/Xerrion/DragonLoot/blob/master/LICENSE)
-[![CurseForge](https://img.shields.io/badge/CurseForge-1472582-f16436?style=for-the-badge&logo=curseforge)](https://www.curseforge.com/wow/addons/dragon-loot)
-[![Wago](https://img.shields.io/badge/Wago-qKQmADKx-c0392b?style=for-the-badge&logo=wago)](https://addons.wago.io/addons/dragon-loot)
-[![WoW Versions](https://img.shields.io/badge/WoW-Retail%20%7C%20Forever%20%7C%20MoP%20Classic%20%7C%20TBC%20Anniversary-blue?style=for-the-badge&logo=battledotnet)](https://worldofwarcraft.blizzard.com/)
-[![Lint](https://img.shields.io/github/actions/workflow/status/Xerrion/DragonLoot/lint.yml?style=for-the-badge&label=luacheck)](https://github.com/Xerrion/DragonLoot/actions)
+[Get it on CurseForge](https://www.curseforge.com/wow/addons/dragon-loot) · [Get it on Wago](https://addons.wago.io/addons/dragon-loot) · [GitHub releases](https://github.com/Xerrion/DragonLoot/releases/latest)
 
 </div>
 
-DragonLoot replaces the default Blizzard loot window and roll frame with cleaner, more configurable replacements, and
-adds a dedicated loot history panel for tracking drops and winners.
+Gorehowl drops. Hover over the axe to compare it with your weapon, hit Need, and follow the tank to the next pack.
+Two pulls later, someone asks who got it. Open `/dl history` and there's the winner, right next to their roll.
 
-## 🐉 Features
+Dragon Loot replaces WoW's loot window and group rolls and keeps a loot history for each character.
 
-- **Modernized UI**: Replaces the Blizzard loot window, roll frames, and introduces a loot history panel.
-- **Advanced Roll Frames**: Custom frames featuring timer bars, an overflow FIFO queue, item-level overlays, and
-  configurable layouts (including 3-row mode and hide-after-voting).
-- **Loot History**: Track drops with class-colored winners, time-ago refresh intervals, and direct loot tracking via
-  `CHAT_MSG_LOOT` for items picked up without a roll.
-- **Smart Notifications**: Filter Need, Greed, Disenchant, and Transmog notifications by instance type and item quality.
-- **DragonToast Integration**: Suppresses duplicate toasts during loot and queues celebration or result toasts.
-- **ElvUI Compatibility**: Detects conflicting ElvUI loot modules and provides a one-time prompt to disable them.
-- **EllesmereUI Compatibility**: Supports the loot window alongside EllesmereUI, including on WoW Forever, without
-  changing EllesmereUI settings.
-- **Complete Customization**: Control fonts (including outlines), per-frame icon sizes, quality-colored borders, LSM
-  textures, and frame colors/transparency.
-- **Animated Transitions**: Powered by LibAnimate with 4 selectable open/close styles and configurable durations.
-- **Modern Addon Stack**: Minimap button support (LibDBIcon), AceDB profile management, and support for 11 locales.
-- **Performance Optimized**: Companion `DragonLoot_Options` addon is LoadOnDemand to keep memory usage low during play.
+![Dragon Loot showing Gorehowl in the loot window, on a timed roll, and in history with a winning Need roll of 87](docs/images/loot-and-roll.png)
 
-## 🎮 Supported Versions
+*Offline render of the built-in samples. Follow Gorehowl from the loot window on the left to the roll and its history entry on the right.*
 
-| Client | Interface Versions |
-|---|---|
-| Retail | 120105 |
-| Forever | 16001 |
-| TBC Anniversary | 20506 |
-| MoP Classic | 50504 |
+## Before you press Need
 
-## 📦 Installation
+Hover the item's icon to compare it with your equipped gear using WoW's comparison key. The timer stays visible while
+you decide. You can ask Dragon Loot to confirm Greed and Pass, or have it dismiss each roll as soon as you vote.
+On TBC Anniversary and Mists of Pandaria Classic, turn on **Show Roll Tally** to watch the votes come in.
+Pair it with **Keep Frame After Voting** to see the winning roll alongside your own if you lose.
 
-### Download
+## Who won Gorehowl?
 
-Available on major platforms:
+Each character’s history survives logout. Open `/dl history` after raid night to see the drops again,
+with each winner’s name in their class color. Turn on roll details and click a rolled item to see who chose Need, Greed, or Pass and
+what they rolled. You can also record direct pickups and set a minimum quality so a night of farming
+doesn't bury the gear you came for.
 
-- [**CurseForge**](https://www.curseforge.com/wow/addons/dragon-loot)
-- [**Wago.io**](https://addons.wago.io/addons/dragon-loot)
-- [**GitHub Releases**](https://github.com/Xerrion/DragonLoot/releases/latest)
+## On a farming run
 
-### Manual Install
+Have the loot window open at your cursor. Item level and binding sit underneath the name, and stack counts tell you
+how much cloth just dropped. To pick up cloth and rare drops automatically, turn off WoW's built-in Auto Loot, enable **Smart Auto-Loot**,
+set **Minimum Quality** to Rare, and add your cloth to the whitelist. The cloth comes with you, and you decide
+what to do with the other common drops.
 
-1. Download the latest release.
-2. Extract the `DragonLoot` and `DragonLoot_Options` folders into your client's AddOns directory:
-   - Retail: `World of Warcraft/_retail_/Interface/AddOns/`
-   - Forever: `World of Warcraft/_forever_/Interface/AddOns/`
-3. Restart World of Warcraft or type `/reload` in-game.
+## Make it fit your UI
 
-## 🧩 Sub-addons
+Narrow the roll frame to fit beside your party frames, or switch on **Compact Text Layout** to put the item name
+and its bind type on one line. The sample above the controls updates as you drag the sliders.
 
-DragonLoot is split into two modules to optimize performance:
-- **DragonLoot**: The core engine that handles loot, rolls, and history. Always loaded.
-- **DragonLoot_Options**: The configuration interface. It only loads when you open the settings panel and embeds the
-  DragonWidgets shared library.
+![Dragon Loot Roll Frame settings showing a pinned Gorehowl roll above the frame width, height, and spacing controls](docs/images/roll-settings.png)
 
-## ⌨️ Slash Commands
+*Offline preview of the Roll Frame page in `/dl config`.*
 
-Use `/dl` or the alias `/dragonloot`.
+## Get started
 
-| Command | Description |
-|---|---|
-| `/dl` | Show the command list |
-| `/dl toggle` | Explicitly toggle the addon on or off |
-| `/dl enable` | Enable the addon |
-| `/dl disable` | Disable the addon |
-| `/dl config` | Open the options panel (aliases: `options`, `settings`) |
-| `/dl history` | Open the loot history panel |
-| `/dl test` | Preview the loot window without looting anything |
-| `/dl testroll` | Spawn a single test roll |
-| `/dl testroll loop` | Start continuous test roll spawning |
-| `/dl testroll stop` | Stop continuous test roll spawning |
-| `/dl reset` | Reset the loot window position to the center of the screen |
-| `/dl version` | Print current version information |
-| `/dl help` | Show the command list (alias: `?`) |
+1. Install Dragon Loot with your addon manager. For a manual install, put both `DragonLoot` and `DragonLoot_Options` in your client's `Interface/AddOns/` folder and reload the game UI.
+2. Type `/dl test` for a sample drop that includes Gorehowl, or `/dl testroll` to try three timed group rolls in town.
+3. Open `/dl config` to tune the windows. Save your favorite setup under **Profiles**.
 
-## ⚙️ Configuration
+**Supported clients** include Retail, WoW Forever, TBC Anniversary, and Mists of Pandaria Classic.
 
-Settings are stored in `DragonLootDB` using AceDB profiles.
+Dragon Loot works alongside EllesmereUI. If ElvUI handles loot or rolls, Dragon Loot offers to switch off the overlapping modules.
 
-| Tab | Settings |
-|---|---|
-| **General** | Addon toggle, UI lock, minimap icon, DragonToast suppression |
-| **Loot Window** | Open at mouse, scale, lock, slot count, icon size |
-| **Loot Roll** | 3-row layout, hide after voting, item-level overlay, timer texture, stack direction |
-| **Notifications** | Roll type filters (Need/Greed/etc), instance filters, quality threshold, group wins |
-| **History** | Auto-open on loot, max entries, direct loot tracking, minimum quality threshold |
-| **AutoLoot** | Enable, quality threshold, exclusion list |
-| **Appearance** | Fonts, outlines, per-frame icon sizes, quality borders, background/border styling |
-| **Animation** | Toggle, selectable open/close styles (4 types), duration sliders |
-| **Profiles** | Standard AceDB profile management (Save/Copy/Reset) |
+## Pair it with Dragon Toast
 
-## 🔗 DragonToast Integration
+Want the winner to pop up while you're moving to the next pull? Dragon Loot can send roll results to Dragon Toast.
+[Get Dragon Toast](https://github.com/Xerrion/DragonToast)
 
-DragonLoot features built-in integration with [DragonToast](https://github.com/Xerrion/DragonToast). It uses a
-fire-and-forget communication system (AceComm) to:
-- **Suppress**: Sends `DRAGONTOAST_SUPPRESS` when loot opens so DragonToast doesn't show duplicate loot alerts.
-- **Unsuppress**: Sends `DRAGONTOAST_UNSUPPRESS` when the loot window closes.
-- **Celebrate**: Sends `DRAGONTOAST_QUEUE_TOAST` to trigger celebratory notifications for roll wins.
+<details>
+<summary>More commands and project links</summary>
 
-This integration has no hard dependency; DragonLoot works perfectly fine without DragonToast.
+Use `/dl help` for the command list. `/dl reset` centers the loot window, and `/dl testroll loop` keeps sample rolls coming
+while you adjust your layout. End the loop with `/dl testroll stop`.
 
-## 🛡️ ElvUI Compatibility
+[Settings preview guide](docs/settings-preview.md) · [Report an issue](https://github.com/Xerrion/DragonLoot/issues) · [Contribute code or translations](CONTRIBUTING.md)
 
-DragonLoot automatically detects if ElvUI's built-in loot module is active. To prevent visual conflicts, it will prompt
-you once to disable the ElvUI loot module. Your choice is remembered, and you can change it at any time in the ElvUI
-settings.
+Made by [Xerrion](https://github.com/Xerrion). [MIT License](LICENSE). World of Warcraft artwork and icons © Blizzard Entertainment.
 
-## EllesmereUI Compatibility
-
-DragonLoot supports EllesmereUI, including on **WoW Forever**. Forever's separate `WOW_PROJECT_CAMELOT` project ID
-(18) is recognized so the Mainline loot, roll, and history listeners load correctly. This fixes the missing loot
-window reported in [#205](https://github.com/Xerrion/DragonLoot/issues/205).
-
-Additional compatibility hardening keeps loot events on a private frame and hides Blizzard's skinned loot window
-without closing DragonLoot's loot session. EllesmereUI settings are not changed.
-
-After updating DragonLoot, type `/reload` to load the new files. To preview the loot window without looting an item,
-use `/dl test`. Use `/dl reset` if you need to move the window back to the center of the screen.
-
-## 🌐 Localization
-
-DragonLoot is localized for the following regions:
-`enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW`.
-
-Translation contributions are welcome! Please submit a pull request or open an issue on GitHub if you would like to
-improve a specific locale.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please refer to [AGENTS.md](AGENTS.md) for full coding conventions.
-
-- **Linting**: Run `luacheck .` or `just lint`
-- **Testing**: Run `busted --verbose` or `just test`
-- **Formatting**: Uses `stylua` (`just fmt`)
-- **Toolchain**: Managed via `mise` (Lua 5.1) and `just` recipes.
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the [LICENSE](https://github.com/Xerrion/DragonLoot/blob/master/LICENSE)
-file for details.
-
-Made with ❤️ by [Xerrion](https://github.com/Xerrion)
+</details>

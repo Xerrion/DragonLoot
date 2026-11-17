@@ -38,6 +38,7 @@ local DisplayUtils = {}
 ns.DisplayUtils = DisplayUtils
 
 DisplayUtils.WHITE8x8 = WHITE8x8
+DisplayUtils.TITLE_BAR_HEIGHT = 24
 DisplayUtils.Style = {
     panel = { 0.035, 0.047, 0.065, 0.98 },
     border = { 0.22, 0.28, 0.35, 1 },
@@ -180,6 +181,61 @@ function DisplayUtils.CreateCloseButton(parent, db)
     DisplayUtils.ApplyCloseButtonFont(button, db)
     button.label:SetText("\195\151")
     return button
+end
+
+function DisplayUtils.ApplyTitleBar(titleBar, db)
+    local parent = titleBar:GetParent()
+    local border = db.profile.appearance.borderSize or 1
+    titleBar:SetHeight(DisplayUtils.TITLE_BAR_HEIGHT)
+    titleBar:ClearAllPoints()
+    titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", border, -border)
+    titleBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -border, -border)
+
+    local close = titleBar.closeButton
+    close:ClearAllPoints()
+    close:SetPoint("TOPRIGHT", titleBar, "TOPRIGHT", -2, -2)
+    DisplayUtils.ApplyCloseButtonFont(close, db)
+
+    local font, size, flags = DisplayUtils.GetFont(db)
+    local action = titleBar.clearButton
+    if action then
+        action:SetHeight(close:GetHeight())
+        action:ClearAllPoints()
+        action:SetPoint("RIGHT", close, "LEFT", -4, 0)
+        action.text:SetFont(font, size, flags)
+        DisplayUtils.ApplyFontShadow(action.text, db)
+        action:SetWidth(action.text:GetStringWidth() + 12)
+    end
+
+    titleBar.text:ClearAllPoints()
+    titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
+    titleBar.text:SetPoint("RIGHT", action or close, "LEFT", -8, 0)
+    titleBar.text:SetJustifyH("LEFT")
+    titleBar.text:SetFont(font, size, flags)
+    DisplayUtils.ApplyFontShadow(titleBar.text, db)
+end
+
+function DisplayUtils.CreateTitleBar(parent, db, title)
+    local titleBar = CreateFrame("Frame", nil, parent)
+    titleBar.background = titleBar:CreateTexture(nil, "BACKGROUND")
+    titleBar.background:SetAllPoints()
+    titleBar.background:SetColorTexture(unpack(Style.title))
+    titleBar.accent = titleBar:CreateTexture(nil, "ARTWORK")
+    titleBar.accent:SetSize(2, 12)
+    titleBar.accent:SetPoint("LEFT", titleBar, "LEFT", 0, 0)
+    titleBar.accent:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 1)
+    titleBar.separator = titleBar:CreateTexture(nil, "ARTWORK")
+    titleBar.separator:SetHeight(1)
+    titleBar.separator:SetPoint("BOTTOMLEFT", titleBar, "BOTTOMLEFT", 0, 0)
+    titleBar.separator:SetPoint("BOTTOMRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
+    titleBar.separator:SetColorTexture(unpack(Style.border))
+    titleBar.text = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleBar.text:SetWordWrap(false)
+    titleBar.text:SetTextColor(unpack(Style.text))
+    titleBar.closeButton = DisplayUtils.CreateCloseButton(titleBar, db)
+    DisplayUtils.ApplyTitleBar(titleBar, db)
+    titleBar.text:SetText(title)
+    return titleBar
 end
 
 -------------------------------------------------------------------------------

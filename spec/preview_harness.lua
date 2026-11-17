@@ -122,6 +122,12 @@ function M.Start(options)
         function object:SetTextColor(...)
             self.textColor = { ... }
         end
+        function object:SetJustifyH(value)
+            self.justifyH = value
+        end
+        function object:SetAllPoints(relative)
+            self.allPoints = relative or self.parent
+        end
         function object:SetShadowOffset(...)
             self.shadowOffset = { ... }
         end
@@ -194,13 +200,11 @@ function M.Start(options)
             error("preview registered an event")
         end
         for _, method in ipairs({
-            "SetAllPoints",
             "SetAlpha",
             "SetBlendMode",
             "SetVertexColor",
             "SetTexCoord",
             "SetDrawLayer",
-            "SetJustifyH",
             "SetJustifyV",
             "SetWordWrap",
             "SetNonSpaceWrap",

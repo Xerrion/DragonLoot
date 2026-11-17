@@ -59,7 +59,7 @@ local BIND_LABELS = {
 -- Layout constants
 -------------------------------------------------------------------------------
 
-local TITLE_BAR_HEIGHT = 24
+local TITLE_BAR_HEIGHT = DU.TITLE_BAR_HEIGHT
 local MIN_QUALITY_RARE = 3
 local ICON_GLOW_PADDING = 25
 local SLOT_ICON_LEFT_INSET = 4 -- icon frame left offset from slot LEFT edge
@@ -205,37 +205,11 @@ end
 local function ApplyLayoutOffsets(frame)
     local borderSize = ns.Addon.db.profile.appearance.borderSize or 1
 
-    -- Title text
-    frame.title:ClearAllPoints()
-    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 12 + borderSize, -(6 + borderSize))
-    frame.title:SetPoint("RIGHT", frame.closeBtn, "LEFT", -8, 0)
-
-    -- Close button
-    frame.closeBtn:ClearAllPoints()
-    frame.closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(borderSize + 2), -(borderSize + 2))
-
-    frame.titleBackground:ClearAllPoints()
-    frame.titleBackground:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -borderSize)
-    frame.titleBackground:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
-    frame.titleAccent:ClearAllPoints()
-    frame.titleAccent:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -(borderSize + 6))
+    DU.ApplyTitleBar(frame.titleBar, ns.Addon.db)
 
     -- Fishing hint text
     frame.fishingText:ClearAllPoints()
     frame.fishingText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8 + borderSize, 4 + borderSize)
-
-    -- Title separator
-    if frame.titleSeparator then
-        frame.titleSeparator:ClearAllPoints()
-        frame.titleSeparator:SetPoint("TOPLEFT", frame, "TOPLEFT", 6 + borderSize, -(TITLE_BAR_HEIGHT + borderSize))
-        frame.titleSeparator:SetPoint(
-            "TOPRIGHT",
-            frame,
-            "TOPRIGHT",
-            -(6 + borderSize),
-            -(TITLE_BAR_HEIGHT + borderSize)
-        )
-    end
 end
 
 -------------------------------------------------------------------------------
@@ -758,10 +732,7 @@ end
 -- Title bar close button creation
 -------------------------------------------------------------------------------
 
-local function CreateCloseButton(parent, isPreview)
-    local btn = DU.CreateCloseButton(parent, ns.Addon.db)
-    btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
-
+local function ConfigureCloseButton(btn, isPreview)
     if isPreview then
         btn:EnableMouse(false)
     else
@@ -770,8 +741,6 @@ local function CreateCloseButton(parent, isPreview)
             ns.LootFrame.Hide()
         end)
     end
-
-    return btn
 end
 
 -------------------------------------------------------------------------------
@@ -794,25 +763,13 @@ local function CreateContainerFrame(parent, isPreview)
     -- Backdrop
     ApplyBackdrop(frame)
 
-    -- Title text
-    local fontPath, fontSize, fontOutline = GetFont()
-    frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -6)
-    frame.title:SetFont(fontPath, fontSize, fontOutline)
-    DU.ApplyFontShadow(frame.title, ns.Addon.db)
-    frame.title:SetText(L["Loot"])
-    frame.title:SetTextColor(unpack(Style.text))
-    frame.title:SetWordWrap(false)
-
-    frame.titleBackground = frame:CreateTexture(nil, "BACKGROUND")
-    frame.titleBackground:SetHeight(TITLE_BAR_HEIGHT)
-    frame.titleBackground:SetColorTexture(unpack(Style.title))
-    frame.titleAccent = frame:CreateTexture(nil, "ARTWORK")
-    frame.titleAccent:SetSize(2, 12)
-    frame.titleAccent:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 1)
-
-    -- Close button
-    frame.closeBtn = CreateCloseButton(frame, isPreview)
+    frame.titleBar = DU.CreateTitleBar(frame, ns.Addon.db, L["Loot"])
+    frame.title = frame.titleBar.text
+    frame.titleBackground = frame.titleBar.background
+    frame.titleAccent = frame.titleBar.accent
+    frame.titleSeparator = frame.titleBar.separator
+    frame.closeBtn = frame.titleBar.closeButton
+    ConfigureCloseButton(frame.closeBtn, isPreview)
 
     -- Dragging
     frame:EnableMouse(not isPreview)
@@ -836,11 +793,6 @@ local function CreateContainerFrame(parent, isPreview)
     frame.fishingText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 4)
     frame.fishingText:SetTextColor(unpack(Style.muted))
     frame.fishingText:Hide()
-
-    -- Title separator
-    frame.titleSeparator = frame:CreateTexture(nil, "ARTWORK")
-    frame.titleSeparator:SetHeight(1)
-    frame.titleSeparator:SetColorTexture(unpack(Style.border))
 
     -- Offset child elements to account for border thickness
     ApplyLayoutOffsets(frame)
@@ -1136,11 +1088,7 @@ function ns.LootFrame.ApplySettings()
     -- Update layout offsets for border thickness
     ApplyLayoutOffsets(containerFrame)
 
-    -- Update title font
     local fontPath, fontSize, fontOutline = GetFont()
-    containerFrame.title:SetFont(fontPath, fontSize, fontOutline)
-    DU.ApplyFontShadow(containerFrame.title, ns.Addon.db)
-    DU.ApplyCloseButtonFont(containerFrame.closeBtn, ns.Addon.db)
 
     -- Update visible slots
     for _, slot in ipairs(activeSlots) do
@@ -1314,10 +1262,6 @@ function ns.LootFrame.CreatePreview(parent)
         )
         ApplyBackdrop(self)
         ApplyLayoutOffsets(self)
-        local font, size, flags = GetFont()
-        self.title:SetFont(font, size, flags)
-        DU.ApplyFontShadow(self.title, ns.Addon.db)
-        DU.ApplyCloseButtonFont(self.closeBtn, ns.Addon.db)
         for i, row in ipairs(rows) do
             RenderSlot(row, BuildTestSlotData(TEST_ITEMS[i], i), true, true)
             row:ClearAllPoints()

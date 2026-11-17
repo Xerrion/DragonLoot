@@ -12,6 +12,19 @@
 * Replace the history clear icon with localized "Clear" text to distinguish it from Close.
 * Fix missing loot windows on WoW Forever by recognizing `WOW_PROJECT_CAMELOT` (18) and loading Mainline loot, roll, and history listeners; also harden loot-event isolation and Blizzard-frame suppression ([#205](https://github.com/Xerrion/DragonLoot/issues/205)).
 
+## [0.20.0](https://github.com/Xerrion/DragonLoot/compare/0.19.0...0.20.0) (2026-11-17)
+
+
+### 🚀 Features
+
+* refresh options with modern DragonWidgets ([#207](https://github.com/Xerrion/DragonLoot/issues/207)) ([4762a21](https://github.com/Xerrion/DragonLoot/commit/4762a21f93c08e55f301026f6cdf1ade218eb8dd))
+
+
+### 🐛 Bug Fixes
+
+* include Forever in TOC updates ([#203](https://github.com/Xerrion/DragonLoot/issues/203)) ([93f19ad](https://github.com/Xerrion/DragonLoot/commit/93f19adaf22ce1104647f8531e686f0f96c88d52))
+* restore Forever loot and EllesmereUI compatibility ([#205](https://github.com/Xerrion/DragonLoot/issues/205)) ([#206](https://github.com/Xerrion/DragonLoot/issues/206)) ([73e89f1](https://github.com/Xerrion/DragonLoot/commit/73e89f1e87910aa2a2c5f6d8388c4b19993bcc2e))
+
 ## [0.19.0](https://github.com/Xerrion/DragonLoot/compare/0.18.2...0.19.0) (2026-11-08)
 
 

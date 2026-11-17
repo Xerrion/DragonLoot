@@ -12,6 +12,18 @@
 * Replace the history clear icon with localized "Clear" text to distinguish it from Close.
 * Fix missing loot windows on WoW Forever by recognizing `WOW_PROJECT_CAMELOT` (18) and loading Mainline loot, roll, and history listeners; also harden loot-event isolation and Blizzard-frame suppression ([#205](https://github.com/Xerrion/DragonLoot/issues/205)).
 
+## [0.21.1](https://github.com/Xerrion/DragonLoot/compare/0.21.0...0.21.1) (2026-11-17)
+
+
+### 🐛 Bug Fixes
+
+* package multi-version clients with pinned DragonWidgets ([#216](https://github.com/Xerrion/DragonLoot/issues/216)) ([ddb4f0f](https://github.com/Xerrion/DragonLoot/commit/ddb4f0f297dff5ea0301109338b8765100a71145))
+
+
+### 🚜 Refactor
+
+* use shared DragonWidgets options defaults ([#214](https://github.com/Xerrion/DragonLoot/issues/214)) ([768e0af](https://github.com/Xerrion/DragonLoot/commit/768e0afe7e2fdcf99736e34f098ff773bd89cc53))
+
 ## [0.21.0](https://github.com/Xerrion/DragonLoot/compare/0.20.0...0.21.0) (2026-11-17)
 
 

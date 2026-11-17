@@ -177,8 +177,8 @@ function DisplayUtils.CreateCloseButton(parent, db)
     DisplayUtils.ApplyButtonSurface(button)
     button.label = button:CreateFontString(nil, "OVERLAY")
     button.label:SetPoint("CENTER", button, "CENTER", 0, 0)
-    button.label:SetText("\195\151")
     DisplayUtils.ApplyCloseButtonFont(button, db)
+    button.label:SetText("\195\151")
     return button
 end
 

@@ -14,7 +14,7 @@ externals:
   DragonLoot/Libs/LibAnimate: https://github.com/Xerrion/LibAnimate
   DragonLoot_Options/Libs/DragonWidgets:
     url: https://github.com/Xerrion/DragonWidgets
-    commit: 35383621b43806f4b5231be2e41c2f979933fba1
+    tag: 0.4.0
 
 ignore:
   - ".git*"

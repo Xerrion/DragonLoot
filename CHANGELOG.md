@@ -10,6 +10,7 @@
 
 * Use namespaced item-info APIs for loot history on supported clients ([#198](https://github.com/Xerrion/DragonLoot/issues/198)).
 * Replace the history clear icon with localized "Clear" text to distinguish it from Close.
+* Fix missing loot windows on WoW Forever by recognizing `WOW_PROJECT_CAMELOT` (18) and loading Mainline loot, roll, and history listeners; also harden loot-event isolation and Blizzard-frame suppression ([#205](https://github.com/Xerrion/DragonLoot/issues/205)).
 
 ## [0.19.0](https://github.com/Xerrion/DragonLoot/compare/0.18.2...0.19.0) (2026-11-08)
 

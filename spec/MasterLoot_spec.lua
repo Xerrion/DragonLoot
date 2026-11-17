@@ -32,7 +32,6 @@ end
 
 local function NewClassicNamespace()
     local ns = mock.CreateNamespace()
-    ns.IsRetail = false
     ns.IsClassic = true
     ns.L = setmetatable({}, {
         __index = function(_, key)

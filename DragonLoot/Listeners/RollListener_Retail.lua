@@ -11,7 +11,7 @@ local _, ns = ...
 -- Version guard: Mainline APIs (Retail and Forever)
 -------------------------------------------------------------------------------
 
-if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+if not ns.IsMainline then
     return
 end
 

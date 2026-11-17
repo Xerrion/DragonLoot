@@ -39,6 +39,7 @@ local function NewHistoryNamespace(projectID)
     environment._G = environment
 
     local ns = mock.CreateNamespace()
+    LoadModule(ns, "DragonLoot/Core/Init.lua", environment)
     ns.historyData = recorder.entries
     ns.NOTIFICATION_STATE_MAP = { [0] = 1 }
     ns.HistoryFrame = {
@@ -85,8 +86,8 @@ local function NewHistoryNamespace(projectID)
     return ns, recorder, environment
 end
 
-local function NewEncounterHistoryNamespace()
-    local ns, recorder, environment = NewHistoryNamespace(1)
+local function NewEncounterHistoryNamespace(projectID)
+    local ns, recorder, environment = NewHistoryNamespace(projectID)
     LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Retail.lua", environment)
     LoadModule(ns, "DragonLoot/Listeners/HistoryListener_Classic.lua", environment)
     return ns, recorder
@@ -118,11 +119,11 @@ describe("History item APIs without legacy globals", function()
     end)
 
     for _, schema in ipairs({
-        { name = "Retail", identifierField = "lootListID" },
-        { name = "Forever", identifierField = "lootListKey" },
+        { name = "Retail", projectID = 1, identifierField = "lootListID" },
+        { name = "Forever", projectID = 18, identifierField = "lootListKey" },
     }) do
         it("records " .. schema.name .. " encounter drops and deduplicates roll results", function()
-            local ns, recorder = NewEncounterHistoryNamespace()
+            local ns, recorder = NewEncounterHistoryNamespace(schema.projectID)
             ns.HistoryListener.Initialize(ns.Addon)
             local drop = NewEncounterDrop(schema.identifierField, 7)
             drop.winner = nil
@@ -161,7 +162,7 @@ describe("History item APIs without legacy globals", function()
         end)
 
         it("seeds new and persisted " .. schema.name .. " drops without replaying notifications", function()
-            local ns, recorder = NewEncounterHistoryNamespace()
+            local ns, recorder = NewEncounterHistoryNamespace(schema.projectID)
             recorder.entries[1] = {
                 dropKey = "42-7",
                 itemLink = ITEM_LINK,

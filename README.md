@@ -28,6 +28,8 @@ adds a dedicated loot history panel for tracking drops and winners.
 - **Smart Notifications**: Filter Need, Greed, Disenchant, and Transmog notifications by instance type and item quality.
 - **DragonToast Integration**: Suppresses duplicate toasts during loot and queues celebration or result toasts.
 - **ElvUI Compatibility**: Detects conflicting ElvUI loot modules and provides a one-time prompt to disable them.
+- **EllesmereUI Compatibility**: Supports the loot window alongside EllesmereUI, including on WoW Forever, without
+  changing EllesmereUI settings.
 - **Complete Customization**: Control fonts (including outlines), per-frame icon sizes, quality-colored borders, LSM
   textures, and frame colors/transparency.
 - **Animated Transitions**: Powered by LibAnimate with 4 selectable open/close styles and configurable durations.
@@ -74,16 +76,17 @@ Use `/dl` or the alias `/dragonloot`.
 
 | Command | Description |
 |---|---|
-| `/dl` | Toggle the addon on or off |
+| `/dl` | Show the command list |
 | `/dl toggle` | Explicitly toggle the addon on or off |
 | `/dl enable` | Enable the addon |
 | `/dl disable` | Disable the addon |
 | `/dl config` | Open the options panel (aliases: `options`, `settings`) |
 | `/dl history` | Open the loot history panel |
-| `/dl test` | Spawn a single test roll |
+| `/dl test` | Preview the loot window without looting anything |
+| `/dl testroll` | Spawn a single test roll |
 | `/dl testroll loop` | Start continuous test roll spawning |
 | `/dl testroll stop` | Stop continuous test roll spawning |
-| `/dl reset` | Reset frame positions to defaults |
+| `/dl reset` | Reset the loot window position to the center of the screen |
 | `/dl version` | Print current version information |
 | `/dl help` | Show the command list (alias: `?`) |
 
@@ -118,6 +121,18 @@ This integration has no hard dependency; DragonLoot works perfectly fine without
 DragonLoot automatically detects if ElvUI's built-in loot module is active. To prevent visual conflicts, it will prompt
 you once to disable the ElvUI loot module. Your choice is remembered, and you can change it at any time in the ElvUI
 settings.
+
+## EllesmereUI Compatibility
+
+DragonLoot supports EllesmereUI, including on **WoW Forever**. Forever's separate `WOW_PROJECT_CAMELOT` project ID
+(18) is recognized so the Mainline loot, roll, and history listeners load correctly. This fixes the missing loot
+window reported in [#205](https://github.com/Xerrion/DragonLoot/issues/205).
+
+Additional compatibility hardening keeps loot events on a private frame and hides Blizzard's skinned loot window
+without closing DragonLoot's loot session. EllesmereUI settings are not changed.
+
+After updating DragonLoot, type `/reload` to load the new files. To preview the loot window without looting an item,
+use `/dl test`. Use `/dl reset` if you need to move the window back to the center of the screen.
 
 ## 🌐 Localization
 

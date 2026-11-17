@@ -8,10 +8,10 @@
 local _, ns = ...
 
 -------------------------------------------------------------------------------
--- Version guard: skip on Retail (Classic listener runs on everything else)
+-- Version guard: skip Mainline clients (Retail and Forever)
 -------------------------------------------------------------------------------
 
-if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
+if not ns.IsClassic then
     return
 end
 

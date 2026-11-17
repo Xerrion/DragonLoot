@@ -20,6 +20,15 @@ local LSM = LibStub("LibSharedMedia-3.0")
 -------------------------------------------------------------------------------
 
 local WHITE8x8 = "Interface\\Buttons\\WHITE8x8"
+local chatFont = _G.ChatFontSmall
+local MODERN_FONT = (chatFont and chatFont.GetFont and chatFont:GetFont())
+    or STANDARD_TEXT_FONT
+    or "Fonts\\FRIZQT__.TTF"
+
+-- Core owns its media and palette; the load-on-demand options library is optional.
+LSM:Register("font", "Dragon UI", MODERN_FONT, 255)
+LSM:Register("border", "Dragon UI", WHITE8x8)
+LSM:Register("statusbar", "Dragon UI", WHITE8x8)
 
 -------------------------------------------------------------------------------
 -- Module table
@@ -29,6 +38,15 @@ local DisplayUtils = {}
 ns.DisplayUtils = DisplayUtils
 
 DisplayUtils.WHITE8x8 = WHITE8x8
+DisplayUtils.Style = {
+    panel = { 0.035, 0.047, 0.065, 0.98 },
+    border = { 0.22, 0.28, 0.35, 1 },
+    title = { 0.065, 0.085, 0.115, 1 },
+    text = { 0.91, 0.94, 0.97 },
+    muted = { 0.62, 0.68, 0.75 },
+    accent = { 0.28, 0.83, 0.73 },
+}
+local Style = DisplayUtils.Style
 
 -------------------------------------------------------------------------------
 -- GetQualityColor(quality) - returns r, g, b for an item quality
@@ -52,7 +70,7 @@ end
 
 function DisplayUtils.GetFont(db)
     local appearance = db.profile.appearance
-    local fontPath = LSM:Fetch("font", appearance.font) or "Fonts\\FRIZQT__.TTF"
+    local fontPath = LSM:Fetch("font", appearance.font) or MODERN_FONT
     return fontPath, appearance.fontSize, appearance.fontOutline
 end
 
@@ -111,17 +129,57 @@ function DisplayUtils.ApplyBackdrop(frame, db)
 
     local bg = appearance.backgroundColor
     if bg then
-        frame:SetBackdropColor(bg.r or 0.05, bg.g or 0.05, bg.b or 0.05, appearance.backgroundAlpha or 0.9)
+        frame:SetBackdropColor(
+            bg.r or Style.panel[1],
+            bg.g or Style.panel[2],
+            bg.b or Style.panel[3],
+            appearance.backgroundAlpha or Style.panel[4]
+        )
     else
-        frame:SetBackdropColor(0.05, 0.05, 0.05, appearance.backgroundAlpha or 0.9)
+        frame:SetBackdropColor(
+            Style.panel[1],
+            Style.panel[2],
+            Style.panel[3],
+            appearance.backgroundAlpha or Style.panel[4]
+        )
     end
 
     local border = appearance.borderColor
     if border then
-        frame:SetBackdropBorderColor(border.r or 0.3, border.g or 0.3, border.b or 0.3, 0.8)
+        frame:SetBackdropBorderColor(
+            border.r or Style.border[1],
+            border.g or Style.border[2],
+            border.b or Style.border[3],
+            1
+        )
     else
-        frame:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
+        frame:SetBackdropBorderColor(unpack(Style.border))
     end
+end
+
+function DisplayUtils.ApplyButtonSurface(button)
+    button:SetBackdrop({ bgFile = WHITE8x8, edgeFile = WHITE8x8, edgeSize = 1 })
+    button:SetBackdropColor(unpack(Style.title))
+    button:SetBackdropBorderColor(unpack(Style.border))
+    button:SetHighlightTexture(WHITE8x8)
+    button:GetHighlightTexture():SetVertexColor(Style.accent[1], Style.accent[2], Style.accent[3], 0.16)
+end
+
+function DisplayUtils.ApplyCloseButtonFont(button, db)
+    local font = DisplayUtils.GetFont(db)
+    button.label:SetFont(font, 18, "")
+    button.label:SetTextColor(unpack(Style.muted))
+end
+
+function DisplayUtils.CreateCloseButton(parent, db)
+    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
+    button:SetSize(20, 20)
+    DisplayUtils.ApplyButtonSurface(button)
+    button.label = button:CreateFontString(nil, "OVERLAY")
+    button.label:SetPoint("CENTER", button, "CENTER", 0, 0)
+    button.label:SetText("\195\151")
+    DisplayUtils.ApplyCloseButtonFont(button, db)
+    return button
 end
 
 -------------------------------------------------------------------------------

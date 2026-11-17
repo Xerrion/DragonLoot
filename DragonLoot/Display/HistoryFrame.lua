@@ -27,6 +27,7 @@ local tostring = tostring
 
 local L = ns.L
 local DU = ns.DisplayUtils
+local Style = DU.Style
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -175,6 +176,12 @@ local function AlignEntryHeader(entry)
     local iconOffset = (entryHeight - iconSize) / 2
     entry.icon:ClearAllPoints()
     entry.icon:SetPoint("TOPLEFT", entry, "TOPLEFT", 2, -iconOffset)
+end
+
+local function ApplyTimestampVisibility(entry)
+    local show = GetHistoryDB().showTimestamp ~= false
+    entry.timeText:SetShown(show)
+    entry.itemName:SetPoint("RIGHT", entry, "RIGHT", show and -60 or -4, 0)
 end
 
 local function ApplyLayoutOffsets(frame)
@@ -343,13 +350,13 @@ local function CreateEntryFrame(parent, isPreview)
     entry.rollInfo = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.rollInfo:SetPoint("LEFT", entry.winnerName, "RIGHT", 6, 0)
     entry.rollInfo:SetJustifyH("LEFT")
-    entry.rollInfo:SetTextColor(0.8, 0.8, 0.8)
+    entry.rollInfo:SetTextColor(unpack(Style.muted))
 
     -- Time text
     entry.timeText = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.timeText:SetPoint("RIGHT", entry, "RIGHT", -4, 0)
     entry.timeText:SetJustifyH("RIGHT")
-    entry.timeText:SetTextColor(0.5, 0.5, 0.5)
+    entry.timeText:SetTextColor(unpack(Style.muted))
 
     -- Highlight
     entry.highlight = entry:CreateTexture(nil, "HIGHLIGHT")
@@ -365,7 +372,7 @@ local function CreateEntryFrame(parent, isPreview)
     -- Expand indicator
     entry.expandIndicator = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     entry.expandIndicator:SetPoint("BOTTOMRIGHT", entry.icon, "BOTTOMRIGHT", -1, 1)
-    entry.expandIndicator:SetTextColor(1, 0.82, 0)
+    entry.expandIndicator:SetTextColor(unpack(Style.accent))
     entry.expandIndicator:Hide()
 
     entry.detailRows = {}
@@ -709,7 +716,7 @@ local function PopulateEntry(entry, data, isPreview)
         elseif data.rollResults and #data.rollResults > 0 then
             -- All passes - rare but possible
             entry.pendingText:SetText(L["(waiting on rolls)"])
-            entry.pendingText:SetTextColor(0.6, 0.6, 0.6)
+            entry.pendingText:SetTextColor(unpack(Style.muted))
             entry.pendingText:Show()
         else
             -- No roll data yet (very early in event flow, or direct loot)
@@ -722,20 +729,21 @@ local function PopulateEntry(entry, data, isPreview)
     DU.ApplyFontShadow(entry.rollInfo, ns.Addon.db)
     if data.isDirectLoot then
         entry.rollInfo:SetText(L["Looted"])
-        entry.rollInfo:SetTextColor(0.6, 0.6, 0.6)
+        entry.rollInfo:SetTextColor(unpack(Style.muted))
     else
         local rollText = GetRollTypeText(data.rollType)
         if data.roll then
             rollText = rollText .. " " .. data.roll
         end
         entry.rollInfo:SetText(rollText)
-        entry.rollInfo:SetTextColor(0.8, 0.8, 0.8)
+        entry.rollInfo:SetTextColor(unpack(Style.muted))
     end
 
     -- Time
     entry.timeText:SetFont(fontPath, fontSize - 2, fontOutline)
     DU.ApplyFontShadow(entry.timeText, ns.Addon.db)
     entry.timeText:SetText(FormatTimeAgo(data))
+    ApplyTimestampVisibility(entry)
 
     -- Roll details expand/collapse
     local db = ns.Addon.db.profile
@@ -899,43 +907,49 @@ local function CreateTitleBar(parent, isPreview)
     titleBar:SetHeight(TITLE_BAR_HEIGHT)
     titleBar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
     titleBar:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
+    titleBar.background = titleBar:CreateTexture(nil, "BACKGROUND")
+    titleBar.background:SetAllPoints()
+    titleBar.background:SetColorTexture(unpack(Style.title))
+    titleBar.accent = titleBar:CreateTexture(nil, "ARTWORK")
+    titleBar.accent:SetSize(2, 12)
+    titleBar.accent:SetPoint("LEFT", titleBar, "LEFT", 0, 0)
+    titleBar.accent:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 1)
+    titleBar.separator = titleBar:CreateTexture(nil, "ARTWORK")
+    titleBar.separator:SetHeight(1)
+    titleBar.separator:SetPoint("BOTTOMLEFT", titleBar, "BOTTOMLEFT", 0, 0)
+    titleBar.separator:SetPoint("BOTTOMRIGHT", titleBar, "BOTTOMRIGHT", 0, 0)
+    titleBar.separator:SetColorTexture(unpack(Style.border))
 
     local fontPath, fontSize, fontOutline = GetFont()
     titleBar.text = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 8, 0)
+    titleBar.text:SetPoint("LEFT", titleBar, "LEFT", 12, 0)
     titleBar.text:SetJustifyH("LEFT")
     titleBar.text:SetWordWrap(false)
     titleBar.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(titleBar.text, ns.Addon.db)
     titleBar.text:SetText(L["DragonLoot - Loot History"])
-    titleBar.text:SetTextColor(1, 0.82, 0)
+    titleBar.text:SetTextColor(unpack(Style.text))
 
     -- Close button
-    local ok, closeBtn = pcall(CreateFrame, "Button", nil, titleBar, "UIPanelCloseButtonNoScripts")
-    if not ok or not closeBtn then
-        closeBtn = CreateFrame("Button", nil, titleBar)
-        closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-        closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-        closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
-    end
-    closeBtn:SetSize(24, 24)
+    local closeBtn = DU.CreateCloseButton(titleBar, ns.Addon.db)
     closeBtn:SetPoint("TOPRIGHT", titleBar, "TOPRIGHT", -2, -2)
     closeBtn:SetScript("OnClick", function()
         ns.HistoryFrame.Hide()
     end)
 
     -- Clear button
-    local clearBtn = CreateFrame("Button", nil, titleBar)
+    local clearBtn = CreateFrame("Button", nil, titleBar, "BackdropTemplate")
+    DU.ApplyButtonSurface(clearBtn)
     clearBtn:SetHeight(TITLE_BAR_HEIGHT - 4)
-    clearBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 2)
+    clearBtn:SetPoint("RIGHT", closeBtn, "LEFT", -4, 0)
     clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     clearBtn.text:SetPoint("CENTER", clearBtn, "CENTER", 0, 0)
     clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
+    clearBtn.text:SetTextColor(unpack(Style.text))
     DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
     clearBtn.text:SetWordWrap(false)
     clearBtn.text:SetText(L["Clear"])
     clearBtn:SetWidth(clearBtn.text:GetStringWidth() + 12)
-    clearBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
     clearBtn:SetScript("OnClick", function()
         ns.HistoryFrame.ClearHistory()
     end)
@@ -948,6 +962,7 @@ local function CreateTitleBar(parent, isPreview)
         GameTooltip:Hide()
     end)
     titleBar.clearButton = clearBtn
+    titleBar.closeButton = closeBtn
     titleBar.text:SetPoint("RIGHT", clearBtn, "LEFT", -8, 0)
 
     if isPreview then
@@ -998,11 +1013,11 @@ local function CreateScrollComponents(parent)
     bar:SetBackdrop({
         bgFile = DU.WHITE8x8,
     })
-    bar:SetBackdropColor(0.1, 0.1, 0.1, 0.5)
+    bar:SetBackdropColor(unpack(Style.title))
 
     -- Thumb texture
     bar.thumb = bar:CreateTexture(nil, "OVERLAY")
-    bar.thumb:SetColorTexture(0.4, 0.4, 0.4, 0.8)
+    bar.thumb:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 0.8)
     bar.thumb:SetSize(SCROLLBAR_WIDTH - SCROLLBAR_GAP, SCROLLBAR_THUMB_HEIGHT)
     bar:SetThumbTexture(bar.thumb)
 
@@ -1031,7 +1046,9 @@ end
 
 local function CreateContainerFrame()
     local frame = CreateFrame("Frame", "DragonLootHistoryFrame", UIParent, "BackdropTemplate")
-    frame:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
+    local cfg = GetHistoryDB()
+    frame:SetSize(cfg.width or FRAME_WIDTH, cfg.height or FRAME_HEIGHT)
+    frame:SetScale(cfg.scale or 1)
     frame:SetFrameStrata("HIGH")
     frame:SetFrameLevel(100)
     frame:SetClampedToScreen(true)
@@ -1161,6 +1178,10 @@ function ns.HistoryFrame.ApplySettings()
         return
     end
 
+    local cfg = GetHistoryDB()
+    containerFrame:SetSize(cfg.width or FRAME_WIDTH, cfg.height or FRAME_HEIGHT)
+    containerFrame:SetScale(cfg.scale or 1)
+
     -- Update backdrop
     ApplyBackdrop(containerFrame)
 
@@ -1171,6 +1192,7 @@ function ns.HistoryFrame.ApplySettings()
     local fontPath, fontSize, fontOutline = GetFont()
     containerFrame.titleBar.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(containerFrame.titleBar.text, ns.Addon.db)
+    DU.ApplyCloseButtonFont(containerFrame.titleBar.closeButton, ns.Addon.db)
     local clearBtn = containerFrame.titleBar.clearButton
     clearBtn.text:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(clearBtn.text, ns.Addon.db)
@@ -1195,6 +1217,7 @@ function ns.HistoryFrame.ApplySettings()
             DU.ApplyFontShadow(entry.rollInfo, ns.Addon.db)
             entry.timeText:SetFont(fontPath, fontSize - 2, fontOutline)
             DU.ApplyFontShadow(entry.timeText, ns.Addon.db)
+            ApplyTimestampVisibility(entry)
 
             -- Update detail rows if expanded
             if entry.detailRows then
@@ -1356,6 +1379,7 @@ function ns.HistoryFrame.CreatePreview(parent)
         local font, size, flags = GetFont()
         self.titleBar.text:SetFont(font, size, flags)
         DU.ApplyFontShadow(self.titleBar.text, ns.Addon.db)
+        DU.ApplyCloseButtonFont(self.titleBar.closeButton, ns.Addon.db)
         local clear = self.titleBar.clearButton
         clear.text:SetFont(font, size, flags)
         DU.ApplyFontShadow(clear.text, ns.Addon.db)

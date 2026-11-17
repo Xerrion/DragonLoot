@@ -75,6 +75,12 @@ end)
 
 local panelResult
 
+function ns.RefreshVisibleWidgets()
+    if panelResult then
+        panelResult.RefreshVisibleWidgets()
+    end
+end
+
 -- Register as soon as the options addon loads, including changes made before
 -- the Profiles page is ever visited. Getters always read the active profile.
 ns.dlns = _G.DragonLootNS

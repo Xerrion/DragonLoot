@@ -30,6 +30,10 @@ local defaults = {
             slotSpacing = 2,
             contentPadding = 4,
             positionAtCursor = false,
+            showDetails = true,
+            showQuantity = true,
+            qualityGlow = false,
+            backgroundIntensity = 1,
         },
 
         rollFrame = {
@@ -42,13 +46,13 @@ local defaults = {
             resultLingerDuration = 3,
             showRollTally = false,
             timerBarHeight = 12,
-            timerBarTexture = "Blizzard",
+            timerBarTexture = "Dragon UI",
             timerBarBorder = false,
-            timerBarBorderColor = { r = 0.3, g = 0.3, b = 0.3 },
-            timerBarColorMode = "gradient",
-            timerBarColor = { r = 0, g = 1, b = 0 },
-            timerBarBackgroundColor = { r = 0.1, g = 0.1, b = 0.1 },
-            timerBarBackgroundAlpha = 0.8,
+            timerBarBorderColor = { r = 0.22, g = 0.28, b = 0.35 },
+            timerBarColorMode = "custom",
+            timerBarColor = { r = 0.28, g = 0.83, b = 0.73 },
+            timerBarBackgroundColor = { r = 0.065, g = 0.085, b = 0.115 },
+            timerBarBackgroundAlpha = 1,
             frameWidth = 328,
             rowSpacing = 4,
             timerBarSpacing = 4,
@@ -66,6 +70,7 @@ local defaults = {
             iconOutsideGap = 4,
             timerBarStyle = "normal",
             timerBarMinimalHeight = 3,
+            showTimerText = true,
         },
 
         history = {
@@ -73,31 +78,35 @@ local defaults = {
             maxEntries = 100,
             autoShow = false,
             lock = false,
+            width = 350,
+            height = 400,
+            scale = 1,
             trackDirectLoot = true,
             minQuality = 2, -- Uncommon
             entrySpacing = 2,
             contentPadding = 6,
             rowHeightPadding = 6,
             showRollDetails = true,
+            showTimestamp = true,
         },
 
         appearance = {
-            font = "Friz Quadrata TT",
+            font = "Dragon UI",
             fontSize = 12,
-            fontOutline = "OUTLINE",
-            fontShadow = true,
+            fontOutline = "",
+            fontShadow = false,
             lootIconSize = 36,
             rollIconSize = 36,
             historyIconSize = 24,
             qualityBorder = true,
             showItemLevel = true,
-            slotBackground = "gradient",
-            backgroundColor = { r = 0.05, g = 0.05, b = 0.05 },
-            backgroundAlpha = 0.9,
+            slotBackground = "flat",
+            backgroundColor = { r = 0.035, g = 0.047, b = 0.065 },
+            backgroundAlpha = 0.98,
             backgroundTexture = "Solid",
-            borderColor = { r = 0.3, g = 0.3, b = 0.3 },
+            borderColor = { r = 0.22, g = 0.28, b = 0.35 },
             borderSize = 1,
-            borderTexture = "None",
+            borderTexture = "Dragon UI",
         },
 
         animation = {
@@ -147,7 +156,7 @@ local defaults = {
 -- Profile Migration
 -------------------------------------------------------------------------------
 
-local CURRENT_SCHEMA = 7
+local CURRENT_SCHEMA = 8
 
 local function DeepCopyValue(value)
     if type(value) ~= "table" then
@@ -268,6 +277,50 @@ local function NotifyAppearanceChange()
     if ns.HistoryFrame and ns.HistoryFrame.ApplySettings then
         ns.HistoryFrame.ApplySettings()
     end
+end
+
+-------------------------------------------------------------------------------
+-- Explicit style preset: preserve layout, content, and behavior preferences.
+-------------------------------------------------------------------------------
+
+local MODERN_STYLE_FIELDS = {
+    appearance = {
+        "font",
+        "fontOutline",
+        "fontShadow",
+        "slotBackground",
+        "backgroundColor",
+        "backgroundAlpha",
+        "backgroundTexture",
+        "borderColor",
+        "borderSize",
+        "borderTexture",
+    },
+    rollFrame = {
+        "timerBarTexture",
+        "timerBarBorderColor",
+        "timerBarColorMode",
+        "timerBarColor",
+        "timerBarBackgroundColor",
+        "timerBarBackgroundAlpha",
+    },
+    lootWindow = {
+        "qualityGlow",
+        "backgroundIntensity",
+    },
+}
+
+function ns.ApplyModernStyle()
+    local db = ns.Addon and ns.Addon.db
+    if not db or not db.profile then
+        return
+    end
+    for section, fields in pairs(MODERN_STYLE_FIELDS) do
+        for _, key in ipairs(fields) do
+            db.profile[section][key] = DeepCopyValue(defaults.profile[section][key])
+        end
+    end
+    NotifyAppearanceChange()
 end
 
 -------------------------------------------------------------------------------

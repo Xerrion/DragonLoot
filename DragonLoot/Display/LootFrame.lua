@@ -32,6 +32,7 @@ local GetCursorPosition = GetCursorPosition
 
 local L = ns.L
 local DU = ns.DisplayUtils
+local Style = DU.Style
 
 -------------------------------------------------------------------------------
 -- Version detection
@@ -134,6 +135,7 @@ end
 
 local function ApplySlotBackground(slot, quality)
     local style = ns.Addon.db.profile.appearance.slotBackground or "gradient"
+    local intensity = ns.Addon.db.profile.lootWindow.backgroundIntensity or 1
 
     -- Only show quality-tinted backgrounds for Rare+ items (quality >= 3)
     if not quality or quality < MIN_QUALITY_RARE or style == "none" then
@@ -146,16 +148,20 @@ local function ApplySlotBackground(slot, quality)
 
     if style == "gradient" then
         slot.rowBg:SetColorTexture(1, 1, 1)
-        slot.rowBg:SetGradient("HORIZONTAL", CreateColor(r, g, b, 0.4), CreateColor(r, g, b, 0.1))
+        slot.rowBg:SetGradient(
+            "HORIZONTAL",
+            CreateColor(r, g, b, math.min(1, 0.4 * intensity)),
+            CreateColor(r, g, b, math.min(1, 0.1 * intensity))
+        )
         slot.rowBg:Show()
         slot.accentStripe:Hide()
     elseif style == "flat" then
-        slot.rowBg:SetColorTexture(r, g, b, 0.08)
+        slot.rowBg:SetColorTexture(r, g, b, math.min(1, 0.08 * intensity))
         slot.rowBg:Show()
         slot.accentStripe:Hide()
     elseif style == "stripe" then
         slot.rowBg:Hide()
-        slot.accentStripe:SetColorTexture(r, g, b, 0.6)
+        slot.accentStripe:SetColorTexture(r, g, b, math.min(1, 0.6 * intensity))
         slot.accentStripe:Show()
     end
 end
@@ -201,11 +207,18 @@ local function ApplyLayoutOffsets(frame)
 
     -- Title text
     frame.title:ClearAllPoints()
-    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 8 + borderSize, -(6 + borderSize))
+    frame.title:SetPoint("TOPLEFT", frame, "TOPLEFT", 12 + borderSize, -(6 + borderSize))
+    frame.title:SetPoint("RIGHT", frame.closeBtn, "LEFT", -8, 0)
 
     -- Close button
     frame.closeBtn:ClearAllPoints()
-    frame.closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
+    frame.closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(borderSize + 2), -(borderSize + 2))
+
+    frame.titleBackground:ClearAllPoints()
+    frame.titleBackground:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -borderSize)
+    frame.titleBackground:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -borderSize, -borderSize)
+    frame.titleAccent:ClearAllPoints()
+    frame.titleAccent:SetPoint("TOPLEFT", frame, "TOPLEFT", borderSize, -(borderSize + 6))
 
     -- Fishing hint text
     frame.fishingText:ClearAllPoints()
@@ -506,6 +519,8 @@ local function ReleaseSlot(slot)
     slot.highlight:SetColorTexture(1, 1, 1, 0.15)
     slot._qr, slot._qg, slot._qb = nil, nil, nil
     slot._quality = nil
+    slot._quantity = nil
+    slot._subText = nil
     slot._comparing = nil
     slot:SetScript("OnUpdate", nil)
 
@@ -599,6 +614,36 @@ end
 -- Unified slot rendering (visual output identical for real and test data)
 -------------------------------------------------------------------------------
 
+local function ApplySlotDetails(slot, fontPath, fontSize, fontOutline)
+    local db = ns.Addon.db.profile
+    local cfg = db.lootWindow
+    local iconSize = db.appearance.lootIconSize or 36
+    if cfg.qualityGlow ~= false and slot._quality and slot._quality >= MIN_QUALITY_RARE then
+        slot.iconGlow:SetVertexColor(slot._qr, slot._qg, slot._qb, 0.6)
+        slot.iconGlow:SetSize(iconSize + ICON_GLOW_PADDING, iconSize + ICON_GLOW_PADDING)
+        slot.iconGlow:ClearAllPoints()
+        slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
+        slot.iconGlow:Show()
+    else
+        slot.iconGlow:Hide()
+    end
+    if cfg.showQuantity ~= false and slot._quantity and slot._quantity > 1 then
+        slot.quantity:SetText(slot._quantity)
+        slot.quantity:Show()
+    else
+        slot.quantity:Hide()
+    end
+    if cfg.showDetails ~= false and slot._subText then
+        slot.subText:SetFont(fontPath, math.max(fontSize - 2, 8), fontOutline)
+        DU.ApplyFontShadow(slot.subText, ns.Addon.db)
+        slot.subText:SetText(slot._subText)
+        slot.subText:SetTextColor(unpack(Style.muted))
+        slot.subText:Show()
+    else
+        slot.subText:Hide()
+    end
+end
+
 local function RenderSlot(slot, data, isTest, isPreview)
     local db = ns.Addon.db.profile
     local iconSize = db.appearance.lootIconSize or 36
@@ -615,6 +660,8 @@ local function RenderSlot(slot, data, isTest, isPreview)
     local r, g, b = DU.GetQualityColor(data.quality)
     slot._qr, slot._qg, slot._qb = r, g, b
     slot._quality = data.quality
+    slot._quantity = data.quantity
+    slot._subText = data.subText
 
     -- Quality border
     if db.appearance.qualityBorder then
@@ -630,42 +677,13 @@ local function RenderSlot(slot, data, isTest, isPreview)
         slot.iconBorder:Show()
     end
 
-    -- Icon glow for Rare+ items (quality >= 3)
-    if data.quality and data.quality >= MIN_QUALITY_RARE then
-        slot.iconGlow:SetVertexColor(r, g, b, 0.6)
-        slot.iconGlow:SetSize(iconSize + ICON_GLOW_PADDING, iconSize + ICON_GLOW_PADDING)
-        slot.iconGlow:ClearAllPoints()
-        slot.iconGlow:SetPoint("CENTER", slot.iconFrame, "CENTER", 0, 0)
-        slot.iconGlow:Show()
-    else
-        slot.iconGlow:Hide()
-    end
-
     -- Item name
     slot.itemName:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(slot.itemName, ns.Addon.db)
     slot.itemName:SetText(data.name)
     slot.itemName:SetTextColor(r, g, b)
 
-    -- Quantity badge
-    if data.quantity and data.quantity > 1 then
-        slot.quantity:SetText(data.quantity)
-        slot.quantity:Show()
-    else
-        slot.quantity:Hide()
-    end
-
-    -- Sub-text (item details or slot type)
-    if data.subText then
-        local subFontSize = math.max(fontSize - 2, 8)
-        slot.subText:SetFont(fontPath, subFontSize, fontOutline)
-        DU.ApplyFontShadow(slot.subText, ns.Addon.db)
-        slot.subText:SetText(data.subText)
-        slot.subText:SetTextColor(0.6, 0.6, 0.6)
-        slot.subText:Show()
-    else
-        slot.subText:Hide()
-    end
+    ApplySlotDetails(slot, fontPath, fontSize, fontOutline)
 
     -- Row background (quality-tinted, configurable)
     ApplySlotBackground(slot, data.quality)
@@ -741,14 +759,7 @@ end
 -------------------------------------------------------------------------------
 
 local function CreateCloseButton(parent, isPreview)
-    local ok, btn = pcall(CreateFrame, "Button", nil, parent, "UIPanelCloseButtonNoScripts")
-    if not ok or not btn then
-        btn = CreateFrame("Button", nil, parent)
-        btn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-        btn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-        btn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
-    end
-    btn:SetSize(24, 24)
+    local btn = DU.CreateCloseButton(parent, ns.Addon.db)
     btn:SetPoint("TOPRIGHT", parent, "TOPRIGHT", 0, 0)
 
     if isPreview then
@@ -790,7 +801,15 @@ local function CreateContainerFrame(parent, isPreview)
     frame.title:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(frame.title, ns.Addon.db)
     frame.title:SetText(L["Loot"])
-    frame.title:SetTextColor(1, 0.82, 0)
+    frame.title:SetTextColor(unpack(Style.text))
+    frame.title:SetWordWrap(false)
+
+    frame.titleBackground = frame:CreateTexture(nil, "BACKGROUND")
+    frame.titleBackground:SetHeight(TITLE_BAR_HEIGHT)
+    frame.titleBackground:SetColorTexture(unpack(Style.title))
+    frame.titleAccent = frame:CreateTexture(nil, "ARTWORK")
+    frame.titleAccent:SetSize(2, 12)
+    frame.titleAccent:SetColorTexture(Style.accent[1], Style.accent[2], Style.accent[3], 1)
 
     -- Close button
     frame.closeBtn = CreateCloseButton(frame, isPreview)
@@ -815,13 +834,13 @@ local function CreateContainerFrame(parent, isPreview)
     -- Fishing hint
     frame.fishingText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     frame.fishingText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 4)
-    frame.fishingText:SetTextColor(0.5, 0.5, 0.5)
+    frame.fishingText:SetTextColor(unpack(Style.muted))
     frame.fishingText:Hide()
 
     -- Title separator
     frame.titleSeparator = frame:CreateTexture(nil, "ARTWORK")
     frame.titleSeparator:SetHeight(1)
-    frame.titleSeparator:SetColorTexture(0.6, 0.5, 0.2, 0.4)
+    frame.titleSeparator:SetColorTexture(unpack(Style.border))
 
     -- Offset child elements to account for border thickness
     ApplyLayoutOffsets(frame)
@@ -1121,16 +1140,22 @@ function ns.LootFrame.ApplySettings()
     local fontPath, fontSize, fontOutline = GetFont()
     containerFrame.title:SetFont(fontPath, fontSize, fontOutline)
     DU.ApplyFontShadow(containerFrame.title, ns.Addon.db)
+    DU.ApplyCloseButtonFont(containerFrame.closeBtn, ns.Addon.db)
 
     -- Update visible slots
     for _, slot in ipairs(activeSlots) do
         if slot:IsShown() then
             slot.itemName:SetFont(fontPath, fontSize, fontOutline)
             DU.ApplyFontShadow(slot.itemName, ns.Addon.db)
+            ApplySlotDetails(slot, fontPath, fontSize, fontOutline)
+            ApplySlotBackground(slot, slot._quality)
             -- Refresh quality border visibility
             if slot.slotIndex then
-                local _, _, _, quality = GetNormalizedSlotInfo(slot.slotIndex)
-                if db.appearance.qualityBorder then
+                local _, _, _, quality, _, isQuestItem = GetNormalizedSlotInfo(slot.slotIndex)
+                if isQuestItem then
+                    slot.iconBorder:SetColorTexture(1, 0.82, 0, 0.9)
+                    slot.iconBorder:Show()
+                elseif db.appearance.qualityBorder then
                     local r, g, b = DU.GetQualityColor(quality)
                     slot._qr, slot._qg, slot._qb = r, g, b
                     slot._quality = quality
@@ -1139,12 +1164,7 @@ function ns.LootFrame.ApplySettings()
                 else
                     slot.iconBorder:Hide()
                 end
-                -- Update sub-text font
-                local subFontSize = math.max(fontSize - 2, 8)
-                slot.subText:SetFont(fontPath, subFontSize, fontOutline)
-                DU.ApplyFontShadow(slot.subText, ns.Addon.db)
-                -- Refresh row background and highlight
-                ApplySlotBackground(slot, quality)
+                -- Refresh highlight
                 slot.highlight:SetColorTexture(slot._qr or 1, slot._qg or 1, slot._qb or 1, 0.15)
             end
         end
@@ -1297,6 +1317,7 @@ function ns.LootFrame.CreatePreview(parent)
         local font, size, flags = GetFont()
         self.title:SetFont(font, size, flags)
         DU.ApplyFontShadow(self.title, ns.Addon.db)
+        DU.ApplyCloseButtonFont(self.closeBtn, ns.Addon.db)
         for i, row in ipairs(rows) do
             RenderSlot(row, BuildTestSlotData(TEST_ITEMS[i], i), true, true)
             row:ClearAllPoints()

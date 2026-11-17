@@ -395,3 +395,30 @@ L["Fit"] = true
 L["Clipped preview"] = true
 L["Feature disabled"] = true
 L["Preview unavailable"] = true
+
+-- Feature customization
+L["Content"] = true
+L["Item Style"] = true
+L["Behavior"] = true
+L["Position and Testing"] = true
+L["Icon Borders"] = true
+L["History Actions"] = true
+L["Show Item Details"] = true
+L["Show item level, binding, and item type below the item name"] = true
+L["Show Stack Counts"] = true
+L["Show stack quantities on loot item icons"] = true
+L["Background Intensity"] = true
+L["Strength of the quality-colored item background"] = true
+L["Quality Glow"] = true
+L["Show a quality-colored glow around Rare and better loot icons"] = true
+L["Show Timer Text"] = true
+L["Show remaining seconds on the normal timer bar"] = true
+L["Show Timestamps"] = true
+L["Show elapsed time beside each history entry"] = true
+
+-- Modern visual preset
+L["Style"] = true
+L["Apply Modern Style"] = true
+-- stylua: ignore
+L["Apply modern font styling, frame backgrounds and borders, flat item highlights without glow, "
+    .. "and roll timer styling. Keep sizes, positions, content, and behavior."] = true

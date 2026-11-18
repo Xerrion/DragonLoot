@@ -223,13 +223,12 @@ StyLua config (`.stylua.toml`): 120-char width, 4-space indent, double quotes, U
 
 This policy applies to every AI coding agent working in this repository. It is separate from [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-1. **Disclose.** State in the PR description which tool you used and how much of the change it produced.
-2. **Keep a human in the loop.** A human must review, understand, and be able to explain every line you submit. Never submit unreviewed agent output.
-3. **Verify.** Run `luacheck .` and `busted --verbose` (see Just Recipes), and have the change tested in-game before submitting. Never claim a check passed without running it.
-4. **Do not fabricate.** Never invent WoW API behavior. Verify it against [warcraft.wiki.gg](https://warcraft.wiki.gg) and Blizzard's FrameXML source.
-5. **No spam.** Do not open bulk or drive-by AI-generated issues or PRs. Make one scoped change per PR, linked to an issue.
-6. **Licensing.** The contributor is responsible for licensing. Do not paste code of unknown origin.
-7. **Agent conduct.**
+1. **Keep a human in the loop.** A human must review, understand, and be able to explain every line you submit. Never submit unreviewed agent output.
+2. **Verify.** Run `luacheck .` and `busted --verbose` (see Just Recipes), and have the change tested in-game before submitting. Never claim a check passed without running it.
+3. **Do not fabricate.** Never invent WoW API behavior. Verify it against [warcraft.wiki.gg](https://warcraft.wiki.gg) and Blizzard's FrameXML source.
+4. **No spam.** Do not open bulk or drive-by AI-generated issues or PRs. Make one scoped change per PR, linked to an issue.
+5. **Licensing.** The contributor is responsible for licensing. Do not paste code of unknown origin.
+6. **Agent conduct.**
    - Follow this AGENTS.md.
    - Never push to `master`.
    - Never merge release-please PRs (`chore(master): release X.Y.Z`). The owner merges those.
@@ -237,7 +236,7 @@ This policy applies to every AI coding agent working in this repository. It is s
 
 PR titles must be conventional commits (`feat:`, `fix(scope):`, `chore:`, ...). Squash merges use the PR title as the commit message, and release-please derives versions from it.
 
-Maintainers may close undisclosed or unreviewed AI-assisted PRs without review.
+Maintainers may close unreviewed AI-assisted PRs without review.
 
 ## Labels
 

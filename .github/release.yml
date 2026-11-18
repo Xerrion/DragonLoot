@@ -1,0 +1,33 @@
+changelog:
+  exclude:
+    labels:
+      - "autorelease: pending"
+      - "autorelease: tagged"
+      - automated
+      - C-Documentation
+      - A-CI
+      - ci
+    authors:
+      - dependabot
+  categories:
+    - title: "🚀 Features"
+      labels:
+        - C-Feature
+    - title: "🐛 Bug Fixes"
+      labels:
+        - C-Bug
+    - title: "⚡ Performance"
+      labels:
+        - C-Performance
+    - title: "🧭 Usability"
+      labels:
+        - C-Usability
+    - title: "🚜 Refactor"
+      labels:
+        - C-Code-Quality
+    - title: "🌍 Localization"
+      labels:
+        - C-Localization
+    - title: "⚙️ Other Changes"
+      labels:
+        - "*"

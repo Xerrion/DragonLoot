@@ -1,0 +1,15 @@
+name: PR Title
+
+# pull_request_target so fork PRs get a token that can read the PR. The called
+# workflow never checks out PR code; it only validates the title.
+on:
+  pull_request_target:
+    branches: [master]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    uses: Xerrion/wow-workflows/.github/workflows/pr-title.yml@main

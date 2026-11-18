@@ -3,10 +3,8 @@ changelog:
     labels:
       - "autorelease: pending"
       - "autorelease: tagged"
+      - autorelease
       - automated
-      - C-Documentation
-      - A-CI
-      - ci
     authors:
       - dependabot
   categories:
@@ -28,6 +26,9 @@ changelog:
     - title: "🌍 Localization"
       labels:
         - C-Localization
+    - title: "📚 Documentation"
+      labels:
+        - C-Documentation
     - title: "⚙️ Other Changes"
       labels:
         - "*"

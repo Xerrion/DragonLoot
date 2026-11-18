@@ -12,6 +12,24 @@
 * Replace the history clear icon with localized "Clear" text to distinguish it from Close.
 * Fix missing loot windows on WoW Forever by recognizing `WOW_PROJECT_CAMELOT` (18) and loading Mainline loot, roll, and history listeners; also harden loot-event isolation and Blizzard-frame suppression ([#205](https://github.com/Xerrion/DragonLoot/issues/205)).
 
+## 0.21.3 (2026-11-18)
+
+<!-- Release notes generated using configuration in .github/release.yml at master -->
+
+## What's Changed
+### ⚙️ Other Changes
+* docs: showcase Dragon Loot with screenshots and matching artwork by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/219
+* ci: validate PR titles as conventional commits by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/222
+* chore: use GitHub-generated release notes to credit contributors by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/221
+* ci: run lint on pull_request instead of pull_request_target by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/220
+* docs: drop AI disclosure requirement by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/224
+* ci: add PR labeler and unify release note categories by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/225
+* ci: use pull_request triggers and update action versions by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/226
+* ci: run the PR labeler on pull_request_target for fork PRs by @Xerrion in https://github.com/Xerrion/DragonLoot/pull/227
+
+
+**Full Changelog**: https://github.com/Xerrion/DragonLoot/compare/0.21.2...0.21.3
+
 ## [0.21.2](https://github.com/Xerrion/DragonLoot/compare/0.21.1...0.21.2) (2026-11-17)
 
 
